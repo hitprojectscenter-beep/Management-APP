@@ -63,6 +63,63 @@
     "loginPrompt": "Sign in to continue to Work OS",
     "demoMode": "Demo mode - click to enter"
   },
+  "landing": {
+    "title": "My Tasks",
+    "subtitle": "All tasks that are still open - sorted by urgency",
+    "tabs": {
+      "all": "All",
+      "inProgress": "In Progress",
+      "notStarted": "Not Started",
+      "blocked": "Blocked",
+      "review": "In Review",
+      "overdue": "Overdue",
+      "byProject": "By Project",
+      "byPortfolio": "By Portfolio"
+    },
+    "noTasks": "No open tasks in this category",
+    "addTask": "Add Task",
+    "myProjects": "My Projects",
+    "myParticipation": "My Participation",
+    "fteTotal": "Total Allocation",
+    "remaining": "Remaining",
+    "stats": {
+      "total": "Total Open Tasks",
+      "inProgress": "In Progress",
+      "overdue": "Overdue",
+      "dueThisWeek": "Due This Week"
+    }
+  },
+  "addTask": {
+    "title": "Add New Task",
+    "description": "Create a new task in an existing project",
+    "fields": {
+      "title": "Task Title",
+      "titlePlaceholder": "What needs to be done?",
+      "description": "Description",
+      "descriptionPlaceholder": "Additional details (optional)",
+      "project": "Project",
+      "selectProject": "Select project",
+      "assignee": "Assignee",
+      "selectAssignee": "Select team member",
+      "status": "Status",
+      "priority": "Priority",
+      "plannedStart": "Start Date",
+      "plannedEnd": "Due Date",
+      "estimateHours": "Hours Estimate"
+    },
+    "submit": "Create Task",
+    "submitting": "Creating...",
+    "cancel": "Cancel"
+  },
+  "members": {
+    "title": "Members",
+    "totalCount": "{count} members",
+    "role": "Role",
+    "fte": "FTE %",
+    "joined": "Joined",
+    "noMembers": "No members yet",
+    "addMember": "Add Member"
+  },
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Hello, {name}",

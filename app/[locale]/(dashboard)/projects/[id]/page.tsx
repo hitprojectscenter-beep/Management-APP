@@ -10,10 +10,12 @@ import {
   getTasksByProject,
   mockUsers,
   mockWbsNodes,
+  getAllMembersOfNodeRecursive,
 } from "@/lib/db/mock-data";
 import { calculateProjectHealth } from "@/lib/ai/risk-engine";
 import { ProjectViews } from "@/components/projects/project-views";
 import { WbsTree } from "@/components/wbs/wbs-tree";
+import { ProjectMembers } from "@/components/members/project-members";
 
 export default async function ProjectDetailPage({
   params,
@@ -30,6 +32,7 @@ export default async function ProjectDetailPage({
 
   const tasks = getTasksByProject(id);
   const health = calculateProjectHealth(tasks);
+  const members = getAllMembersOfNodeRecursive(id);
   const completion = tasks.length > 0
     ? Math.round((tasks.filter((t) => t.status === "done").length / tasks.length) * 100)
     : 0;
@@ -113,17 +116,26 @@ export default async function ProjectDetailPage({
 
       {/* WBS + Views */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        <Card className="xl:col-span-1 max-h-[80vh] overflow-auto">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <GitBranch className="size-4" />
-              {locale === "he" ? "מבנה היררכי (WBS)" : "Work Breakdown Structure"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <WbsTree nodes={childNodes} allNodes={mockWbsNodes} locale={locale} />
-          </CardContent>
-        </Card>
+        <div className="xl:col-span-1 space-y-4">
+          <Card className="max-h-[40vh] overflow-auto">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <GitBranch className="size-4" />
+                {locale === "he" ? "מבנה היררכי (WBS)" : "Work Breakdown Structure"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <WbsTree nodes={childNodes} allNodes={mockWbsNodes} locale={locale} />
+            </CardContent>
+          </Card>
+
+          <ProjectMembers
+            members={members}
+            users={mockUsers}
+            locale={locale}
+            title={locale === "he" ? "צוות הפרויקט" : "Project Team"}
+          />
+        </div>
 
         <Card className="xl:col-span-3">
           <CardContent className="p-0">

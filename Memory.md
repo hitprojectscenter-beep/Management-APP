@@ -143,6 +143,67 @@
 
 ---
 
+### 🗨️ סבב 6: עמוד נחיתה חדש + משתתפים בפרויקט (FTE) + הסברי גרפים
+
+**👤 משתמש (סבב 6.1):**
+> בנוגע ליישום: עמוד נחיתה של היישום ייתן למשתמש את רשימת המשימות שעדיין לא נסגרו, בהצגת סטטוסים וזמן נותר לסיום המשימה. את חיבור לכלל הרובריקות דרך טאבים. סימון של "+" להוספת משימה חדשה. כמו- כן, המשתמש יוכל לראות את כלל המשתתפים בכל פרויקט/משימה/פרוגרמה בה הוא מעורב. לכל משתתף יהיה תפקיד בפרויקט ואחוז משרה אותו הוא משקיע לפרויקט.
+
+**👤 משתמש (סבב 6.2 - הוסיף תוך כדי):**
+> היישום בהצגת ברירת מחדל יהיה בעברית. יש צורך לתת כמה משפטי הסבר עבור כל גרף שמוצג ביישום. לדוגמה: יש צורך להסביר מה זה Progress Over Time?
+
+**🤖 Claude:**
+
+1. **הרחבת ה-data layer:**
+   - הוספת טבלת `projectMembers` ל-schema (user_id, wbs_node_id, role_in_project, fte_percent)
+   - הוספת `MockProjectMember` interface ו-16 רשומות דמה (משתתפים בפורטפוליו, תוכניות, פרויקטים)
+   - הוספת `CURRENT_USER_ID = "u1"` (אורי) לדמיית session
+   - 6 helper functions חדשות: `getMembersOfNode`, `getAllMembersOfNodeRecursive`, `getNodesForUser`, `getOpenTasksForUser`, `getAllTasksForUser`, `getTimeRemaining`
+
+2. **תרגומים חדשים** ב-`he.json` ו-`en.json`:
+   - section `landing` - title, tabs, stats
+   - section `addTask` - dialog labels
+   - section `members` - role, fte, joined
+
+3. **עמוד נחיתה חדש** (`app/[locale]/(dashboard)/page.tsx`):
+   - Header עם אבטר המשתמש + ברכה אישית + כרטיסיית "סך הקצאה שלי" (125% = הקצאת יתר!)
+   - 4 KPI cards: סך פתוחות / בביצוע / באיחור / השבוע
+   - **MyTasksTabs** - 7 טאבים (הכל / בביצוע / לא התחילו / בבדיקה / חסומות / באיחור / לפי פרויקט)
+   - כרטיסי משימות עם זמן נותר (`days left` / `overdue`) בצבעים דינמיים
+   - Side panel: "הפרויקטים שלי" + "ההשתתפות שלי" (FTE breakdown עם total + over-allocation warning)
+
+4. **AddTaskDialog component** (Radix Dialog):
+   - כפתור "+" בעמוד הנחיתה
+   - Dialog form עם: title, description, project, assignee, status, priority, dates, hours
+   - Toast notification דרך Sonner על יצירה מוצלחת
+   - Form reset אחרי submit
+
+5. **ProjectMembers component**:
+   - 2 variants: `card` (מלא) ו-`compact`
+   - הצגת אבטר + שם + תפקיד + אחוז משרה צבעוני (ירוק 80%+, כחול 50-80%, צהוב 25-50%)
+   - חישוב סך FTE עם indication של "FTEs מלאים"
+   - הוספה לדף הפרויקט הבודד ולדף המשימה הבודדת
+
+6. **דף Dashboard ישיר** ב-`/dashboard`:
+   - העברת הדשבורד הישן (executive view) למיקום נפרד
+   - הוספת `CardDescription` עם הסברים מפורטים לכל גרף + אייקון Info כחול
+
+7. **Sidebar עודכן**:
+   - הוסף קישור "המשימות שלי" → `/`
+   - הוסף קישור "לוח מחוונים" → `/dashboard`
+   - מעבר מ-`useTranslations("nav")` ל-labels מובנים בקוד עם `isHe` switch
+
+8. **הסברי גרפים** ב-Reports + Dashboard:
+   - "התקדמות לאורך זמן" - עם הסבר על Velocity ו-Scrum
+   - "התפלגות סטטוס" - הסבר על תמונת מצב מיידית
+   - "עומס עבודה" - הסבר על איזון צוות
+   - "בריאות כוללת" - הסבר על הציון 0-100
+
+9. **ולידציה:**
+   - 13 דפים מחזירים HTTP 200 (כולל `/he/dashboard` החדש)
+   - `/` מפנה אוטומטית ל-`/he` (default locale)
+   - Screenshot validation: דף הנחיתה החדש בעברית RTL מלא עם כל הרכיבים
+   - Project detail עם משתתפים מוצג נכון
+
 ### 🗨️ סבב 5: דרישת העלאה ל-Git + מסמכי תיעוד
 
 **👤 משתמש:**

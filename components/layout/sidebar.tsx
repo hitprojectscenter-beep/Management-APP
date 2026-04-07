@@ -1,8 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/routing";
 import {
+  Home,
   LayoutDashboard,
   FolderKanban,
   Briefcase,
@@ -18,22 +19,24 @@ import {
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { key: "dashboard", icon: LayoutDashboard, href: "/" },
-  { key: "portfolios", icon: Boxes, href: "/portfolios" },
-  { key: "projects", icon: Briefcase, href: "/projects" },
-  { key: "tasks", icon: CheckSquare, href: "/tasks" },
-  { key: "calendar", icon: Calendar, href: "/calendar" },
-  { key: "ai", icon: Sparkles, href: "/ai" },
-  { key: "reports", icon: BarChart3, href: "/reports" },
-  { key: "automations", icon: Workflow, href: "/automations" },
-  { key: "team", icon: Users, href: "/team" },
-  { key: "settings", icon: Settings, href: "/settings" },
+  { key: "home", icon: Home, href: "/", labelHe: "המשימות שלי", labelEn: "My Tasks" },
+  { key: "dashboard", icon: LayoutDashboard, href: "/dashboard", labelHe: "לוח מחוונים", labelEn: "Dashboard" },
+  { key: "portfolios", icon: Boxes, href: "/portfolios", labelHe: "פורטפוליו", labelEn: "Portfolios" },
+  { key: "projects", icon: Briefcase, href: "/projects", labelHe: "פרויקטים", labelEn: "Projects" },
+  { key: "tasks", icon: CheckSquare, href: "/tasks", labelHe: "משימות", labelEn: "Tasks" },
+  { key: "calendar", icon: Calendar, href: "/calendar", labelHe: "יומן", labelEn: "Calendar" },
+  { key: "ai", icon: Sparkles, href: "/ai", labelHe: "מרכז AI", labelEn: "AI Center" },
+  { key: "reports", icon: BarChart3, href: "/reports", labelHe: "דוחות", labelEn: "Reports" },
+  { key: "automations", icon: Workflow, href: "/automations", labelHe: "אוטומציות", labelEn: "Automations" },
+  { key: "team", icon: Users, href: "/team", labelHe: "צוות", labelEn: "Team" },
+  { key: "settings", icon: Settings, href: "/settings", labelHe: "הגדרות", labelEn: "Settings" },
 ] as const;
 
 export function Sidebar() {
-  const t = useTranslations("nav");
   const tApp = useTranslations("app");
+  const locale = useLocale();
   const pathname = usePathname();
+  const isHe = locale === "he";
 
   return (
     <aside className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-e border-sidebar-border">
@@ -57,7 +60,9 @@ export function Sidebar() {
           const isActive =
             item.href === "/"
               ? pathname === "/"
-              : pathname.startsWith(item.href);
+              : item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname.startsWith(item.href);
           return (
             <Link
               key={item.key}
@@ -70,7 +75,7 @@ export function Sidebar() {
               )}
             >
               <Icon className="size-4 shrink-0" />
-              <span>{t(item.key)}</span>
+              <span>{isHe ? item.labelHe : item.labelEn}</span>
             </Link>
           );
         })}

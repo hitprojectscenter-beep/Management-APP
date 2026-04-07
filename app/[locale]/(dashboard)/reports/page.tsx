@@ -1,6 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart3, FileText, Download } from "lucide-react";
+import { BarChart3, FileText, Download, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { mockTasks, mockUsers } from "@/lib/db/mock-data";
 import { calculateProjectHealth } from "@/lib/ai/risk-engine";
@@ -40,8 +40,13 @@ export default async function ReportsPage({
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>{locale === "he" ? "מהירות צוות (Velocity)" : "Team Velocity"}</CardTitle>
-            <CardDescription>
-              {locale === "he" ? "כמות משימות שהושלמו לאורך 6 שבועות" : "Tasks completed over 6 weeks"}
+            <CardDescription className="flex items-start gap-1.5">
+              <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
+              <span>
+                {locale === "he"
+                  ? "כמות המשימות שהצוות סוגר כל שבוע. גרף עולה = הצוות מאיץ. גרף שטוח = ייתכן צוואר בקבוק. גרף יורד = משהו תקוע. ה-velocity הוא המדד הקלאסי בשיטת Scrum להערכת קיבולת הצוות וסיכוני זמן."
+                  : "How many tasks the team closes each week. Up-trend = accelerating. Flat = bottleneck possible. Down-trend = something is stuck. Velocity is the classic Scrum metric for capacity planning and timing risk."}
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -51,6 +56,14 @@ export default async function ReportsPage({
         <Card>
           <CardHeader>
             <CardTitle>{locale === "he" ? "בריאות כוללת" : "Overall Health"}</CardTitle>
+            <CardDescription className="flex items-start gap-1.5">
+              <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
+              <span>
+                {locale === "he"
+                  ? "ציון משוקלל מ-0 עד 100 שמשקף את בריאות הפרויקטים: אחוז ביצוע, אחוז איחורים וחסימות. 70+ = בריא, 40-70 = בסיכון, מתחת ל-40 = קריטי."
+                  : "A weighted score 0-100 reflecting project health: completion rate, overdue rate, blocker rate. 70+ = healthy, 40-70 = at-risk, <40 = critical."}
+              </span>
+            </CardDescription>
           </CardHeader>
           <CardContent className="text-center py-8">
             <div className="text-7xl font-black gradient-text">{health.score}</div>
@@ -63,6 +76,14 @@ export default async function ReportsPage({
         <Card>
           <CardHeader>
             <CardTitle>{locale === "he" ? "עומס עבודה" : "Workload Distribution"}</CardTitle>
+            <CardDescription className="flex items-start gap-1.5">
+              <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
+              <span>
+                {locale === "he"
+                  ? "כמה משימות מוקצות לכל חבר צוות, מפוצלות לפתוחות / הושלמו / חסומות. הגרף עוזר לזהות עומס יתר על אנשים מסוימים, או מי 'פנוי' לקבל עוד משימות."
+                  : "How many tasks are assigned to each team member, split into open / done / blocked. Helps spot people who are over-loaded vs available for more work."}
+              </span>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <WorkloadChart users={mockUsers} tasks={mockTasks} locale={locale} />
@@ -71,6 +92,14 @@ export default async function ReportsPage({
         <Card>
           <CardHeader>
             <CardTitle>{locale === "he" ? "התפלגות סטטוס" : "Status Distribution"}</CardTitle>
+            <CardDescription className="flex items-start gap-1.5">
+              <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
+              <span>
+                {locale === "he"
+                  ? "פילוח עוגתי של כל המשימות בארגון לפי הסטטוס שלהן (לא התחיל / בביצוע / בבדיקה / הושלם / חסום / בוטל). מאפשר להבין במבט אחד איפה התקיעות."
+                  : "Pie chart of all organizational tasks by their status (not-started / in-progress / review / done / blocked / cancelled). Provides at-a-glance insight into where work is stuck."}
+              </span>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <StatusDistribution tasks={mockTasks} locale={locale} />

@@ -75,6 +75,22 @@ export interface MockAutomation {
   action: string;
 }
 
+export interface MockProjectMember {
+  id: string;
+  wbsNodeId: string;
+  userId: string;
+  roleInProject: string;
+  roleInProjectEn?: string;
+  ftePercent: number; // 1-100
+  joinedAt: string;
+}
+
+/**
+ * The currently logged-in user (for demo mode).
+ * בייצור זה יגיע מה-session של Auth.js.
+ */
+export const CURRENT_USER_ID = "u1";
+
 // ============================================
 // Users
 // ============================================
@@ -504,6 +520,166 @@ export const mockComments: MockComment[] = [
 ];
 
 // ============================================
+// Project Members - מי משתתף בכל פרויקט/תוכנית/פורטפוליו
+// כולל תפקיד ואחוז משרה (FTE)
+// ============================================
+export const mockProjectMembers: MockProjectMember[] = [
+  // Portfolio: Digital Transformation 2026
+  {
+    id: "pm-1",
+    wbsNodeId: "wbs-portfolio-1",
+    userId: "u1",
+    roleInProject: "מנהל פורטפוליו",
+    roleInProjectEn: "Portfolio Manager",
+    ftePercent: 50,
+    joinedAt: "2026-01-01",
+  },
+  {
+    id: "pm-2",
+    wbsNodeId: "wbs-portfolio-1",
+    userId: "u2",
+    roleInProject: "PMO Lead",
+    roleInProjectEn: "PMO Lead",
+    ftePercent: 30,
+    joinedAt: "2026-01-15",
+  },
+
+  // Program: Cloud & Infrastructure
+  {
+    id: "pm-3",
+    wbsNodeId: "wbs-program-1",
+    userId: "u1",
+    roleInProject: "Sponsor",
+    roleInProjectEn: "Sponsor",
+    ftePercent: 20,
+    joinedAt: "2026-01-10",
+  },
+  {
+    id: "pm-4",
+    wbsNodeId: "wbs-program-1",
+    userId: "u2",
+    roleInProject: "מנהלת תוכנית",
+    roleInProjectEn: "Program Manager",
+    ftePercent: 60,
+    joinedAt: "2026-01-10",
+  },
+  {
+    id: "pm-5",
+    wbsNodeId: "wbs-program-1",
+    userId: "u3",
+    roleInProject: "Architect",
+    roleInProjectEn: "Architect",
+    ftePercent: 40,
+    joinedAt: "2026-01-20",
+  },
+
+  // Program: AI & Automation
+  {
+    id: "pm-6",
+    wbsNodeId: "wbs-program-2",
+    userId: "u1",
+    roleInProject: "Executive Sponsor",
+    roleInProjectEn: "Executive Sponsor",
+    ftePercent: 15,
+    joinedAt: "2026-02-01",
+  },
+  {
+    id: "pm-7",
+    wbsNodeId: "wbs-program-2",
+    userId: "u4",
+    roleInProject: "מנהלת AI",
+    roleInProjectEn: "AI Lead",
+    ftePercent: 80,
+    joinedAt: "2026-02-01",
+  },
+
+  // Project: AWS Migration
+  {
+    id: "pm-8",
+    wbsNodeId: "wbs-project-1",
+    userId: "u1",
+    roleInProject: "Project Owner",
+    roleInProjectEn: "Project Owner",
+    ftePercent: 30,
+    joinedAt: "2026-02-15",
+  },
+  {
+    id: "pm-9",
+    wbsNodeId: "wbs-project-1",
+    userId: "u2",
+    roleInProject: "מנהלת פרויקט",
+    roleInProjectEn: "Project Manager",
+    ftePercent: 70,
+    joinedAt: "2026-02-15",
+  },
+  {
+    id: "pm-10",
+    wbsNodeId: "wbs-project-1",
+    userId: "u3",
+    roleInProject: "Tech Lead",
+    roleInProjectEn: "Tech Lead",
+    ftePercent: 75,
+    joinedAt: "2026-02-20",
+  },
+  {
+    id: "pm-11",
+    wbsNodeId: "wbs-project-1",
+    userId: "u4",
+    roleInProject: "DevOps Engineer",
+    roleInProjectEn: "DevOps Engineer",
+    ftePercent: 50,
+    joinedAt: "2026-03-01",
+  },
+  {
+    id: "pm-12",
+    wbsNodeId: "wbs-project-1",
+    userId: "u5",
+    roleInProject: "QA Lead",
+    roleInProjectEn: "QA Lead",
+    ftePercent: 40,
+    joinedAt: "2026-03-05",
+  },
+
+  // Project: Internal AI Platform
+  {
+    id: "pm-13",
+    wbsNodeId: "wbs-project-2",
+    userId: "u1",
+    roleInProject: "Stakeholder",
+    roleInProjectEn: "Stakeholder",
+    ftePercent: 10,
+    joinedAt: "2026-02-25",
+  },
+  {
+    id: "pm-14",
+    wbsNodeId: "wbs-project-2",
+    userId: "u4",
+    roleInProject: "מובילת AI",
+    roleInProjectEn: "AI Lead",
+    ftePercent: 60,
+    joinedAt: "2026-02-25",
+  },
+  {
+    id: "pm-15",
+    wbsNodeId: "wbs-project-2",
+    userId: "u3",
+    roleInProject: "Backend Engineer",
+    roleInProjectEn: "Backend Engineer",
+    ftePercent: 50,
+    joinedAt: "2026-03-01",
+  },
+  {
+    id: "pm-16",
+    wbsNodeId: "wbs-project-2",
+    userId: "u5",
+    roleInProject: "Frontend Engineer",
+    roleInProjectEn: "Frontend Engineer",
+    ftePercent: 50,
+    joinedAt: "2026-03-10",
+  },
+];
+
+// ============================================
 // Automations
 // ============================================
 export const mockAutomations: MockAutomation[] = [
@@ -597,4 +773,89 @@ export function getPortfolios(): MockWbsNode[] {
 
 export function getPrograms(): MockWbsNode[] {
   return mockWbsNodes.filter((n) => n.level === "program");
+}
+
+// ============================================
+// Project Members helpers
+// ============================================
+
+/** משתתפים ישירים על node ספציפי */
+export function getMembersOfNode(wbsNodeId: string): MockProjectMember[] {
+  return mockProjectMembers.filter((m) => m.wbsNodeId === wbsNodeId);
+}
+
+/** כל המשתתפים על node + ה-ancestors שלו (היררכי) */
+export function getAllMembersOfNodeRecursive(wbsNodeId: string): MockProjectMember[] {
+  const nodeIds = new Set<string>([wbsNodeId]);
+  // Walk descendants
+  let queue = [wbsNodeId];
+  while (queue.length > 0) {
+    const next: string[] = [];
+    for (const id of queue) {
+      const children = mockWbsNodes.filter((n) => n.parentId === id).map((n) => n.id);
+      children.forEach((c) => {
+        nodeIds.add(c);
+        next.push(c);
+      });
+    }
+    queue = next;
+  }
+  const members = mockProjectMembers.filter((m) => nodeIds.has(m.wbsNodeId));
+  // Dedupe by userId, prefer the one closest to the requested node
+  const seen = new Set<string>();
+  return members.filter((m) => {
+    if (seen.has(m.userId)) return false;
+    seen.add(m.userId);
+    return true;
+  });
+}
+
+/** כל ה-WBS nodes שמשתמש מסוים מעורב בהם */
+export function getNodesForUser(userId: string): MockWbsNode[] {
+  const memberNodeIds = new Set(
+    mockProjectMembers.filter((m) => m.userId === userId).map((m) => m.wbsNodeId)
+  );
+  return mockWbsNodes.filter((n) => memberNodeIds.has(n.id));
+}
+
+/** כל המשימות הפתוחות של משתמש (לא done/cancelled) */
+export function getOpenTasksForUser(userId: string): MockTask[] {
+  return mockTasks.filter(
+    (t) =>
+      t.assigneeId === userId &&
+      t.status !== "done" &&
+      t.status !== "cancelled"
+  );
+}
+
+/** כל המשימות של משתמש (כולל הושלמו) */
+export function getAllTasksForUser(userId: string): MockTask[] {
+  return mockTasks.filter((t) => t.assigneeId === userId);
+}
+
+/** חישוב זמן נותר במשימה עד plannedEnd */
+export function getTimeRemaining(plannedEnd: string): {
+  days: number;
+  hours: number;
+  isOverdue: boolean;
+  label: { he: string; en: string };
+} {
+  const now = Date.now();
+  const end = new Date(plannedEnd).getTime();
+  const diffMs = end - now;
+  const days = Math.floor(Math.abs(diffMs) / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((Math.abs(diffMs) % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const isOverdue = diffMs < 0;
+
+  if (isOverdue) {
+    if (days >= 1) {
+      return { days, hours, isOverdue, label: { he: `איחור של ${days} ימים`, en: `${days}d overdue` } };
+    }
+    return { days, hours, isOverdue, label: { he: `איחור של ${hours} שעות`, en: `${hours}h overdue` } };
+  }
+
+  if (days >= 1) {
+    return { days, hours, isOverdue, label: { he: `${days} ימים נותרו`, en: `${days}d left` } };
+  }
+  return { days, hours, isOverdue, label: { he: `${hours} שעות נותרו`, en: `${hours}h left` } };
 }

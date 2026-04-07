@@ -6,8 +6,10 @@ import {
   getRisksByTask,
   getUserById,
   getWbsNodeById,
+  getAllMembersOfNodeRecursive,
   mockUsers,
 } from "@/lib/db/mock-data";
+import { ProjectMembers } from "@/components/members/project-members";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -43,6 +45,7 @@ export default async function TaskDetailPage({
   const risks = getRisksByTask(task.id);
   const wbsNode = getWbsNodeById(task.wbsNodeId);
   const variance = calculateVariance(task.plannedEnd, task.actualEnd);
+  const members = getAllMembersOfNodeRecursive(task.wbsNodeId);
 
   const STATUS_LABELS: Record<string, { he: string; en: string }> = {
     not_started: { he: "לא התחיל", en: "Not started" },
@@ -249,6 +252,13 @@ export default async function TaskDetailPage({
             <History className="size-4" />
             {locale === "he" ? "צפה בהיסטוריה" : "View history"}
           </Button>
+
+          <ProjectMembers
+            members={members}
+            users={mockUsers}
+            locale={locale}
+            title={locale === "he" ? "צוות המשימה" : "Task Team"}
+          />
         </div>
       </div>
     </div>

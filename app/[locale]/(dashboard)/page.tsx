@@ -1,204 +1,278 @@
-import { useTranslations } from "next-intl";
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import {
-  Briefcase,
   CheckSquare,
-  AlertTriangle,
-  TrendingUp,
-  Users,
   Clock,
-  Target,
+  AlertTriangle,
+  Calendar as CalendarIcon,
   Sparkles,
+  Briefcase,
+  TrendingUp,
 } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
 import {
-  mockTasks,
+  CURRENT_USER_ID,
+  getOpenTasksForUser,
+  getUserById,
+  getNodesForUser,
+  mockProjectMembers,
   mockUsers,
-  mockRisks,
+  mockWbsNodes,
   getProjects,
+  getMembersOfNode,
 } from "@/lib/db/mock-data";
-import { calculateProjectHealth } from "@/lib/ai/risk-engine";
-import { ProgressChart } from "@/components/dashboard/progress-chart";
-import { StatusDistribution } from "@/components/dashboard/status-distribution";
-import { WorkloadChart } from "@/components/dashboard/workload-chart";
-import { RecentRisks } from "@/components/dashboard/recent-risks";
-import { RecentTasks } from "@/components/dashboard/recent-tasks";
+import { MyTasksTabs } from "@/components/landing/my-tasks-tabs";
+import { ProjectMembers } from "@/components/members/project-members";
 
-export default async function DashboardPage({
+export default async function LandingPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("dashboard");
-  const tCommon = await getTranslations("common");
+  const isHe = locale === "he";
+  const t = await getTranslations("landing");
 
-  const health = calculateProjectHealth(mockTasks);
-  const projects = getProjects();
-  const activeProjects = projects.length;
-  const openTasks = mockTasks.filter((t) => t.status !== "done" && t.status !== "cancelled").length;
-  const completedThisWeek = mockTasks.filter((t) => {
-    if (!t.actualEnd) return false;
-    const days = (Date.now() - new Date(t.actualEnd).getTime()) / (1000 * 60 * 60 * 24);
+  const currentUser = getUserById(CURRENT_USER_ID);
+  const myOpenTasks = getOpenTasksForUser(CURRENT_USER_ID);
+  const myNodes = getNodesForUser(CURRENT_USER_ID);
+  const myProjects = myNodes.filter((n) => n.level === "project");
+  const myMemberships = mockProjectMembers.filter((m) => m.userId === CURRENT_USER_ID);
+  const totalFte = myMemberships.reduce((sum, m) => sum + m.ftePercent, 0);
+
+  // Stats
+  const inProgress = myOpenTasks.filter((t) => t.status === "in_progress").length;
+  const overdue = myOpenTasks.filter((t) => {
+    if (!t.plannedEnd) return false;
+    return new Date(t.plannedEnd).getTime() < Date.now();
+  }).length;
+  const dueThisWeek = myOpenTasks.filter((t) => {
+    if (!t.plannedEnd) return false;
+    const days = (new Date(t.plannedEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     return days >= 0 && days <= 7;
   }).length;
-  const atRisk = mockRisks.filter((r) => !r.dismissed).length;
 
-  const stats = [
-    {
-      label: t("stats.activeProjects"),
-      value: activeProjects,
-      icon: Briefcase,
-      color: "from-blue-500 to-indigo-600",
-      bg: "bg-blue-500/10",
-      iconColor: "text-blue-600",
-    },
-    {
-      label: t("stats.openTasks"),
-      value: openTasks,
-      icon: CheckSquare,
-      color: "from-violet-500 to-purple-600",
-      bg: "bg-violet-500/10",
-      iconColor: "text-violet-600",
-    },
-    {
-      label: t("stats.completedThisWeek"),
-      value: completedThisWeek,
-      icon: TrendingUp,
-      color: "from-emerald-500 to-teal-600",
-      bg: "bg-emerald-500/10",
-      iconColor: "text-emerald-600",
-    },
-    {
-      label: t("stats.atRisk"),
-      value: atRisk,
-      icon: AlertTriangle,
-      color: "from-orange-500 to-red-600",
-      bg: "bg-orange-500/10",
-      iconColor: "text-orange-600",
-    },
-  ];
+  const projects = getProjects();
 
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t("welcome", { name: "אורי" })}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {locale === "he"
-              ? "הנה תמונת מצב של הפעילות הארגונית שלך"
-              : "Here's your organization's current activity"}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge variant={health.status === "healthy" ? "success" : health.status === "at-risk" ? "warning" : "destructive"}>
-            <Target className="size-3 me-1" />
-            {locale === "he" ? "בריאות פרויקטים" : "Project Health"}: {health.score}/100
-          </Badge>
-        </div>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={stat.label} className="card-hover overflow-hidden">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-sm text-muted-foreground">{stat.label}</div>
-                    <div className="text-3xl font-bold mt-2">{stat.value}</div>
-                  </div>
-                  <div className={`size-11 rounded-lg ${stat.bg} flex items-center justify-center`}>
-                    <Icon className={`size-5 ${stat.iconColor}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>{t("charts.progressOverTime")}</CardTitle>
-            <CardDescription>
-              {locale === "he" ? "התפלגות סטטוס משימות לאורך הזמן" : "Task status distribution over time"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProgressChart locale={locale} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("charts.taskDistribution")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <StatusDistribution tasks={mockTasks} locale={locale} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Workload + Risks */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>{t("charts.workload")}</CardTitle>
-            <CardDescription>
-              {locale === "he" ? "עומס עבודה לכל חבר צוות" : "Workload per team member"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <WorkloadChart users={mockUsers} tasks={mockTasks} locale={locale} />
-          </CardContent>
-        </Card>
-
-        <Card className="border-orange-200/50 bg-gradient-to-br from-orange-50/30 to-transparent dark:from-orange-950/10">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="size-4 text-orange-500" />
-                {locale === "he" ? "תובנות AI" : "AI Insights"}
-              </CardTitle>
-              <Link href="/ai" className="text-xs text-primary hover:underline">
-                {tCommon("more")} →
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <RecentRisks risks={mockRisks.slice(0, 3)} locale={locale} />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent activity */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>
-              {locale === "he" ? "משימות עדכניות" : "Recent Tasks"}
-            </CardTitle>
-            <Link href="/tasks" className="text-xs text-primary hover:underline">
-              {locale === "he" ? "ראה הכל" : "View all"} →
-            </Link>
+        <div className="flex items-center gap-4">
+          {currentUser && (
+            <Avatar
+              src={currentUser.image}
+              fallback={currentUser.name[0]}
+              className="size-14 ring-2 ring-primary/20"
+            />
+          )}
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {isHe ? `שלום, ${currentUser?.name?.split(" ")[0]} 👋` : `Hello, ${currentUser?.name?.split(" ")[0]} 👋`}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {isHe
+                ? "כל המשימות שעדיין לא נסגרו - מסודרות לפי דחיפות"
+                : "All tasks that are still open - sorted by urgency"}
+            </p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <RecentTasks tasks={mockTasks.slice(0, 6)} users={mockUsers} locale={locale} />
-        </CardContent>
-      </Card>
+        </div>
+        <Link href="/reports">
+          <Card className="cursor-pointer card-hover">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className="size-9 rounded-lg bg-purple-100 dark:bg-purple-950/30 flex items-center justify-center">
+                <TrendingUp className="size-4 text-purple-600" />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">{isHe ? "סך הקצאה שלי" : "My total allocation"}</div>
+                <div className="text-lg font-bold">{totalFte}%</div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon={CheckSquare}
+          label={isHe ? "סך משימות פתוחות" : "Total Open Tasks"}
+          value={myOpenTasks.length}
+          color="from-blue-500 to-indigo-600"
+          bg="bg-blue-500/10"
+          iconColor="text-blue-600"
+          tooltip={isHe ? "כל המשימות שעוד לא הושלמו או בוטלו" : "All tasks not yet completed or cancelled"}
+        />
+        <StatCard
+          icon={Clock}
+          label={isHe ? "בביצוע" : "In Progress"}
+          value={inProgress}
+          color="from-emerald-500 to-teal-600"
+          bg="bg-emerald-500/10"
+          iconColor="text-emerald-600"
+          tooltip={isHe ? "משימות שכבר התחלת לעבוד עליהן" : "Tasks you've started working on"}
+        />
+        <StatCard
+          icon={AlertTriangle}
+          label={isHe ? "באיחור" : "Overdue"}
+          value={overdue}
+          color="from-red-500 to-rose-600"
+          bg="bg-red-500/10"
+          iconColor="text-red-600"
+          tooltip={isHe ? "משימות שעברו את תאריך היעד" : "Tasks past their due date"}
+        />
+        <StatCard
+          icon={CalendarIcon}
+          label={isHe ? "השבוע" : "Due This Week"}
+          value={dueThisWeek}
+          color="from-amber-500 to-orange-600"
+          bg="bg-amber-500/10"
+          iconColor="text-amber-600"
+          tooltip={isHe ? "תאריך היעד שלהן בתוך 7 הימים הקרובים" : "Due within the next 7 days"}
+        />
+      </div>
+
+      {/* Main content: tasks tabs + side panel */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div className="xl:col-span-3">
+          <MyTasksTabs
+            tasks={myOpenTasks}
+            users={mockUsers}
+            projects={projects}
+            wbsNodes={mockWbsNodes}
+            locale={locale}
+          />
+        </div>
+
+        {/* Side panel */}
+        <div className="space-y-4">
+          {/* My Projects */}
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Briefcase className="size-4 text-blue-600" />
+                <h3 className="font-semibold text-sm">{isHe ? "הפרויקטים שלי" : "My Projects"}</h3>
+                <Badge variant="outline" className="ms-auto">{myProjects.length}</Badge>
+              </div>
+              <div className="space-y-2">
+                {myProjects.map((project) => {
+                  const myMembership = myMemberships.find((m) => m.wbsNodeId === project.id);
+                  return (
+                    <Link
+                      key={project.id}
+                      href={`/projects/${project.id}`}
+                      className="block p-2 rounded-md hover:bg-accent transition-colors"
+                    >
+                      <div className="text-sm font-medium line-clamp-1">
+                        {isHe ? project.name : project.nameEn || project.name}
+                      </div>
+                      {myMembership && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] text-muted-foreground truncate">
+                            {isHe ? myMembership.roleInProject : myMembership.roleInProjectEn || myMembership.roleInProject}
+                          </span>
+                          <Badge variant="outline" className="text-[9px] py-0">
+                            {myMembership.ftePercent}%
+                          </Badge>
+                        </div>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* My participation - all WBS nodes */}
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="size-4 text-purple-600" />
+                <h3 className="font-semibold text-sm">{isHe ? "ההשתתפות שלי" : "My Participation"}</h3>
+              </div>
+              <div className="text-xs text-muted-foreground mb-3">
+                {isHe
+                  ? "סך אחוזי המשרה שלך בכל הפרויקטים"
+                  : "Total FTE % across all your projects"}
+              </div>
+              <div className="space-y-2">
+                {myMemberships.map((m) => {
+                  const node = mockWbsNodes.find((n) => n.id === m.wbsNodeId);
+                  if (!node) return null;
+                  return (
+                    <div key={m.id} className="space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs font-medium line-clamp-1 flex-1">
+                          {isHe ? node.name : node.nameEn || node.name}
+                        </div>
+                        <span className="text-xs font-bold text-primary">{m.ftePercent}%</span>
+                      </div>
+                      <Progress value={m.ftePercent} className="h-1" />
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 pt-3 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-semibold">{isHe ? "סה״כ" : "Total"}</span>
+                  <span
+                    className={
+                      totalFte > 100
+                        ? "text-red-600 font-bold"
+                        : "text-emerald-600 font-bold"
+                    }
+                  >
+                    {totalFte}%
+                  </span>
+                </div>
+                {totalFte > 100 && (
+                  <div className="text-[10px] text-red-600 mt-1">
+                    {isHe ? "⚠️ הקצאת יתר!" : "⚠️ Over-allocated!"}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  color,
+  bg,
+  iconColor,
+  tooltip,
+}: {
+  icon: typeof CheckSquare;
+  label: string;
+  value: number;
+  color: string;
+  bg: string;
+  iconColor: string;
+  tooltip: string;
+}) {
+  return (
+    <Card className="card-hover" title={tooltip}>
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-sm text-muted-foreground">{label}</div>
+            <div className="text-3xl font-bold mt-2">{value}</div>
+          </div>
+          <div className={`size-11 rounded-lg ${bg} flex items-center justify-center`}>
+            <Icon className={`size-5 ${iconColor}`} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

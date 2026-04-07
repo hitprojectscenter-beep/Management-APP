@@ -63,6 +63,63 @@
     "loginPrompt": "התחבר כדי להמשיך ל-Work OS",
     "demoMode": "מצב הדגמה - לחץ כדי להיכנס"
   },
+  "landing": {
+    "title": "המשימות שלי",
+    "subtitle": "כל המשימות שעדיין לא נסגרו - מסודרות לפי דחיפות",
+    "tabs": {
+      "all": "הכל",
+      "inProgress": "בביצוע",
+      "notStarted": "לא התחילו",
+      "blocked": "חסומות",
+      "review": "בבדיקה",
+      "overdue": "באיחור",
+      "byProject": "לפי פרויקט",
+      "byPortfolio": "לפי פורטפוליו"
+    },
+    "noTasks": "אין משימות פתוחות בקטגוריה זו",
+    "addTask": "הוסף משימה",
+    "myProjects": "הפרויקטים שלי",
+    "myParticipation": "ההשתתפות שלי",
+    "fteTotal": "סך ההקצאה שלי",
+    "remaining": "נותר",
+    "stats": {
+      "total": "סך משימות פתוחות",
+      "inProgress": "בביצוע",
+      "overdue": "באיחור",
+      "dueThisWeek": "השבוע"
+    }
+  },
+  "addTask": {
+    "title": "הוספת משימה חדשה",
+    "description": "צור משימה חדשה בפרויקט קיים",
+    "fields": {
+      "title": "כותרת המשימה",
+      "titlePlaceholder": "מה צריך לעשות?",
+      "description": "תיאור",
+      "descriptionPlaceholder": "פרטים נוספים (אופציונלי)",
+      "project": "פרויקט",
+      "selectProject": "בחר פרויקט",
+      "assignee": "אחראי",
+      "selectAssignee": "בחר חבר צוות",
+      "status": "סטטוס",
+      "priority": "עדיפות",
+      "plannedStart": "תאריך התחלה",
+      "plannedEnd": "תאריך יעד",
+      "estimateHours": "הערכת שעות"
+    },
+    "submit": "צור משימה",
+    "submitting": "יוצר...",
+    "cancel": "ביטול"
+  },
+  "members": {
+    "title": "משתתפים",
+    "totalCount": "{count} משתתפים",
+    "role": "תפקיד",
+    "fte": "אחוז משרה",
+    "joined": "הצטרף ב",
+    "noMembers": "אין משתתפים עדיין",
+    "addMember": "הוסף משתתף"
+  },
   "dashboard": {
     "title": "לוח בקרה",
     "welcome": "שלום, {name}",

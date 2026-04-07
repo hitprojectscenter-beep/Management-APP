@@ -189,6 +189,32 @@
 
 ---
 
+## 🆕 סבב פיתוח 2 - עמוד נחיתה חדש + משתתפים (FTE)
+
+### מה נוסף:
+1. **טבלת `projectMembers` חדשה** - assignment של משתמשים ל-WBS nodes עם תפקיד + אחוז משרה
+2. **`CURRENT_USER_ID`** - דמיית session של משתמש פעיל (אורי)
+3. **6 helpers חדשים** ב-`mock-data.ts`: members ו-tasks per user
+4. **עמוד הנחיתה הראשי** עבר מ-Executive Dashboard ל-"My Tasks" עם:
+   - 7 טאבים סינון (הכל / בביצוע / לא התחילו / בבדיקה / חסומות / באיחור / לפי פרויקט)
+   - זמן נותר דינמי על כל משימה
+   - כפתור "+" להוספת משימה
+   - Side panel עם הפרויקטים שלי + breakdown של FTE עם over-allocation warning
+5. **Dashboard הישן** עבר ל-`/dashboard` (עדיין נגיש דרך sidebar)
+6. **`AddTaskDialog`** - Radix Dialog עם form מלא ו-toast notifications
+7. **`ProjectMembers`** - רכיב לתצוגת חברי צוות בכל פרויקט/משימה עם 2 variants
+8. **שולב בדף הפרויקט הבודד ובדף המשימה הבודדת**
+9. **הסברי גרפים** - כל גרף עכשיו מקבל `CardDescription` עם הסבר ידידותי בעברית/אנגלית + אייקון Info
+10. **ברירת מחדל עברית** - מאומת ש-`/` מפנה ל-`/he`
+
+### עקרונות חדשים שהוספתי:
+- **Variant pattern**: כל רכיב ראוי שיתמוך ב-`variant="card" | "compact"` למחזור שימוש
+- **Toast במקום alert**: שימוש ב-Sonner ל-feedback למשתמש
+- **Tooltips על KPI cards**: שימוש ב-`title=` HTML attribute - פשוט ומועיל
+- **Date inputs פשוטים**: `type="date"` של HTML מספיק טוב, אין צורך ב-Calendar component מורכב
+
+---
+
 ## 🔮 איך להמשיך מכאן
 
 אם אתה (Claude עתידי או אנושי) רוצה להמשיך:

@@ -299,6 +299,31 @@ export const boardRoles = pgTable("board_roles", {
 });
 
 // ============================================
+// Project Members - assignment of users to projects/programs/portfolios
+// with role in project + FTE % allocation
+// ============================================
+export const projectMembers = pgTable(
+  "project_members",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    wbsNodeId: uuid("wbs_node_id")
+      .notNull()
+      .references(() => wbsNodes.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    roleInProject: text("role_in_project").notNull(), // e.g. "Tech Lead", "PM", "QA"
+    ftePercent: integer("fte_percent").default(100).notNull(), // 1-100
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+    leftAt: timestamp("left_at"),
+  },
+  (table) => ({
+    wbsIdx: index("members_wbs_idx").on(table.wbsNodeId),
+    userIdx: index("members_user_idx").on(table.userId),
+  })
+);
+
+// ============================================
 // Google Calendar Sync
 // ============================================
 export const calendarSync = pgTable("calendar_sync", {
