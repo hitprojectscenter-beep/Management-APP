@@ -204,6 +204,83 @@
    - Screenshot validation: דף הנחיתה החדש בעברית RTL מלא עם כל הרכיבים
    - Project detail עם משתתפים מוצג נכון
 
+### 🗨️ סבב 10: גאנט מתקדם עם תכנון-מול-ביצוע + נתיב קריטי + WBS roll-up
+
+**👤 משתמש:**
+> אנא, הוסף את לוח הגאנט בהתאם לדרישות הבאות: 1. אפיון מסך תצוגת הגאנט [פירוט מלא של תכנון מול ביצוע, dependencies, נתיב קריטי, milestones, buffers, RTL, צבעי בריאות]. 2. אפיון מסך עץ תכולת העבודה (WBS) [8 רמות, roll-up אוטומטי, מספור 1.1.1, collapse/expand, ייצוא, חבילות עבודה 1-5 ימים, אחריות אישית].
+
+**🤖 Claude:**
+
+1. **`lib/gantt/critical-path.ts`** - אלגוריתם CPM מלא:
+   - Topological sort (Kahn's algorithm) על הDAG
+   - Forward pass לחישוב earliest start/finish לכל משימה
+   - Backward pass לחישוב latest start/finish
+   - חישוב slack - tasks עם slack=0 = critical
+   - מחזיר Set של criticalTaskIds + totalDays
+   - בנוסף: `getTaskHealth()` שמשלב סטטוס + תאריך יעד + התקדמות בפועל
+
+2. **`lib/gantt/rollup.ts`** - אגרגציה רקורסיבית:
+   - לכל WBS node, סוכם שעות/עלויות מכל ה-descendants
+   - אחוז התקדמות משוקלל לפי שעות
+   - תאריכים: min(start) ו-max(end)
+   - עלויות: hourly rate × שעות
+   - ספירות: tasks/done/blocked/overdue
+   - בנוסף: `computeWbsNumbering()` ל-1, 1.1, 1.1.1 וכו' + `getDescendants()`
+
+3. **`lib/gantt/export.ts`** - ייצוא:
+   - CSV עם BOM ל-UTF-8 (תואם Excel עם עברית!)
+   - PDF דרך window.print()
+   - `buildExportRows()` שמייצר שורות מ-WBS + tasks + rollups + numbering
+
+4. **`components/gantt/advanced-gantt.tsx`** (~700 שורות) - הרכיב המרכזי:
+
+   **שכבת ה-toolbar:**
+   - כפתור "נתיב קריטי" toggle (אדום כשמופעל) + badge עם count
+   - כפתור "חוצץ זמן" toggle
+   - "הרחב הכל" / "כווץ הכל"
+   - Zoom in/out (16-80px לכל יום)
+   - "Excel" export (CSV)
+   - "PDF" print
+
+   **Legend** עם 5 פריטים: מתוכנן (אפור) / ביצוע (ירוק) / אבן דרך (יהלום סגול) / נתיב קריטי (אדום) / חוצץ זמן (כחול מקווקו)
+
+   **WBS Table משמאל (480px רוחב):**
+   - עמודות: מס' (1.1.1) / שם פריט עם indentation + chevron / שעות (actual/estimate) / progress bar + %
+   - אייקון expand/collapse לכל node עם children
+   - Badge רמה (PROJ/GOAL/MILE/ACTI) באותיות גדולות
+   - hover effect
+
+   **Gantt Chart מימין:**
+   - Date header עם 2 שורות: month groups (סוף ינואר 2026...) + ימים בודדים
+   - Today line (orange dot למעלה + קו אנכי)
+   - Weekend stripes (אפור בהיר על יום ו' ויום ש')
+   - **Planned bar** (baseline) - מלבן שקוף אפור
+   - **Actual bar** (overlay) - מלבן צבעוני לפי health (ירוק/צהוב/אדום)
+     - חישוב: אם actualEnd קיים → משתמש בו; אם in_progress → חישוב לפי %
+   - **Milestone diamond** - יהלום סגול עם דגל
+   - **Roll-up bar** - פס שחור דק לרמות גבוהות
+   - **Buffer rectangle** - מלבן כחול מקווקו אחרי הנתיב הקריטי (7 ימים)
+   - **Critical highlight** - כשמופעל, שורות מסומנות באדום + Zap icon
+
+   **Sync scroll** בין WBS table ו-Gantt chart דרך useEffect + scrollTop
+
+   **Footer stats**: WBS items / tasks / critical path count / work days / last update timestamp
+
+5. **task-gantt.tsx** עכשיו wrapper ל-AdvancedGantt - מוצא את ה-project root ע"י הליכה לפי parentId
+
+6. **ולידציה:**
+   - 13 דפים HTTP 200
+   - Screenshot:
+     - WBS table עם 6 פריטי AWS Migration עם מספור 1, 1.1, 1.1.1, 1.1.2
+     - Progress bars מציגים: 75% (Goal), 50%/50%/0% (משימות)
+     - Badge רמות (PROJ/GOAL/MILE/ACTI)
+     - Toolbar עם כל הכפתורים
+     - Legend מלא
+     - חוצץ זמן (buffer) עם label כחול
+     - Today indicator
+     - Footer: 6 פריטי WBS · 7 משימות · 4 במסלול קריטי · 19 ימי עבודה
+   - שגיאת hydration ב-Kanban DnD לא קשורה (קיימת מההתחלה)
+
 ### 🗨️ סבב 9: מסך ניהול אדמין + KPIs לפי תפקיד
 
 **👤 משתמש (סבב 9.1):**

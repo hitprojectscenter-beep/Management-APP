@@ -189,6 +189,55 @@
 
 ---
 
+## 🆕 סבב פיתוח 6 - גאנט מתקדם + WBS עם Roll-up ונתיב קריטי
+
+### מה נוסף:
+1. **Critical Path Method (CPM) algorithm** ב-`lib/gantt/critical-path.ts`:
+   - Topological sort של ה-DAG (Kahn's algorithm)
+   - Forward pass: earliest start/finish
+   - Backward pass: latest start/finish
+   - Slack calculation - tasks עם slack=0 הם critical
+   - מחזיר Set של criticalTaskIds + totalDays
+2. **WBS Roll-up** ב-`lib/gantt/rollup.ts`:
+   - אגרגציה רקורסיבית מ-leaf nodes למעלה דרך כל ההיררכיה
+   - שעות מתוכננות/בפועל (סכום)
+   - אחוז התקדמות משוקלל לפי שעות
+   - תאריכים מינימלי/מקסימלי
+   - עלויות (hourly rate × שעות)
+   - ספירת משימות (total/done/blocked/overdue)
+3. **Auto-numbering** WBS (1, 1.1, 1.1.1, 1.2...)
+4. **Export utilities** ב-`lib/gantt/export.ts`:
+   - CSV עם BOM ל-UTF-8 (תואם Excel עם עברית)
+   - PDF דרך window.print() עם print stylesheet
+5. **`AdvancedGantt` component** (~700 שורות) - הרכיב המרכזי עם:
+   - **WBS table משמאל** עם sync scroll: מספור, שמות, hours/estimate, progress bars
+   - **Gantt chart מימין**:
+     - **תכנון מול ביצוע** - שני פסים מקבילים: פס שקוף עליון (baseline) ופס צבעוני תחתון (actual)
+     - **נתיב קריטי** עם toggle: מדגיש אדום, מציג Zap icon, ring highlight על הפסים
+     - **אבני דרך** (milestones) כיהלום סגול עם דגל לבן
+     - **חוצץ זמן** (Buffer) עם toggle - מלבן מקווקו כחול אחרי הנתיב הקריטי
+     - **Today line** עם נקודה כתומה
+     - **Roll-up bars** - פסי אב להראות summary של node
+     - **קידוד צבעים בריאות** - ירוק/צהוב/אדום אוטומטי לפי `getTaskHealth`
+     - **RTL מלא** - הציר LTR פנימי כדי שתאריכים קוראים לשמאל-לימין נכון
+   - **Toolbar** עם: Critical Path toggle, Buffer toggle, Expand/Collapse all, Zoom in/out, Excel export, PDF print
+   - **Legend** מקרא צבעים וסמלים
+   - **Footer stats**: WBS items, tasks, critical path count, total work days
+   - **Month groups** בכותרת התאריכים + יום בודד
+   - **Weekend stripes** ברקע
+   - **Sync scroll** בין ה-WBS table וה-Gantt
+6. **`task-gantt.tsx` עכשיו wrapper** ל-AdvancedGantt - הולך up to find the project root, ואז מציג
+
+### עקרונות:
+- **CPM הוא הסטנדרט הקלאסי** של ניהול פרויקטים - PMI's PMBOK
+- **Health-based coloring** משלב סטטוס + due date proximity + progress vs elapsed
+- **Roll-up תמיד weighted by effort** (לא ממוצע פשוט)
+- **Auto-numbering** עם depth-first traversal
+- **CSV with BOM** הוא הדרך היחידה ש-Excel קורא עברית נכון
+- **direction: ltr פנימי בתוך RTL** - חיוני לציר זמן שעובד נכון
+
+---
+
 ## 🆕 סבב פיתוח 5 - מסך ניהול אדמין + KPIs לפי תפקיד (PM vs PMO)
 
 ### מה נוסף:
