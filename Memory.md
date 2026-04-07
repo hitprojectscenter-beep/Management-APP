@@ -204,6 +204,49 @@
    - Screenshot validation: דף הנחיתה החדש בעברית RTL מלא עם כל הרכיבים
    - Project detail עם משתתפים מוצג נכון
 
+### 🗨️ סבב 12: תוכנית ניהול סיכונים אקטיבית של ה-AI
+
+**👤 משתמש:**
+> אנא שלב את ההנחיות הבאות להצעת תכנית ניהול סיכונים ע"י AI:
+> 1. המלצות לאיזון והקצאה מחדש של משאבים (skills + availability + performance)
+> 2. הצעת פעולות ואסטרטגיות גידור (Mitigation Strategies)
+> 3. חיזוי חכם ומניעה מוקדמת
+> 4. אוטומציה וניתוב משימות חכם
+
+**🤖 Claude:**
+
+1. **MockUser הורחב** עם 3 שדות: skills, performanceScore, hourlyCapacity. הוקצו 6 משתמשים עם כישורים מציאותיים (aws/k8s לדוד, ai/ml למאיה, qa/uat ליוסי וכו')
+
+2. **`lib/ai/mitigation-engine.ts` חדש** (~500 שורות) עם 4 פונקציות מרכזיות:
+
+   - **`findBestReassignment()`** - skills+availability+performance matcher
+     - 4 משקלים: skill match 40%, availability 35%, performance 25%, load penalty
+     - מחזיר ReassignmentSuggestion עם match score 0-100, reasoning במילים, ו-3 metrics
+
+   - **`getMitigationActionsForRisk(riskType)`** - per-risk action catalog
+     - blocked: פגישת הסלמה / משאב סיוע / פיצול
+     - overdue: עדכון baseline / תגבור / daily standups
+     - effort_overrun: scope reduction / ייעוץ טכני
+     - schedule_slip: pair programming / pinning
+     - critical_not_started: kick-off היום / הסלמה
+     - לכל אחת: effort/impact/timeframe rating
+
+   - **`predictAutoRoute()`** - לכל משימה חדשה, מחזיר recommended user + 3 alternatives
+
+   - **`generateMitigationPlan()`** - ה-aggregator הראשי שמחזיר MitigationPlan מלא
+
+3. **`MitigationPlanCard` component** (~500 שורות) - הקומפוננטה המרשימה ביותר:
+   - Header gradient purple-indigo עם summary cards
+   - **Section 1: Smart Reassignment** - לכל הצעה: from→to avatars, match score badge, reasoning chips, mini metrics
+   - **Section 2: Mitigation Strategies** - collapsible per task, ⭐ למומלץ, all actions עם effort/impact/timeframe, Apply button
+   - **Section 3: Early Warnings** - אזהרות בצבע אמבר
+   - **Section 4: Footer** עם timestamp + Regenerate
+
+4. **דף /risks עודכן** - MitigationPlanCard הוסף אחרי ActiveRecommendations
+5. **AI Sidekick API מועשר** - context snapshot כולל mitigationPlan עם reassignments + strategies + earlyWarnings
+
+6. **ולידציה**: 13 דפים HTTP 200
+
 ### 🗨️ סבב 11: שיפור AI לניהול סיכונים פרואקטיבי
 
 **👤 משתמש:**

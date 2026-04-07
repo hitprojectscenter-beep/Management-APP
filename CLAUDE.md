@@ -189,6 +189,74 @@
 
 ---
 
+## 🆕 סבב פיתוח 8 - תוכנית ניהול סיכונים אקטיבית של ה-AI
+
+### מה נוסף:
+1. **`MockUser` הורחב** עם 3 שדות חדשים:
+   - `skills` - מערך כישורים (לדוגמה: `["aws", "kubernetes", "devops"]`)
+   - `performanceScore` - 0-100 (היסטוריית on-time delivery)
+   - `hourlyCapacity` - שעות לשבוע (default 40)
+   - **6 משתמשים קיבלו skills + performance score** מציאותיים
+
+2. **`lib/ai/mitigation-engine.ts` חדש** (~500 שורות) עם 4 capabilities:
+
+   **A. `findBestReassignment(task, users, members, allTasks)`**:
+   - מחשב לכל user candidate score המבוסס על:
+     - **Skill match** (40% משקל) - השוואת user.skills מול task tags + title keywords
+     - **Availability** (35%) - 100 - FTE allocation
+     - **Performance** (25%) - performanceScore היסטורי
+     - **Load penalty** - הפחתה לכל active task נוסף
+   - מחזיר ReassignmentSuggestion עם match score 0-100, reasoning במילים, ו-3 metrics
+
+   **B. `getMitigationActionsForRisk(riskType, task)`**:
+   - מקטלוג של actions per risk type:
+     - **blocked**: פגישת הסלמה / משאב סיוע / פיצול משימה
+     - **overdue**: עדכון baseline / תגבור / daily standups
+     - **effort_overrun**: scope reduction / ייעוץ טכני
+     - **schedule_slip**: pair programming / pinning the assignee
+     - **critical_not_started**: kick-off היום / הסלמה ל-sponsor
+   - לכל action: effort (low/medium/high), impact, timeframe
+
+   **C. `predictAutoRoute(taskTitle, tags, hours, users, members)`**:
+   - לפי skills + availability + performance, מחזיר suggested user + alternatives
+   - שימוש: לכל משימה חדשה - מי הכי מתאים?
+
+   **D. `generateMitigationPlan(tasks, users, members)`** - **ה-aggregator הראשי**:
+   - מאחד את כל הניתוחים לתוכנית פעולה אחת
+   - Sections:
+     - reassignments (top 6 לפי match score)
+     - strategies (top 8 sorted by severity)
+     - bottlenecks (top 5)
+     - **earlyWarnings** - קריטי לא התחיל / bottlenecks קרבים / forecast warning
+   - summary: totalActions, immediateActions, riskTasksCount, bottleneckUsersCount
+
+3. **`MitigationPlanCard` component** - הקומפוננטה המרשימה ביותר עד כה (~500 שורות):
+   - **Header gradient** purple-indigo עם 2 stats: סך פעולות + מיידיות
+   - **Section 1: Smart Reassignment** - לכל הצעה:
+     - Match score badge (ירוק/צהוב/אדום)
+     - From/To avatars עם Arrow
+     - Reasoning כ-badges (✓ X כישורים תואמים, ✓ זמינות, ✓ ביצועים)
+     - Mini metrics: skills% / available% / perf/100
+   - **Section 2: Mitigation Strategies** - collapsible per strategy:
+     - Severity badge + risk type
+     - Preferred action preview עם ⭐
+     - Click to expand → all 2-3 actions עם effort/impact/timeframe badges
+     - Apply button על האקשן המומלץ
+   - **Section 3: Early Warnings** - רשימת אזהרות אמבר עם אייקון
+   - **Section 4: Footer** עם timestamp + Regenerate button
+
+4. **AI Sidekick API מועשר** - context snapshot כולל עכשיו mitigationPlan עם reassignments, strategies ו-earlyWarnings
+
+### עקרונות שיושמו:
+- **Skill-availability-performance triple** - לא רק מי פנוי, אלא מי מתאים
+- **Effort-impact ratio** - הפעולה המומלצת היא זו עם היחס הטוב ביותר
+- **Categorized actions** - כל פעולה משויכת ל-resource/schedule/scope/process/escalation
+- **Apply button per action** - לא רק תיאור, יש מה לעשות
+- **Early warnings קודמים לבעיות** - חיזוי לפני שהבעיה מתרחשת
+- **Single-source-of-truth** - generateMitigationPlan הוא ה-API היחיד שצריך
+
+---
+
 ## 🆕 סבב פיתוח 7 - שיפור AI לניהול סיכונים פרואקטיבי
 
 ### מה נוסף:

@@ -13,6 +13,9 @@ export interface MockUser {
   image: string;
   locale: "he" | "en";
   role: UserRole;
+  skills?: string[]; // for AI auto-routing and reassignment matching
+  performanceScore?: number; // 0-100 derived from history (on-time delivery rate)
+  hourlyCapacity?: number; // hours per week available (default 40)
 }
 
 export interface MockWbsNode {
@@ -103,6 +106,9 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Ori",
     locale: "he",
     role: "admin",
+    skills: ["pmo", "strategy", "compliance", "soc2", "salesforce"],
+    performanceScore: 92,
+    hourlyCapacity: 40,
   },
   {
     id: "u2",
@@ -111,6 +117,9 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Sara",
     locale: "he",
     role: "manager",
+    skills: ["pmo", "procurement", "vendor-management", "rfp", "salesforce"],
+    performanceScore: 88,
+    hourlyCapacity: 40,
   },
   {
     id: "u3",
@@ -119,6 +128,9 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=David",
     locale: "en",
     role: "member",
+    skills: ["aws", "kubernetes", "devops", "terraform", "salesforce", "backend"],
+    performanceScore: 85,
+    hourlyCapacity: 40,
   },
   {
     id: "u4",
@@ -127,6 +139,9 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Maya",
     locale: "he",
     role: "member",
+    skills: ["ai", "ml", "rag", "python", "claude-api", "data"],
+    performanceScore: 78,
+    hourlyCapacity: 40,
   },
   {
     id: "u5",
@@ -135,6 +150,9 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Yossi",
     locale: "he",
     role: "member",
+    skills: ["qa", "testing", "automation", "uat", "frontend"],
+    performanceScore: 91,
+    hourlyCapacity: 40,
   },
   {
     id: "u6",
@@ -143,6 +161,9 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Mapi",
     locale: "he",
     role: "admin",
+    skills: ["pmo", "salesforce", "procurement", "compliance", "government"],
+    performanceScore: 87,
+    hourlyCapacity: 40,
   },
 ];
 

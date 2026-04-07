@@ -40,6 +40,8 @@ import { ResourceBottlenecks } from "@/components/risks/resource-bottlenecks";
 import { PredictiveForecast } from "@/components/risks/predictive-forecast";
 import { DependencyImpactCard } from "@/components/risks/dependency-impact";
 import { ActiveRecommendations } from "@/components/risks/active-recommendations";
+import { MitigationPlanCard } from "@/components/risks/mitigation-plan";
+import { generateMitigationPlan } from "@/lib/ai/mitigation-engine";
 import { cn, formatDate } from "@/lib/utils";
 
 export default async function RisksPage({
@@ -55,6 +57,7 @@ export default async function RisksPage({
   const bottlenecks = detectResourceBottlenecks(mockUsers, mockProjectMembers, mockTasks);
   const forecast = predictProjectEndDate(mockTasks);
   const recommendations = generateActiveRecommendations(mockTasks, mockUsers, mockProjectMembers);
+  const mitigationPlan = generateMitigationPlan(mockTasks, mockUsers, mockProjectMembers);
 
   // Compute dependency impacts for currently delayed/blocked tasks
   const delayedTasks = mockTasks.filter((t) => {
@@ -257,6 +260,9 @@ export default async function RisksPage({
 
       {/* AI Active Recommendations - top priority */}
       <ActiveRecommendations recommendations={recommendations} locale={locale} />
+
+      {/* Comprehensive AI Mitigation Plan */}
+      <MitigationPlanCard plan={mitigationPlan} users={mockUsers} locale={locale} />
 
       {/* AI Forecast + Resource Bottlenecks side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

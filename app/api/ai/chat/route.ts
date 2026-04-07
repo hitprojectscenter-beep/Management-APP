@@ -8,6 +8,7 @@ import {
   generateActiveRecommendations,
   scanTasksForRisks,
 } from "@/lib/ai/risk-engine";
+import { generateMitigationPlan } from "@/lib/ai/mitigation-engine";
 
 export const runtime = "nodejs";
 
@@ -25,6 +26,7 @@ function buildContextSnapshot(): string {
   const forecast = predictProjectEndDate(mockTasks);
   const recommendations = generateActiveRecommendations(mockTasks, mockUsers, mockProjectMembers);
   const dynamicRisks = scanTasksForRisks(mockTasks);
+  const mitigationPlan = generateMitigationPlan(mockTasks, mockUsers, mockProjectMembers);
 
   const summary = {
     totalTasks: mockTasks.length,
@@ -76,6 +78,25 @@ function buildContextSnapshot(): string {
       detail: r.detail,
       action: r.actionLabel,
     })),
+    // === Mitigation plan: AI-suggested actions ===
+    mitigationPlan: {
+      summary: mitigationPlan.summary,
+      reassignments: mitigationPlan.reassignments.slice(0, 5).map((r) => ({
+        task: r.taskTitle,
+        from: r.fromUserName,
+        to: r.toUserName,
+        matchScore: r.matchScore,
+        reasoning: r.reasoning,
+      })),
+      strategies: mitigationPlan.strategies.slice(0, 5).map((s) => ({
+        task: s.taskTitle,
+        riskType: s.riskType,
+        severity: s.riskSeverity,
+        preferredAction: s.preferredAction.title,
+        actionDetail: s.preferredAction.detail,
+      })),
+      earlyWarnings: mitigationPlan.earlyWarnings,
+    },
   };
 
   return JSON.stringify(summary, null, 2);
