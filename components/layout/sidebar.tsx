@@ -2,6 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/routing";
+import Image from "next/image";
 import {
   Home,
   LayoutDashboard,
@@ -15,12 +16,14 @@ import {
   Users,
   Workflow,
   Boxes,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { key: "home", icon: Home, href: "/", labelHe: "המשימות שלי", labelEn: "My Tasks" },
-  { key: "dashboard", icon: LayoutDashboard, href: "/dashboard", labelHe: "לוח מחוונים", labelEn: "Dashboard" },
+  { key: "dashboard", icon: LayoutDashboard, href: "/dashboard", labelHe: "דשבורדים ו-KPI", labelEn: "Dashboards & KPI" },
+  { key: "risks", icon: ShieldAlert, href: "/risks", labelHe: "ניהול סיכונים", labelEn: "Risk Management" },
   { key: "portfolios", icon: Boxes, href: "/portfolios", labelHe: "פורטפוליו", labelEn: "Portfolios" },
   { key: "projects", icon: Briefcase, href: "/projects", labelHe: "פרויקטים", labelEn: "Projects" },
   { key: "tasks", icon: CheckSquare, href: "/tasks", labelHe: "משימות", labelEn: "Tasks" },
@@ -43,15 +46,23 @@ export function Sidebar() {
       className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-e border-sidebar-border"
       data-tour="sidebar"
     >
-      <div className="px-6 py-5 border-b border-sidebar-border">
+      <div className="px-5 py-5 border-b border-sidebar-border">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="size-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-            <FolderKanban className="size-5 text-white" />
+          <div className="size-12 rounded-lg bg-white/95 flex items-center justify-center shadow-lg shrink-0 p-1.5">
+            <Image
+              src="/mapi-logo.svg"
+              alt="המרכז למיפוי ישראל"
+              width={36}
+              height={36}
+              priority
+            />
           </div>
-          <div>
-            <div className="text-base font-bold text-white">{tApp("name")}</div>
-            <div className="text-[11px] text-sidebar-foreground/70 truncate max-w-[160px]">
-              {tApp("tagline")}
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-white leading-tight">
+              {isHe ? "המרכז למיפוי ישראל" : "Israel Mapping Center"}
+            </div>
+            <div className="text-[11px] text-sidebar-foreground/70 truncate">
+              {tApp("name")} · {tApp("tagline")}
             </div>
           </div>
         </Link>

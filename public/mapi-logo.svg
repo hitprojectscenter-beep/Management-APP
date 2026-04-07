@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="המרכז למיפוי ישראל">
+  <defs>
+    <linearGradient id="mapiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e5fa8"/>
+      <stop offset="100%" stop-color="#0d3a72"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer circle -->
+  <circle cx="100" cy="100" r="90" fill="none" stroke="url(#mapiGrad)" stroke-width="6"/>
+  <!-- Inner globe lines (latitude) -->
+  <ellipse cx="100" cy="100" rx="70" ry="25" fill="none" stroke="url(#mapiGrad)" stroke-width="3"/>
+  <ellipse cx="100" cy="100" rx="70" ry="50" fill="none" stroke="url(#mapiGrad)" stroke-width="3"/>
+  <ellipse cx="100" cy="100" rx="70" ry="70" fill="none" stroke="url(#mapiGrad)" stroke-width="3"/>
+  <!-- Vertical meridian -->
+  <line x1="100" y1="30" x2="100" y2="170" stroke="url(#mapiGrad)" stroke-width="3"/>
+  <!-- Stylized "key" / מיפוי ישראל emblem - simplified Israel shape -->
+  <path d="M 88 60 Q 95 55 102 60 L 108 75 Q 110 85 105 95 L 100 110 Q 92 120 95 135 L 92 145 L 88 135 Q 82 120 90 110 L 88 95 Q 84 85 86 75 Z"
+        fill="url(#mapiGrad)" stroke="#fff" stroke-width="1.5"/>
+  <!-- Center dot -->
+  <circle cx="100" cy="100" r="4" fill="#fff"/>
+</svg>

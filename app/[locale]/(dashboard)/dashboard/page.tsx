@@ -89,13 +89,16 @@ export default async function DashboardPage({
     <div className="p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {isHe ? "לוח מחוונים ארגוני" : "Executive Dashboard"}
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <div className="size-11 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
+              <Target className="size-6 text-white" />
+            </div>
+            {isHe ? "דשבורדים ו-KPI" : "Dashboards & KPIs"}
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1.5">
             {isHe
-              ? "תמונת מצב מלאה של פעילות הארגון, מגמות, וביצועי צוות"
-              : "Full picture of organizational activity, trends, and team performance"}
+              ? "מדדי ביצוע מרכזיים, מגמות, ותמונת מצב מלאה של פעילות הארגון"
+              : "Key performance indicators, trends, and full organizational picture"}
           </p>
         </div>
         <Badge variant={health.status === "healthy" ? "success" : health.status === "at-risk" ? "warning" : "destructive"}>
