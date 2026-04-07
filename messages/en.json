@@ -1,0 +1,212 @@
+{
+  "app": {
+    "name": "Work OS",
+    "tagline": "Internal Project Management Platform",
+    "description": "Strategy and execution in one place"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "portfolios": "Portfolios",
+    "programs": "Programs",
+    "projects": "Projects",
+    "tasks": "Tasks",
+    "calendar": "Calendar",
+    "ai": "AI Center",
+    "reports": "Reports",
+    "settings": "Settings",
+    "team": "Team",
+    "automations": "Automations",
+    "logout": "Logout"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "loading": "Loading...",
+    "noData": "No data to display",
+    "actions": "Actions",
+    "name": "Name",
+    "description": "Description",
+    "status": "Status",
+    "priority": "Priority",
+    "assignee": "Assignee",
+    "dueDate": "Due Date",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "progress": "Progress",
+    "all": "All",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "close": "Close",
+    "open": "Open",
+    "view": "View",
+    "add": "Add",
+    "remove": "Remove",
+    "more": "More",
+    "less": "Less"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "loginWithGoogle": "Sign in with Google",
+    "email": "Email",
+    "password": "Password",
+    "welcomeBack": "Welcome Back",
+    "loginPrompt": "Sign in to continue to Work OS",
+    "demoMode": "Demo mode - click to enter"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Hello, {name}",
+    "overview": "Overview",
+    "stats": {
+      "activeProjects": "Active Projects",
+      "openTasks": "Open Tasks",
+      "completedThisWeek": "Completed This Week",
+      "atRisk": "At Risk",
+      "onTime": "On Time",
+      "overdue": "Overdue",
+      "teamMembers": "Team Members",
+      "completion": "Completion Rate"
+    },
+    "charts": {
+      "progressOverTime": "Progress Over Time",
+      "taskDistribution": "Task Distribution",
+      "workload": "Workload",
+      "velocity": "Team Velocity"
+    }
+  },
+  "tasks": {
+    "title": "Tasks",
+    "newTask": "New Task",
+    "addTask": "Add Task",
+    "noTasks": "No tasks yet",
+    "createFirst": "Create your first task",
+    "fields": {
+      "title": "Title",
+      "description": "Description",
+      "status": "Status",
+      "priority": "Priority",
+      "assignee": "Assignee",
+      "dueDate": "Due Date",
+      "tags": "Tags",
+      "estimate": "Estimate",
+      "actual": "Actual",
+      "deliverable": "Deliverable"
+    },
+    "status": {
+      "notStarted": "Not Started",
+      "inProgress": "In Progress",
+      "review": "In Review",
+      "done": "Done",
+      "blocked": "Blocked",
+      "cancelled": "Cancelled"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "tabs": {
+      "details": "Details",
+      "comments": "Comments",
+      "attachments": "Attachments",
+      "history": "History",
+      "dependencies": "Dependencies",
+      "subtasks": "Subtasks"
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "newProject": "New Project",
+    "myProjects": "My Projects",
+    "allProjects": "All Projects",
+    "wbs": "WBS",
+    "views": {
+      "list": "List",
+      "kanban": "Kanban",
+      "gantt": "Gantt",
+      "calendar": "Calendar",
+      "timeline": "Timeline",
+      "dashboard": "Dashboard"
+    }
+  },
+  "wbs": {
+    "title": "Work Breakdown Structure",
+    "levels": {
+      "goal": "Goal",
+      "milestone": "Milestone",
+      "activity": "Activity",
+      "task": "Task",
+      "subtask": "Subtask"
+    },
+    "addChild": "Add Child",
+    "expand": "Expand",
+    "collapse": "Collapse"
+  },
+  "ai": {
+    "title": "Claude AI Center",
+    "sidekick": "AI Sidekick",
+    "askQuestion": "Ask a question about the project...",
+    "risks": "Risk Analysis",
+    "insights": "Insights",
+    "summarize": "Summarize",
+    "noRisks": "No active risks detected",
+    "credits": "{used} of {total} credits",
+    "riskLevels": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "syncWithGoogle": "Sync with Google Calendar",
+    "syncStatus": "Sync Status",
+    "lastSync": "Last Sync",
+    "syncNow": "Sync Now"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "account": "Account",
+    "appearance": "Appearance",
+    "language": "Language",
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "notifications": "Notifications",
+    "permissions": "Permissions",
+    "integrations": "Integrations",
+    "team": "Team",
+    "automation": "Automation"
+  },
+  "rbac": {
+    "roles": {
+      "admin": "Administrator",
+      "manager": "Manager",
+      "member": "Team Member",
+      "viewer": "Viewer",
+      "guest": "Guest"
+    },
+    "noPermission": "You don't have permission to perform this action"
+  },
+  "footer": {
+    "copyright": "© 2026 Work OS. All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  }
+}

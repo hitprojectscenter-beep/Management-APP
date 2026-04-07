@@ -1,0 +1,212 @@
+{
+  "app": {
+    "name": "Work OS",
+    "tagline": "פלטפורמת ניהול פרויקטים פנים-ארגונית",
+    "description": "ניהול אסטרטגיה וביצוע במקום אחד"
+  },
+  "nav": {
+    "dashboard": "לוח בקרה",
+    "portfolios": "פורטפוליו",
+    "programs": "תוכניות",
+    "projects": "פרויקטים",
+    "tasks": "משימות",
+    "calendar": "יומן",
+    "ai": "מרכז AI",
+    "reports": "דוחות",
+    "settings": "הגדרות",
+    "team": "צוות",
+    "automations": "אוטומציות",
+    "logout": "התנתקות"
+  },
+  "common": {
+    "save": "שמור",
+    "cancel": "ביטול",
+    "delete": "מחק",
+    "edit": "ערוך",
+    "create": "צור",
+    "search": "חיפוש",
+    "filter": "סינון",
+    "sort": "מיון",
+    "loading": "טוען...",
+    "noData": "אין נתונים להצגה",
+    "actions": "פעולות",
+    "name": "שם",
+    "description": "תיאור",
+    "status": "סטטוס",
+    "priority": "עדיפות",
+    "assignee": "אחראי",
+    "dueDate": "תאריך יעד",
+    "startDate": "תאריך התחלה",
+    "endDate": "תאריך סיום",
+    "progress": "התקדמות",
+    "all": "הכל",
+    "yes": "כן",
+    "no": "לא",
+    "back": "חזרה",
+    "next": "הבא",
+    "submit": "שלח",
+    "close": "סגור",
+    "open": "פתח",
+    "view": "צפייה",
+    "add": "הוסף",
+    "remove": "הסר",
+    "more": "עוד",
+    "less": "פחות"
+  },
+  "auth": {
+    "login": "התחברות",
+    "logout": "התנתקות",
+    "loginWithGoogle": "התחבר עם Google",
+    "email": "אימייל",
+    "password": "סיסמה",
+    "welcomeBack": "ברוך הבא חזרה",
+    "loginPrompt": "התחבר כדי להמשיך ל-Work OS",
+    "demoMode": "מצב הדגמה - לחץ כדי להיכנס"
+  },
+  "dashboard": {
+    "title": "לוח בקרה",
+    "welcome": "שלום, {name}",
+    "overview": "סקירה כללית",
+    "stats": {
+      "activeProjects": "פרויקטים פעילים",
+      "openTasks": "משימות פתוחות",
+      "completedThisWeek": "הושלמו השבוע",
+      "atRisk": "בסיכון",
+      "onTime": "בזמן",
+      "overdue": "באיחור",
+      "teamMembers": "חברי צוות",
+      "completion": "אחוז ביצוע"
+    },
+    "charts": {
+      "progressOverTime": "התקדמות לאורך זמן",
+      "taskDistribution": "התפלגות משימות",
+      "workload": "עומס עבודה",
+      "velocity": "מהירות צוות"
+    }
+  },
+  "tasks": {
+    "title": "משימות",
+    "newTask": "משימה חדשה",
+    "addTask": "הוסף משימה",
+    "noTasks": "אין משימות עדיין",
+    "createFirst": "צור את המשימה הראשונה שלך",
+    "fields": {
+      "title": "כותרת",
+      "description": "תיאור",
+      "status": "סטטוס",
+      "priority": "עדיפות",
+      "assignee": "אחראי",
+      "dueDate": "תאריך יעד",
+      "tags": "תגיות",
+      "estimate": "הערכת זמן",
+      "actual": "זמן בפועל",
+      "deliverable": "תוצר"
+    },
+    "status": {
+      "notStarted": "לא התחיל",
+      "inProgress": "בביצוע",
+      "review": "בבדיקה",
+      "done": "הושלם",
+      "blocked": "חסום",
+      "cancelled": "בוטל"
+    },
+    "priority": {
+      "low": "נמוכה",
+      "medium": "בינונית",
+      "high": "גבוהה",
+      "critical": "קריטית"
+    },
+    "tabs": {
+      "details": "פרטים",
+      "comments": "תגובות",
+      "attachments": "קבצים",
+      "history": "היסטוריה",
+      "dependencies": "תלויות",
+      "subtasks": "תת-משימות"
+    }
+  },
+  "projects": {
+    "title": "פרויקטים",
+    "newProject": "פרויקט חדש",
+    "myProjects": "הפרויקטים שלי",
+    "allProjects": "כל הפרויקטים",
+    "wbs": "מבנה היררכי",
+    "views": {
+      "list": "רשימה",
+      "kanban": "קנבן",
+      "gantt": "גאנט",
+      "calendar": "יומן",
+      "timeline": "ציר זמן",
+      "dashboard": "דשבורד"
+    }
+  },
+  "wbs": {
+    "title": "מבנה עבודה היררכי",
+    "levels": {
+      "goal": "יעד",
+      "milestone": "אבן דרך",
+      "activity": "פעילות",
+      "task": "משימה",
+      "subtask": "תת-משימה"
+    },
+    "addChild": "הוסף ילד",
+    "expand": "הרחב",
+    "collapse": "כווץ"
+  },
+  "ai": {
+    "title": "מרכז Claude AI",
+    "sidekick": "עוזר AI",
+    "askQuestion": "שאל שאלה על הפרויקט...",
+    "risks": "ניתוח סיכונים",
+    "insights": "תובנות",
+    "summarize": "סכם",
+    "noRisks": "לא זוהו סיכונים פעילים",
+    "credits": "{used} מתוך {total} קרדיטים",
+    "riskLevels": {
+      "low": "נמוך",
+      "medium": "בינוני",
+      "high": "גבוה",
+      "critical": "קריטי"
+    }
+  },
+  "calendar": {
+    "title": "יומן",
+    "syncWithGoogle": "סנכרון עם Google Calendar",
+    "syncStatus": "סטטוס סנכרון",
+    "lastSync": "סנכרון אחרון",
+    "syncNow": "סנכרן עכשיו"
+  },
+  "settings": {
+    "title": "הגדרות",
+    "general": "כללי",
+    "account": "חשבון",
+    "appearance": "מראה",
+    "language": "שפה",
+    "theme": "ערכת נושא",
+    "themes": {
+      "light": "בהיר",
+      "dark": "כהה",
+      "system": "מערכת"
+    },
+    "notifications": "התראות",
+    "permissions": "הרשאות",
+    "integrations": "אינטגרציות",
+    "team": "צוות",
+    "automation": "אוטומציה"
+  },
+  "rbac": {
+    "roles": {
+      "admin": "מנהל מערכת",
+      "manager": "מנהל",
+      "member": "חבר צוות",
+      "viewer": "צופה",
+      "guest": "אורח"
+    },
+    "noPermission": "אין לך הרשאה לבצע פעולה זו"
+  },
+  "footer": {
+    "copyright": "© 2026 Work OS. כל הזכויות שמורות.",
+    "privacy": "פרטיות",
+    "terms": "תנאי שימוש"
+  }
+}
