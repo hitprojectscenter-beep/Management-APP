@@ -29,8 +29,8 @@ export function scanTasksForRisks(tasks: MockTask[]): DetectedRisk[] {
   for (const task of tasks) {
     if (task.status === "done" || task.status === "cancelled") continue;
 
-    // 1. Overdue
-    if (task.plannedEnd && new Date(task.plannedEnd).getTime() < now && task.status !== "done") {
+    // 1. Overdue (status already filtered above, just check the date)
+    if (task.plannedEnd && new Date(task.plannedEnd).getTime() < now) {
       risks.push({
         taskId: task.id,
         severity: "high",

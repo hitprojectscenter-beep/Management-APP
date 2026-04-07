@@ -142,8 +142,8 @@ export function getTaskHealth(task: MockTask): "green" | "amber" | "red" {
 
   const end = new Date(task.plannedEnd).getTime();
 
-  // Already overdue
-  if (end < now && task.status !== "done") return "red";
+  // Already overdue (done/cancelled were filtered above)
+  if (end < now) return "red";
 
   // Calculate expected progress vs actual
   if (task.plannedStart && task.status === "in_progress") {
@@ -158,9 +158,9 @@ export function getTaskHealth(task: MockTask): "green" | "amber" | "red" {
     }
   }
 
-  // Approaching deadline
+  // Approaching deadline (done/cancelled were filtered above)
   const daysRemaining = (end - now) / (1000 * 60 * 60 * 24);
-  if (daysRemaining < 2 && task.status !== "done" && task.progressPercent < 80) {
+  if (daysRemaining < 2 && task.progressPercent < 80) {
     return "amber";
   }
 
