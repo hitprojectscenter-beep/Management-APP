@@ -189,6 +189,48 @@
 
 ---
 
+## 🆕 סבב פיתוח 3 - מערכת עזרה אינטראקטיבית + נתוני Salesforce
+
+### מה נוסף:
+1. **מערכת Onboarding מלאה** - מבוסס מחקר UX (NN/g, Microsoft Fluent, Material Design):
+   - **Welcome Tour** של 12 שלבים עם spotlight effect ידני (overlay + ring + popover)
+   - Auto-start בכניסה ראשונה (localStorage flag)
+   - תמיכת RTL מלאה כולל ניווט עם חצים
+   - כפתורי דלג / הקודם / הבא
+   - Progress bar במעבר צבעים
+
+2. **Help Bot** עם 2-tier אסטרטגיה:
+   - **Tier 1:** Keyword matching מ-`HELP_ENTRIES` (16 שאלות נפוצות) - מהיר וחינמי
+   - **Tier 2:** Fallback ל-Claude עם knowledge base מלא כ-system prompt
+   - Knowledge base כולל: navigation, tasks, projects, AI, settings, general
+   - Quick questions chips ב-onboarding
+
+3. **HelpProvider Context** - state management לשני המנגנונים יחד
+
+4. **שני entry points להעזרה:**
+   - כפתור עזרה בtopbar (HelpTrigger) - popover עם 2 אופציות
+   - כפתור צף ירוק בפינה (HelpFloatingButton) - גישה מהירה לבוט
+
+5. **API route חדש** `/api/help` - מטפל ב-keyword matching ו-AI fallback
+
+6. **נתוני Salesforce ארגוניים:**
+   - משתמש חדש: "משתמש המרכז למיפוי" (u6) - הפך ל-CURRENT_USER
+   - תוכנית: "יישומי Salesforce במרכז למיפוי ישראל"
+   - 3 פרויקטים מציאותיים עם תאריכים, סטטוסים וחריגות
+   - 10 משימות מפורטות
+   - 6 חברויות עם FTE allocation
+
+### עקרונות UX שיושמו:
+- **Recognition over recall** - כל אייקון עם title tooltip
+- **Progressive disclosure** - תוכן בסיור מתגלה בהדרגה
+- **Always escapable** - Esc/דלג/X תמיד זמינים
+- **Context-aware** - הסיור מדגיש את האלמנט הנוכחי
+- **Persistent help** - כפתור עזרה קיים בכל דף
+- **Smart fallback** - הבוט תמיד עונה (גם ללא AI)
+- **First-visit detection** - localStorage flag
+
+---
+
 ## 🆕 סבב פיתוח 2 - עמוד נחיתה חדש + משתתפים (FTE)
 
 ### מה נוסף:

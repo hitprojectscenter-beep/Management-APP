@@ -204,6 +204,54 @@
    - Screenshot validation: דף הנחיתה החדש בעברית RTL מלא עם כל הרכיבים
    - Project detail עם משתתפים מוצג נכון
 
+### 🗨️ סבב 7: מערכת עזרה אינטראקטיבית + יצירת משתמש Salesforce
+
+**👤 משתמש (סבב 7.1):**
+> אני רוצה שהיישום יהיה מאוד נוח לשימוש ואינטואיטיבי. אנא, בצע מחקר ותיישם אותו על היישום. לדוגמה, שני דברים אני מבקש שתוסיף: 1. מדריך למשתמש המסביר על היישום באופן אינטראקטיבי ופשוט. 2. בוט עזרה בו המשתמש יוכל לשאול כל דבר על היישום והשימוש בו ולקבל תשובה.
+
+**👤 משתמש (סבב 7.2 - תוך כדי):**
+> אני מבקש שתיצור אותי כמשתמש. המשימות: 1. CRM מבוסס Salesforce, סטטוס - תחזוקה התחיל ב 15/04/2025, הסתיים 20/03/2026, חריגה של 3 חודשים, סוג - פרויקט. 2. שירותי שיווק ומכירות מבוססי Salesforce - התחיל ב01/09/2025, שלבים: "פרסום הבריף" ו"בחירת ספק", זמן צפוי לסיום: 01/09/2027. סוג - פרויקט. שניהם שייכים לפרוגרמה "יישומי Salesforce במרכז למיפוי ישראל". בנוסף, ישנו תת-פרויקט נוסף "יישום ניהול משימות מבוסס Salesforce". התחיל ב 01/08/2025, עד כה לא הסתיים. היה צפוי להסתיים בתאריך 26/02/2026.
+
+**🤖 Claude:**
+
+**מחקר UX:** סקרתי best practices מ-Nielsen Norman Group, Microsoft Fluent, Material Design. עקרונות שיושמו: onboarding tour, contextual help, spotlight effect, progressive disclosure, persistent help button, skip option, recognition over recall.
+
+1. **מערכת עזרה מלאה:**
+   - `lib/help/tour-steps.ts` - הגדרת 12 שלבי סיור (ברוך הבא, sidebar, לשון/ערכת נושא, סטטיסטיקות, טאבים, הוסף משימה, כרטיס משימה, FTE panel, AI center, כפתור עזרה, סיום)
+   - `lib/help/help-content.ts` - knowledge base עם 16 שאלות נפוצות + פונקציות `findHelpByKeywords` ו-`formatKnowledgeBaseForAI`
+   - `components/help/help-provider.tsx` - React Context לניהול state (tour + bot)
+   - `components/help/welcome-tour.tsx` - overlay עם spotlight effect, popover עם progress bar, navigation, כיבוי דרך Esc/X/דלג
+   - `components/help/help-bot.tsx` - chat floating panel עם quick questions, animation, RTL support
+   - `components/help/help-trigger.tsx` - HelpTrigger (כפתור בtopbar) + HelpFloatingButton (כפתור צף)
+   - `app/api/help/route.ts` - API: קודם keyword matching, fallback ל-Claude עם knowledge base כcontext
+
+2. **חיווט מלא:**
+   - `HelpProvider` עוטף את ה-dashboard layout
+   - `data-tour` attributes על: sidebar, language-toggle, theme-toggle, stats, tabs, add-task, task-list, fte-panel, ai-link, help-trigger
+   - localStorage flag למניעת סיור חוזר אחרי שהושלם
+   - Auto-start בכניסה ראשונה אחרי 800ms
+
+3. **יצירת משתמש חדש (u6) + נתוני Salesforce:**
+   - הוספת משתמש "משתמש המרכז למיפוי" (manager) - הפך ל-CURRENT_USER_ID
+   - תוכנית חדשה: "יישומי Salesforce במרכז למיפוי ישראל"
+   - **3 פרויקטים:**
+     - **CRM מבוסס Salesforce** - הסתיים ב-20/03/2026 עם חריגה של 3 חודשים (כעת בתחזוקה)
+     - **שירותי שיווק ומכירות מבוססי Salesforce** - התחיל 01/09/2025, צפוי 01/09/2027, עם 2 milestones: "פרסום הבריף" ו"בחירת ספק"
+     - **יישום ניהול משימות מבוסס Salesforce** - תת-פרויקט שהתחיל 01/08/2025, היה צפוי 26/02/2026, **טרם הסתיים** (באיחור!)
+   - **10 משימות חדשות** (sf-task-1 עד sf-task-10) - כולן מוקצות ל-u6
+   - **6 חברויות פרויקט** של u6 + 2 חברי צוות נוספים: סך FTE = 100% (מאוזן!)
+
+4. **ולידציה מלאה:**
+   - 13 דפים מחזירים HTTP 200
+   - Help API מחזיר תשובות מ-knowledge base (`{"answer":"FTE = Full-Time Equivalent..."}`)
+   - Screenshot validation:
+     - הסיור עולה אוטומטית ב-popover עם spotlight effect מלא
+     - תפריט העזרה ב-topbar נפתח עם 2 אופציות (סיור / בוט)
+     - בוט העזרה פתוח עם הודעת ברכה + 4 quick questions
+     - הבוט מחזיר תשובות מדויקות מה-knowledge base
+     - דף הנחיתה מציג את 7 משימות ה-Salesforce של u6 עם זמן נותר דינמי
+     - "ההשתתפות שלי" מציגה את 4 הפרויקטים של u6 עם FTE breakdown של 100%
+
 ### 🗨️ סבב 5: דרישת העלאה ל-Git + מסמכי תיעוד
 
 **👤 משתמש:**

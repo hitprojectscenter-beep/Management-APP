@@ -39,7 +39,10 @@ export function Sidebar() {
   const isHe = locale === "he";
 
   return (
-    <aside className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-e border-sidebar-border">
+    <aside
+      className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-e border-sidebar-border"
+      data-tour="sidebar"
+    >
       <div className="px-6 py-5 border-b border-sidebar-border">
         <Link href="/" className="flex items-center gap-3 group">
           <div className="size-9 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
@@ -67,6 +70,7 @@ export function Sidebar() {
             <Link
               key={item.key}
               href={item.href}
+              data-tour={item.key === "ai" ? "ai-link" : undefined}
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                 isActive

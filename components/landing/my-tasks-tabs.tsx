@@ -117,7 +117,7 @@ export function MyTasksTabs({
     <div className="space-y-4">
       {/* Tabs row + Add button */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-none" data-tour="tabs">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key;
             return (
@@ -147,7 +147,7 @@ export function MyTasksTabs({
           })}
         </div>
         <AddTaskDialog projects={projects} users={users} locale={locale}>
-          <Button className="shrink-0 shadow-md">
+          <Button className="shrink-0 shadow-md" data-tour="add-task">
             <Plus className="size-4" />
             {isHe ? "הוסף משימה" : "Add Task"}
           </Button>
@@ -182,7 +182,7 @@ export function MyTasksTabs({
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2" data-tour="task-list">
           {sortedTasks.map((task) => (
             <TaskCard key={task.id} task={task} users={users} locale={locale} />
           ))}

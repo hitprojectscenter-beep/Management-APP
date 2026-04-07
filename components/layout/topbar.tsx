@@ -6,6 +6,7 @@ import { Search, Bell, Sun, Moon, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
+import { HelpTrigger } from "@/components/help/help-trigger";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
@@ -36,7 +37,13 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" onClick={switchLocale} title="Switch language">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={switchLocale}
+          title="Switch language"
+          data-tour="language-toggle"
+        >
           <Globe className="size-4" />
           <span className="text-xs font-semibold ms-1">
             {locale === "he" ? "EN" : "עב"}
@@ -49,10 +56,13 @@ export function Topbar() {
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             title="Toggle theme"
+            data-tour="theme-toggle"
           >
             {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </Button>
         )}
+
+        <HelpTrigger />
 
         <Button variant="ghost" size="icon" className="relative" title="Notifications">
           <Bell className="size-4" />

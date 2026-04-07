@@ -88,8 +88,9 @@ export interface MockProjectMember {
 /**
  * The currently logged-in user (for demo mode).
  * בייצור זה יגיע מה-session של Auth.js.
+ * מוגדר ל-"u6" (אתה - משתמש המרכז למיפוי).
  */
-export const CURRENT_USER_ID = "u1";
+export const CURRENT_USER_ID = "u6";
 
 // ============================================
 // Users
@@ -134,6 +135,14 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Yossi",
     locale: "he",
     role: "member",
+  },
+  {
+    id: "u6",
+    name: "משתמש המרכז למיפוי",
+    email: "user@mapi.gov.il",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Mapi",
+    locale: "he",
+    role: "manager",
   },
 ];
 
@@ -231,6 +240,72 @@ export const mockWbsNodes: MockWbsNode[] = [
     nameEn: "Payment service migration",
     deliverable: "שירות בייצור על EKS עם traffic מלא",
     position: 0,
+  },
+
+  // ============================================
+  // Salesforce Program (מרכז למיפוי ישראל)
+  // ============================================
+  {
+    id: "wbs-program-sf",
+    parentId: "wbs-portfolio-1",
+    level: "program",
+    name: "יישומי Salesforce במרכז למיפוי ישראל",
+    nameEn: "Salesforce Applications - Israel Mapping Center",
+    description:
+      "תוכנית הטמעה ופיתוח של מערכות מבוססות Salesforce במרכז הממשלתי למיפוי ישראל",
+    position: 2,
+  },
+  // Project 1: CRM (in maintenance, ended with 3 month overrun)
+  {
+    id: "wbs-project-sf-crm",
+    parentId: "wbs-program-sf",
+    level: "project",
+    name: "CRM מבוסס Salesforce",
+    nameEn: "Salesforce CRM",
+    description:
+      "מערכת ניהול קשרי לקוחות למרכז למיפוי ישראל. הסתיים ב-20/03/2026 עם חריגה של 3 חודשים. כעת בסטטוס תחזוקה.",
+    position: 0,
+  },
+  // Project 2: Marketing & Sales (in progress, two phases)
+  {
+    id: "wbs-project-sf-marketing",
+    parentId: "wbs-program-sf",
+    level: "project",
+    name: "שירותי שיווק ומכירות מבוססי Salesforce",
+    nameEn: "Salesforce Marketing & Sales Services",
+    description:
+      "שירותי שיווק ומכירות חדשים על תשתית Salesforce. צפוי להסתיים ב-01/09/2027.",
+    position: 1,
+  },
+  // Project 2 phases / milestones
+  {
+    id: "wbs-milestone-sf-brief",
+    parentId: "wbs-project-sf-marketing",
+    level: "milestone",
+    name: "פרסום הבריף",
+    nameEn: "Brief Publication",
+    deliverable: "מסמך RFI/בריף שפורסם לספקים",
+    position: 0,
+  },
+  {
+    id: "wbs-milestone-sf-vendor",
+    parentId: "wbs-project-sf-marketing",
+    level: "milestone",
+    name: "בחירת ספק",
+    nameEn: "Vendor Selection",
+    deliverable: "בחירה והודעת זכייה לספק",
+    position: 1,
+  },
+  // Project 3 (sub-project): Task management - delayed!
+  {
+    id: "wbs-project-sf-tasks",
+    parentId: "wbs-program-sf",
+    level: "project",
+    name: "יישום ניהול משימות מבוסס Salesforce",
+    nameEn: "Salesforce-based Task Management Implementation",
+    description:
+      "תת-פרויקט להטמעת מערכת ניהול משימות פנימית מבוססת Salesforce. החל ב-01/08/2025, היה צפוי להסתיים ב-26/02/2026 וטרם הסתיים.",
+    position: 2,
   },
 ];
 
@@ -439,6 +514,231 @@ export const mockTasks: MockTask[] = [
     progressPercent: 0,
     tags: ["ui", "ai"],
     dependencies: ["task-9"],
+  },
+
+  // ============================================
+  // Salesforce CRM (in maintenance, finished with 3-month overrun)
+  // Started 15/04/2025, ended 20/03/2026
+  // ============================================
+  {
+    id: "sf-task-1",
+    wbsNodeId: "wbs-project-sf-crm",
+    parentTaskId: null,
+    title: "תחזוקה שוטפת - CRM",
+    titleEn: "Routine maintenance - CRM",
+    description:
+      "תחזוקה חודשית של מערכת ה-CRM: עדכוני אבטחה, גיבויים, ניטור ביצועים, וטיפול בתקלות שוטפות.",
+    status: "in_progress",
+    priority: "medium",
+    assigneeId: "u6",
+    plannedStart: "2026-03-20T00:00:00.000Z",
+    plannedEnd: "2026-12-31T00:00:00.000Z",
+    actualStart: "2026-03-20T00:00:00.000Z",
+    actualEnd: null,
+    estimateHours: 200,
+    actualHours: 24,
+    progressPercent: 12,
+    tags: ["maintenance", "salesforce", "crm"],
+    dependencies: [],
+  },
+  {
+    id: "sf-task-2",
+    wbsNodeId: "wbs-project-sf-crm",
+    parentTaskId: null,
+    title: "סיכום פרויקט CRM וניתוח חריגה",
+    titleEn: "CRM project closure & overrun analysis",
+    description:
+      "מסמך retrospective על הפרויקט שהסתיים עם חריגה של 3 חודשים. ניתוח גורמים, המלצות לפרויקטים הבאים.",
+    status: "done",
+    priority: "high",
+    assigneeId: "u6",
+    plannedStart: "2026-03-15T00:00:00.000Z",
+    plannedEnd: "2026-03-30T00:00:00.000Z",
+    actualStart: "2026-03-21T00:00:00.000Z",
+    actualEnd: "2026-04-01T00:00:00.000Z",
+    estimateHours: 24,
+    actualHours: 28,
+    progressPercent: 100,
+    tags: ["retrospective", "documentation"],
+    dependencies: [],
+  },
+
+  // ============================================
+  // Salesforce Marketing & Sales
+  // Started 01/09/2025, expected end 01/09/2027
+  // Phases: brief publication, vendor selection
+  // ============================================
+  {
+    id: "sf-task-3",
+    wbsNodeId: "wbs-milestone-sf-brief",
+    parentTaskId: null,
+    title: "כתיבת מסמך הדרישות לבריף",
+    titleEn: "Write requirements document for brief",
+    description:
+      "ניסוח מסמך הדרישות הפונקציונליות והלא-פונקציונליות ל-RFI שיפורסם לספקי Salesforce.",
+    status: "done",
+    priority: "high",
+    assigneeId: "u6",
+    plannedStart: "2025-09-01T00:00:00.000Z",
+    plannedEnd: "2025-11-30T00:00:00.000Z",
+    actualStart: "2025-09-01T00:00:00.000Z",
+    actualEnd: "2025-12-15T00:00:00.000Z",
+    estimateHours: 80,
+    actualHours: 95,
+    progressPercent: 100,
+    tags: ["requirements", "rfi"],
+    dependencies: [],
+  },
+  {
+    id: "sf-task-4",
+    wbsNodeId: "wbs-milestone-sf-brief",
+    parentTaskId: null,
+    title: "פרסום הבריף לספקים",
+    titleEn: "Publish brief to vendors",
+    description:
+      "פרסום ה-RFI הסופי בערוצי הרכש הממשלתיים. כולל מענה לשאלות ספקים ואירוע הצגה.",
+    status: "in_progress",
+    priority: "high",
+    assigneeId: "u6",
+    plannedStart: "2026-01-15T00:00:00.000Z",
+    plannedEnd: "2026-04-30T00:00:00.000Z",
+    actualStart: "2026-02-01T00:00:00.000Z",
+    actualEnd: null,
+    estimateHours: 60,
+    actualHours: 35,
+    progressPercent: 60,
+    tags: ["procurement", "rfi"],
+    dependencies: ["sf-task-3"],
+  },
+  {
+    id: "sf-task-5",
+    wbsNodeId: "wbs-milestone-sf-vendor",
+    parentTaskId: null,
+    title: "ועדת בחינת הצעות וניקוד",
+    titleEn: "Proposal review committee & scoring",
+    description:
+      "כינוס ועדת בחינה, ניקוד הצעות לפי קריטריונים, ראיונות עם ספקים, והמלצה לבחירה.",
+    status: "not_started",
+    priority: "critical",
+    assigneeId: "u6",
+    plannedStart: "2026-05-01T00:00:00.000Z",
+    plannedEnd: "2026-08-31T00:00:00.000Z",
+    actualStart: null,
+    actualEnd: null,
+    estimateHours: 120,
+    actualHours: 0,
+    progressPercent: 0,
+    tags: ["procurement", "evaluation"],
+    dependencies: ["sf-task-4"],
+  },
+  {
+    id: "sf-task-6",
+    wbsNodeId: "wbs-milestone-sf-vendor",
+    parentTaskId: null,
+    title: "חוזה התקשרות עם הספק הזוכה",
+    titleEn: "Contract with selected vendor",
+    description: "ניסוח, משא ומתן וחתימה על חוזה ההתקשרות.",
+    status: "not_started",
+    priority: "critical",
+    assigneeId: "u6",
+    plannedStart: "2026-09-01T00:00:00.000Z",
+    plannedEnd: "2026-11-30T00:00:00.000Z",
+    actualStart: null,
+    actualEnd: null,
+    estimateHours: 80,
+    actualHours: 0,
+    progressPercent: 0,
+    tags: ["procurement", "legal"],
+    dependencies: ["sf-task-5"],
+  },
+
+  // ============================================
+  // Salesforce Task Management Implementation
+  // Started 01/08/2025, was expected 26/02/2026, NOT done (overdue!)
+  // ============================================
+  {
+    id: "sf-task-7",
+    wbsNodeId: "wbs-project-sf-tasks",
+    parentTaskId: null,
+    title: "אפיון מערכת ניהול משימות",
+    titleEn: "Task management system specification",
+    description:
+      "אפיון מלא של פונקציונליות, מודל נתונים ו-workflows למערכת ניהול המשימות מבוססת Salesforce.",
+    status: "done",
+    priority: "high",
+    assigneeId: "u6",
+    plannedStart: "2025-08-01T00:00:00.000Z",
+    plannedEnd: "2025-10-31T00:00:00.000Z",
+    actualStart: "2025-08-01T00:00:00.000Z",
+    actualEnd: "2025-12-10T00:00:00.000Z",
+    estimateHours: 120,
+    actualHours: 160,
+    progressPercent: 100,
+    tags: ["specification", "salesforce"],
+    dependencies: [],
+  },
+  {
+    id: "sf-task-8",
+    wbsNodeId: "wbs-project-sf-tasks",
+    parentTaskId: null,
+    title: "פיתוח אובייקטים מותאמים ב-Salesforce",
+    titleEn: "Custom Salesforce objects development",
+    description:
+      "בניית Custom Objects, Fields, Relationships, Page Layouts ו-Validation Rules.",
+    status: "in_progress",
+    priority: "critical",
+    assigneeId: "u6",
+    plannedStart: "2025-11-01T00:00:00.000Z",
+    plannedEnd: "2026-01-31T00:00:00.000Z",
+    actualStart: "2025-12-15T00:00:00.000Z",
+    actualEnd: null,
+    estimateHours: 200,
+    actualHours: 180,
+    progressPercent: 75,
+    tags: ["development", "salesforce", "custom"],
+    dependencies: ["sf-task-7"],
+  },
+  {
+    id: "sf-task-9",
+    wbsNodeId: "wbs-project-sf-tasks",
+    parentTaskId: null,
+    title: "אינטגרציה עם מערכות פנימיות",
+    titleEn: "Integration with internal systems",
+    description:
+      "חיבור מערכת ניהול המשימות החדשה למערכות הקיימות במרכז למיפוי ישראל (ERP, HR, Active Directory).",
+    status: "blocked",
+    priority: "critical",
+    assigneeId: "u6",
+    plannedStart: "2026-02-01T00:00:00.000Z",
+    plannedEnd: "2026-02-26T00:00:00.000Z",
+    actualStart: "2026-02-15T00:00:00.000Z",
+    actualEnd: null,
+    estimateHours: 100,
+    actualHours: 65,
+    progressPercent: 50,
+    tags: ["integration", "blocked", "salesforce"],
+    dependencies: ["sf-task-8"],
+  },
+  {
+    id: "sf-task-10",
+    wbsNodeId: "wbs-project-sf-tasks",
+    parentTaskId: null,
+    title: "בדיקות UAT ומעבר לייצור",
+    titleEn: "UAT testing and production rollout",
+    description:
+      "User Acceptance Testing מול משתמשי קצה, איסוף משוב, תיקונים ומעבר לייצור.",
+    status: "not_started",
+    priority: "critical",
+    assigneeId: "u6",
+    plannedStart: "2026-02-15T00:00:00.000Z",
+    plannedEnd: "2026-02-26T00:00:00.000Z",
+    actualStart: null,
+    actualEnd: null,
+    estimateHours: 80,
+    actualHours: 0,
+    progressPercent: 0,
+    tags: ["testing", "uat", "rollout"],
+    dependencies: ["sf-task-9"],
   },
 ];
 
@@ -676,6 +976,65 @@ export const mockProjectMembers: MockProjectMember[] = [
     roleInProjectEn: "Frontend Engineer",
     ftePercent: 50,
     joinedAt: "2026-03-10",
+  },
+
+  // ============================================
+  // Current user (u6) - Salesforce program ownership
+  // ============================================
+  {
+    id: "pm-17",
+    wbsNodeId: "wbs-program-sf",
+    userId: "u6",
+    roleInProject: "מנהל תוכנית Salesforce",
+    roleInProjectEn: "Salesforce Program Manager",
+    ftePercent: 30,
+    joinedAt: "2025-08-01",
+  },
+  {
+    id: "pm-18",
+    wbsNodeId: "wbs-project-sf-crm",
+    userId: "u6",
+    roleInProject: "אחראי תחזוקה",
+    roleInProjectEn: "Maintenance Owner",
+    ftePercent: 15,
+    joinedAt: "2026-03-20",
+  },
+  {
+    id: "pm-19",
+    wbsNodeId: "wbs-project-sf-marketing",
+    userId: "u6",
+    roleInProject: "מנהל פרויקט",
+    roleInProjectEn: "Project Manager",
+    ftePercent: 25,
+    joinedAt: "2025-09-01",
+  },
+  {
+    id: "pm-20",
+    wbsNodeId: "wbs-project-sf-tasks",
+    userId: "u6",
+    roleInProject: "Project Owner",
+    roleInProjectEn: "Project Owner",
+    ftePercent: 30,
+    joinedAt: "2025-08-01",
+  },
+  // Add team members to Salesforce projects so the team panel isn't empty
+  {
+    id: "pm-21",
+    wbsNodeId: "wbs-project-sf-tasks",
+    userId: "u3",
+    roleInProject: "Salesforce Developer",
+    roleInProjectEn: "Salesforce Developer",
+    ftePercent: 60,
+    joinedAt: "2025-11-01",
+  },
+  {
+    id: "pm-22",
+    wbsNodeId: "wbs-project-sf-marketing",
+    userId: "u2",
+    roleInProject: "אחראית רכש",
+    roleInProjectEn: "Procurement Lead",
+    ftePercent: 40,
+    joinedAt: "2025-09-01",
   },
 ];
 

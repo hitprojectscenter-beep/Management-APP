@@ -97,7 +97,7 @@ export default async function LandingPage({
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats">
         <StatCard
           icon={CheckSquare}
           label={isHe ? "סך משימות פתוחות" : "Total Open Tasks"}
@@ -188,7 +188,7 @@ export default async function LandingPage({
           </Card>
 
           {/* My participation - all WBS nodes */}
-          <Card>
+          <Card data-tour="fte-panel">
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="size-4 text-purple-600" />
