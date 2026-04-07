@@ -189,6 +189,57 @@
 
 ---
 
+## 🆕 סבב פיתוח 7 - שיפור AI לניהול סיכונים פרואקטיבי
+
+### מה נוסף:
+1. **Risk Engine Enhanced** ב-`lib/ai/risk-engine.ts` עם 3 ניתוחים חדשים:
+
+   **A. `detectResourceBottlenecks(users, members, tasks)`** - מנתח את הקיבולת של חברי הצוות:
+   - בודק FTE > 80% וסימון "סף בטיחות"
+   - מזהה משתמשים שעובדים על משימות בנתיב הקריטי + הקצאת יתר → critical bottleneck
+   - מזהה 2+ משימות חסומות במקביל לאותו משתמש → high
+   - מחזיר רשימה של ResourceBottleneck עם severity, message, recommendation
+
+   **B. `predictProjectEndDate(tasks)`** - חיזוי תאריך סיום ריאליסטי:
+   - מחשב velocity actual (משימות שנסגרו לשבוע)
+   - מחשב velocity required (כמה צריך לסגור כדי לעמוד בלו"ז)
+   - מחשב avg slip from completed tasks (כמה ימי איחור היו בממוצע)
+   - מכפיל את הסליפ במספר המשימות הנותרות (capped)
+   - מחזיר ProjectForecast עם plannedEnd, forecastEnd, delayDays, confidence
+
+   **C. `computeDependencyImpact(taskId, delayDays, tasks)`** - אפקט שרשרת:
+   - בונה forward graph (task → tasks that depend on it)
+   - BFS forward מהמשימה המעוכבת
+   - בודק אם משימות מושפעות הן בנתיב הקריטי (CPM)
+   - מחשב cascade days = delay × √(max depth)
+   - מחזיר DependencyImpact עם affectedCount, criticalCount, message, recommendation
+
+   **D. `generateActiveRecommendations(tasks, users, members)`** - aggregator חכם:
+   - חוצה את כל הניתוחים ומפיק רשימת המלצות מסודרת לפי priority (now/soon/watch)
+   - 4 קטגוריות: blocker / resource / schedule / scope / quality
+   - לכל המלצה: title, detail, actionLabel, affectedTaskIds
+
+2. **4 רכיבי UI חדשים** ב-`/risks` page:
+   - **`ResourceBottlenecks`** - גרף FTE עם safety line ב-80%, אזהרת overallocation, badges של critical assignments
+   - **`PredictiveForecast`** - 3 כרטיסי תאריכים: planned / forecast / variance, +velocity actual vs required, +AI insight
+   - **`DependencyImpactCard`** - ויזואליזציה של אפקט שרשרת: 3 מספרים מובלטים (affected → critical → cascade days)
+   - **`ActiveRecommendations`** - "מה לעשות עכשיו" עם action buttons, מסודר לפי priority
+
+3. **AI Sidekick API משופר** ב-`/api/ai/chat/route.ts`:
+   - context snapshot עכשיו כולל: bottlenecks, forecast, recommendations, AI risks
+   - System prompt משופר עם 5 חוקי תשובה: lead with conclusion, use numbers, give action, real names, icons
+   - תמיכה בעברית מלאה עם הוראות RTL
+
+### עקרונות שיושמו:
+- **Proactive over reactive** - האיתור הוא לפני הבעיה, לא אחרי
+- **Pattern over snapshot** - ה-forecast לומד מהיסטוריה
+- **Cascade thinking** - כל עיכוב מעוכב במחשבה של ה-domino effect
+- **Action-oriented insights** - לכל ניתוח יש המלצה מעשית
+- **Severity sorting** - מסודר לפי דחיפות
+- **Single source of recommendations** - generateActiveRecommendations הוא ה-aggregator שמפשט את ה-API
+
+---
+
 ## 🆕 סבב פיתוח 6 - גאנט מתקדם + WBS עם Roll-up ונתיב קריטי
 
 ### מה נוסף:

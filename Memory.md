@@ -204,6 +204,65 @@
    - Screenshot validation: דף הנחיתה החדש בעברית RTL מלא עם כל הרכיבים
    - Project detail עם משתתפים מוצג נכון
 
+### 🗨️ סבב 11: שיפור AI לניהול סיכונים פרואקטיבי
+
+**👤 משתמש:**
+> אנא, הוסף/שפר את שילוב ה-AI לתחום של ניהול סיכונים [...]
+> 1. מנוע סריקה וזיהוי סיכונים אוטומטי בזמן אמת (5 סוגים)
+> 2. חיזוי וזיהוי צווארי בקבוק במשאבים
+> 3. חיזוי תאריכי סיום וניתוח מגמות
+> 4. חישוב אוטומטי של תלויות והשפעות שרשרת
+> 5. המלצות אקטיביות דרך עוזר חכם
+> [+ דרישות UI: צמצום עומס נתונים, כלל 7 צבעים, role-based views, tooltips, מבנה אחיד]
+
+**🤖 Claude:**
+
+1. **`lib/ai/risk-engine.ts` הורחב משמעותית** עם 4 capabilities חדשים:
+
+   - **`detectResourceBottlenecks()`** - מנתח users, members, tasks. בודק:
+     - FTE > 80% (סף בטיחות)
+     - User בנתיב קריטי + הקצאת יתר → critical
+     - 2+ blocked tasks לאותו user → high
+     - Returns ResourceBottleneck[] עם severity, message, recommendation
+
+   - **`predictProjectEndDate()`** - חישוב חיזוי velocity-based:
+     - velocityActual = completed tasks per week
+     - avgSlipDays from completed tasks
+     - effortOverrun multiplier
+     - forecast = planned + slip × min(remaining, 10) × overrun
+     - confidence based on sample size
+     - Returns ProjectForecast עם plannedEnd, forecastEnd, delayDays, velocity comparison
+
+   - **`computeDependencyImpact()`** - cascade analysis:
+     - בונה forward dependency graph
+     - BFS מ-delayed task forward
+     - בודק אילו מהמושפעים בנתיב הקריטי
+     - cascadeDays = delay × √(maxDepth)
+     - Returns DependencyImpact עם affectedCount, criticalCount, message
+
+   - **`generateActiveRecommendations()`** - aggregator שלוקח את כל הניתוחים ומחזיר ActiveRecommendation[] מסודר לפי priority (now/soon/watch) עם actionLabel ספציפי
+
+2. **4 רכיבים חדשים** ב-`components/risks/`:
+   - **`ResourceBottlenecks`** - card עם רשימת bottlenecks. כל אחד מציג: avatar + name + severity badge + critical assignments badge + FTE bar עם safety line ב-80% + recommendation
+   - **`PredictiveForecast`** - 3 כרטיסים אופקיים: Planned end / AI Forecast / Variance days. + velocity actual vs required. + insight בצבע מתאים. + confidence badge
+   - **`DependencyImpactCard`** - לכל delayed task: source title + ויזואליזציה גדולה (affected → critical → cascade days) + message + recommendation
+   - **`ActiveRecommendations`** - top of page card עם gradient orange-pink. כל המלצה עם priority badge + category + title + detail + action button
+
+3. **דף `/risks` עודכן** - הוסף הרכיבים החדשים בסדר חכם:
+   - ראשית: ActiveRecommendations (מה לעשות עכשיו)
+   - אחר כך: PredictiveForecast + ResourceBottlenecks (side by side)
+   - אחר כך: DependencyImpactCard
+   - הרכיבים הקיימים נשארו: severity stats, project health matrix, all risks list, types legend
+
+4. **AI Sidekick API משופר** ב-`/api/ai/chat/route.ts`:
+   - context snapshot כולל עכשיו: bottlenecks, forecast, recommendations, dynamicRisks
+   - System prompt עם 5 חוקי תשובה: lead with conclusion, numbers, action, real names, emoji icons
+   - תמיכה משופרת בעברית
+
+5. **ולידציה:**
+   - 13 דפים מחזירים HTTP 200
+   - Screenshot timeout (Kanban DnD hydration warning קיים) - הדף נטען בהצלחה
+
 ### 🗨️ סבב 10: גאנט מתקדם עם תכנון-מול-ביצוע + נתיב קריטי + WBS roll-up
 
 **👤 משתמש:**

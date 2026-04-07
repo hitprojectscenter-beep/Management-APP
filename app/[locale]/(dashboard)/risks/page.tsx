@@ -22,12 +22,24 @@ import {
   mockTasks,
   mockUsers,
   mockRisks,
+  mockProjectMembers,
   getTaskById,
   getUserById,
   getWbsNodeById,
   mockWbsNodes,
 } from "@/lib/db/mock-data";
-import { scanTasksForRisks, calculateProjectHealth } from "@/lib/ai/risk-engine";
+import {
+  scanTasksForRisks,
+  calculateProjectHealth,
+  detectResourceBottlenecks,
+  predictProjectEndDate,
+  computeDependencyImpact,
+  generateActiveRecommendations,
+} from "@/lib/ai/risk-engine";
+import { ResourceBottlenecks } from "@/components/risks/resource-bottlenecks";
+import { PredictiveForecast } from "@/components/risks/predictive-forecast";
+import { DependencyImpactCard } from "@/components/risks/dependency-impact";
+import { ActiveRecommendations } from "@/components/risks/active-recommendations";
 import { cn, formatDate } from "@/lib/utils";
 
 export default async function RisksPage({
@@ -38,6 +50,36 @@ export default async function RisksPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const isHe = locale === "he";
+
+  // === New AI analyses ===
+  const bottlenecks = detectResourceBottlenecks(mockUsers, mockProjectMembers, mockTasks);
+  const forecast = predictProjectEndDate(mockTasks);
+  const recommendations = generateActiveRecommendations(mockTasks, mockUsers, mockProjectMembers);
+
+  // Compute dependency impacts for currently delayed/blocked tasks
+  const delayedTasks = mockTasks.filter((t) => {
+    if (t.status === "blocked") return true;
+    if (!t.plannedEnd || t.status === "done" || t.status === "cancelled") return false;
+    return new Date(t.plannedEnd).getTime() < Date.now();
+  });
+  const dependencyImpacts = delayedTasks
+    .map((t) => {
+      const delayDays =
+        t.status === "blocked"
+          ? 5
+          : Math.max(
+              1,
+              Math.round((Date.now() - new Date(t.plannedEnd).getTime()) / (1000 * 60 * 60 * 24))
+            );
+      return computeDependencyImpact(t.id, delayDays, mockTasks);
+    })
+    .filter((i): i is NonNullable<typeof i> => i !== null && i.affectedCount > 0)
+    .sort((a, b) => {
+      // Critical-path-affecting first, then by cascade days
+      if (a.affectsCriticalPath !== b.affectsCriticalPath) return a.affectsCriticalPath ? -1 : 1;
+      return b.cascadeDays - a.cascadeDays;
+    })
+    .slice(0, 5);
 
   // Combine mock risks + dynamic risks from engine
   const dynamicRisks = scanTasksForRisks(mockTasks);
@@ -212,6 +254,18 @@ export default async function RisksPage({
           );
         })}
       </div>
+
+      {/* AI Active Recommendations - top priority */}
+      <ActiveRecommendations recommendations={recommendations} locale={locale} />
+
+      {/* AI Forecast + Resource Bottlenecks side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PredictiveForecast forecast={forecast} locale={locale} />
+        <ResourceBottlenecks bottlenecks={bottlenecks} users={mockUsers} locale={locale} />
+      </div>
+
+      {/* Dependency Impact Analysis */}
+      <DependencyImpactCard impacts={dependencyImpacts} tasks={mockTasks} locale={locale} />
 
       {/* Project Health Matrix */}
       <Card>
