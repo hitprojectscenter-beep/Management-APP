@@ -1,22 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="המרכז למיפוי ישראל">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="המרכז למיפוי ישראל">
   <defs>
-    <linearGradient id="mapiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1e5fa8"/>
-      <stop offset="100%" stop-color="#0d3a72"/>
-    </linearGradient>
+    <!-- Path for curved Hebrew text along bottom -->
+    <path id="textCircle" d="M 30,120 A 90,90 0 0 0 210,120" fill="none" />
   </defs>
-  <!-- Outer circle -->
-  <circle cx="100" cy="100" r="90" fill="none" stroke="url(#mapiGrad)" stroke-width="6"/>
-  <!-- Inner globe lines (latitude) -->
-  <ellipse cx="100" cy="100" rx="70" ry="25" fill="none" stroke="url(#mapiGrad)" stroke-width="3"/>
-  <ellipse cx="100" cy="100" rx="70" ry="50" fill="none" stroke="url(#mapiGrad)" stroke-width="3"/>
-  <ellipse cx="100" cy="100" rx="70" ry="70" fill="none" stroke="url(#mapiGrad)" stroke-width="3"/>
-  <!-- Vertical meridian -->
-  <line x1="100" y1="30" x2="100" y2="170" stroke="url(#mapiGrad)" stroke-width="3"/>
-  <!-- Stylized "key" / מיפוי ישראל emblem - simplified Israel shape -->
-  <path d="M 88 60 Q 95 55 102 60 L 108 75 Q 110 85 105 95 L 100 110 Q 92 120 95 135 L 92 145 L 88 135 Q 82 120 90 110 L 88 95 Q 84 85 86 75 Z"
-        fill="url(#mapiGrad)" stroke="#fff" stroke-width="1.5"/>
-  <!-- Center dot -->
-  <circle cx="100" cy="100" r="4" fill="#fff"/>
+
+  <!-- Outer blue ring -->
+  <circle cx="120" cy="120" r="100" fill="none" stroke="#1e5fa8" stroke-width="3"/>
+
+  <!-- Inner emblem area -->
+  <g transform="translate(120, 110)">
+    <!-- Globe/grid background (subtle latitude/longitude lines) -->
+    <ellipse cx="0" cy="0" rx="62" ry="62" fill="none" stroke="#1e5fa8" stroke-width="1.5" opacity="0.5"/>
+    <ellipse cx="0" cy="0" rx="62" ry="44" fill="none" stroke="#1e5fa8" stroke-width="1.2" opacity="0.4"/>
+    <ellipse cx="0" cy="0" rx="62" ry="22" fill="none" stroke="#1e5fa8" stroke-width="1.2" opacity="0.4"/>
+    <line x1="0" y1="-62" x2="0" y2="62" stroke="#1e5fa8" stroke-width="1.2" opacity="0.4"/>
+    <line x1="-62" y1="0" x2="62" y2="0" stroke="#1e5fa8" stroke-width="1.2" opacity="0.4"/>
+
+    <!-- Stylized abstract emblem in center (curved shape representing mapping/measurement) -->
+    <g fill="#1e5fa8">
+      <!-- Top arc - "head" of the symbol -->
+      <path d="M -28,-50 Q -10,-58 12,-50 Q 30,-42 32,-22 Q 28,-8 14,-2 Q 0,4 -14,-2 Q -28,-8 -32,-22 Q -30,-42 -28,-50 Z" />
+      <!-- Inner cutout to give it depth -->
+      <path d="M -18,-42 Q -4,-46 10,-42 Q 22,-36 22,-22 Q 18,-12 8,-10 Q -2,-8 -10,-12 Q -20,-16 -20,-26 Q -20,-36 -18,-42 Z" fill="#ffffff"/>
+      <!-- Vertical descender / "tail" -->
+      <path d="M -8,-10 L -8,42 L 8,42 L 8,-10 Z"/>
+      <!-- Wave/swoosh below -->
+      <path d="M -36,28 Q -12,52 14,40 Q 32,32 38,18 L 32,14 Q 26,26 12,30 Q -8,38 -32,22 Z"/>
+    </g>
+  </g>
+
+  <!-- Curved Hebrew text along bottom -->
+  <text font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#1e5fa8" letter-spacing="1">
+    <textPath href="#textCircle" startOffset="50%" text-anchor="middle">
+      המרכז למיפוי ישראל
+    </textPath>
+  </text>
 </svg>
