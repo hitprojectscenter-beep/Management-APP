@@ -16,7 +16,9 @@ import {
   mockUsers,
   mockRisks,
   getProjects,
+  getPrograms,
 } from "@/lib/db/mock-data";
+import { RoleBasedKpi } from "@/components/dashboard/role-based-kpi";
 import { calculateProjectHealth } from "@/lib/ai/risk-engine";
 import { ProgressChart } from "@/components/dashboard/progress-chart";
 import { StatusDistribution } from "@/components/dashboard/status-distribution";
@@ -107,7 +109,22 @@ export default async function DashboardPage({
         </Badge>
       </div>
 
-      {/* KPI Cards */}
+      {/* Role-based KPI dashboards (PM vs PMO) */}
+      <RoleBasedKpi
+        tasks={mockTasks}
+        users={mockUsers}
+        projects={getProjects()}
+        programs={getPrograms()}
+        locale={locale}
+      />
+
+      {/* General KPI Cards (always visible) */}
+      <div className="border-t pt-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Info className="size-4 text-muted-foreground" />
+          {isHe ? "מבט כללי על הארגון" : "General organizational overview"}
+        </h2>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon;

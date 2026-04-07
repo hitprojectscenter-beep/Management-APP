@@ -17,6 +17,7 @@ import {
   Workflow,
   Boxes,
   ShieldAlert,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,7 @@ const navItems = [
   { key: "reports", icon: BarChart3, href: "/reports", labelHe: "דוחות", labelEn: "Reports" },
   { key: "automations", icon: Workflow, href: "/automations", labelHe: "אוטומציות", labelEn: "Automations" },
   { key: "team", icon: Users, href: "/team", labelHe: "צוות", labelEn: "Team" },
+  { key: "admin", icon: Shield, href: "/admin", labelHe: "ניהול מערכת", labelEn: "Admin" },
   { key: "settings", icon: Settings, href: "/settings", labelHe: "הגדרות", labelEn: "Settings" },
 ] as const;
 

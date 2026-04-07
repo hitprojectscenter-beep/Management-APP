@@ -142,9 +142,66 @@ export const mockUsers: MockUser[] = [
     email: "user@mapi.gov.il",
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Mapi",
     locale: "he",
-    role: "manager",
+    role: "admin",
   },
 ];
+
+// ============================================
+// Task & Project Types - configurable categories
+// (admin can define custom types)
+// ============================================
+export interface MockItemType {
+  id: string;
+  scope: "task" | "project";
+  nameHe: string;
+  nameEn: string;
+  icon: string;
+  color: string;
+  description: string;
+  isSystem: boolean; // system types cannot be deleted
+}
+
+export const mockItemTypes: MockItemType[] = [
+  // Task types
+  { id: "tt-bug", scope: "task", nameHe: "באג", nameEn: "Bug", icon: "🐛",
+    color: "#EF4444", description: "תקלה במערכת או באפליקציה", isSystem: true },
+  { id: "tt-feature", scope: "task", nameHe: "תכונה חדשה", nameEn: "Feature", icon: "✨",
+    color: "#3B82F6", description: "תוספת חדשה למערכת", isSystem: true },
+  { id: "tt-improvement", scope: "task", nameHe: "שיפור", nameEn: "Improvement", icon: "📈",
+    color: "#10B981", description: "שיפור של פונקציונליות קיימת", isSystem: true },
+  { id: "tt-research", scope: "task", nameHe: "מחקר", nameEn: "Research", icon: "🔬",
+    color: "#8B5CF6", description: "POC, ניתוח או אפיון", isSystem: true },
+  { id: "tt-doc", scope: "task", nameHe: "תיעוד", nameEn: "Documentation", icon: "📝",
+    color: "#64748B", description: "מסמכים, מדריכים, ותיעוד טכני", isSystem: true },
+  { id: "tt-meeting", scope: "task", nameHe: "פגישה", nameEn: "Meeting", icon: "📅",
+    color: "#F59E0B", description: "ישיבה, סקירה, או הצגה", isSystem: false },
+  { id: "tt-procurement", scope: "task", nameHe: "רכש", nameEn: "Procurement", icon: "🛒",
+    color: "#06B6D4", description: "תהליך רכישה ופרסום מכרזים", isSystem: false },
+
+  // Project types
+  { id: "pt-dev", scope: "project", nameHe: "פיתוח", nameEn: "Development", icon: "💻",
+    color: "#3B82F6", description: "פרויקט פיתוח תוכנה", isSystem: true },
+  { id: "pt-infra", scope: "project", nameHe: "תשתיות", nameEn: "Infrastructure", icon: "🏗️",
+    color: "#64748B", description: "פרויקט תשתיות וענן", isSystem: true },
+  { id: "pt-marketing", scope: "project", nameHe: "שיווק", nameEn: "Marketing", icon: "📣",
+    color: "#EC4899", description: "פרויקט שיווק או מכירות", isSystem: false },
+  { id: "pt-research", scope: "project", nameHe: "מחקר", nameEn: "Research", icon: "🔬",
+    color: "#8B5CF6", description: "פרויקט מחקר ופיתוח", isSystem: false },
+  { id: "pt-maintenance", scope: "project", nameHe: "תחזוקה", nameEn: "Maintenance", icon: "🔧",
+    color: "#10B981", description: "פרויקט תחזוקה שוטפת", isSystem: false },
+  { id: "pt-procurement", scope: "project", nameHe: "רכש", nameEn: "Procurement", icon: "📋",
+    color: "#06B6D4", description: "פרויקט רכש ומכרזים ממשלתיים", isSystem: false },
+  { id: "pt-implementation", scope: "project", nameHe: "הטמעה", nameEn: "Implementation", icon: "🚀",
+    color: "#F59E0B", description: "פרויקט הטמעה של מערכת חדשה", isSystem: false },
+];
+
+export function getTaskTypes(): MockItemType[] {
+  return mockItemTypes.filter((t) => t.scope === "task");
+}
+
+export function getProjectTypes(): MockItemType[] {
+  return mockItemTypes.filter((t) => t.scope === "project");
+}
 
 // ============================================
 // WBS Hierarchy

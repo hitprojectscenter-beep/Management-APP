@@ -204,6 +204,78 @@
    - Screenshot validation: דף הנחיתה החדש בעברית RTL מלא עם כל הרכיבים
    - Project detail עם משתתפים מוצג נכון
 
+### 🗨️ סבב 9: מסך ניהול אדמין + KPIs לפי תפקיד
+
+**👤 משתמש (סבב 9.1):**
+> אנא, הוסף מסך ניהול לאדמין המערכת. הוספת משתמשים, הגדרת תפקידים, סוגי משימות/פרויקטים, שיוך משימות ופרויקטים לפרוגרמה.
+
+**👤 משתמש (סבב 9.2 - תוך כדי):**
+> כמו כן, הוסף את ה-KPI-ים האלה לבחירת מנהלי פרויקטים ומנהלי פרוגרמות [...] מנהל הפרויקט מתמקד בביצוע הטקטי של פרויקט בודד; מנהל ה-PMO מספק ראיית-על אסטרטגית [...] [פירוט מלא של 4 KPIs לכל תפקיד]
+
+**🤖 Claude:**
+
+1. **דף `/admin` חדש** עם RBAC guard (רק admin):
+   - Header עם Shield icon ו-badges
+   - 4 quick stats cards
+   - 4 טאבים: משתמשים / תפקידים והרשאות / סוגי משימות ופרויקטים / שיוך היררכי
+
+2. **u6 הועלה לתפקיד admin** (היה manager) כדי שהמשתמש יוכל להיכנס
+
+3. **mockItemTypes חדש** - 14 סוגי פריטים מובנים (7 task + 7 project) עם isSystem flag
+
+4. **UsersManager** - טבלה מלאה:
+   - חיפוש + סינון לפי תפקיד
+   - הוספה דרך Dialog (שם, אימייל, תפקיד, שפה)
+   - עריכה inline דרך אותו Dialog
+   - מחיקה (למעט המשתמש הנוכחי)
+   - Toast notifications
+
+5. **RolesManager** - מטריצת הרשאות:
+   - 5 כרטיסי תפקידים עם gradient ואייקונים ייחודיים
+   - מטריצה 12×5: 12 הרשאות × 5 תפקידים
+   - ✓ ירוק / ✗ אפור לכל תא
+   - sticky column
+
+6. **TypesManager** - סוגי פריטים:
+   - Toggle בין סוגי משימות וסוגי פרויקטים
+   - גריד 3 עמודות עם cards צבעוניים
+   - Dialog עם emoji picker (16 אופציות) ו-color picker (12 צבעים)
+   - System types נעולים (isSystem: true)
+
+7. **HierarchyManager** - שיוך:
+   - שני מצבים: שיוך פרויקטים לתוכניות / שיוך משימות לפריטים
+   - לכל פרויקט dropdown לבחירת תוכנית חדשה
+   - לכל משימה dropdown לבחירת WBS node חדש (project/goal/milestone/activity)
+
+8. **RoleBasedKpi component** (החלק הגדול ביותר - ~600 שורות):
+   - **Role switcher** - שני כרטיסים גדולים PM/PMO עם indicators
+   - **ProjectManagerView**: 4 KPIs + 2 charts
+     - חריגת לו"ז (Schedule Variance) - חישוב ממוצע ימים מ-completedTasks
+     - אבני דרך באיחור - critical priority + overdue
+     - Throughput שבועי (mock 13.5/16)
+     - ניצול תקציב (mock ₪612k/₪850k)
+     - Throughput chart - planned vs actual bar chart
+     - Workload chart - per-user stacked bars
+   - **PmoManagerView**: 4 KPIs + 4 components
+     - יישור אסטרטגי 78%
+     - ROI 247%
+     - **Capacity vs Demand 87%** עם **burnout warning** מעל 85%
+     - מגמת סיכונים (line chart עולה)
+     - **Portfolio Health RAG** - traffic light (green/amber/red counts)
+     - **Risk Trend line chart**
+     - **EVM Metrics**: CPI 0.92 + SPI 0.88 (cards מוסברים)
+     - **Cost Analysis**: CapEx vs OpEx pie chart + values
+
+9. **Sidebar עודכן** עם פריט "ניהול מערכת" + Shield icon (סה"כ 13 פריטי navigation)
+
+10. **ולידציה:**
+    - 13 דפים HTTP 200 (כולל `/admin` החדש)
+    - Screenshots:
+      - דף Admin עם טבלת משתמשים (6 משתמשים, אורי+u6 = admin)
+      - מטריצת הרשאות 12×5
+      - דשבורד PM עם 4 KPIs כחולים + Throughput chart
+      - דשבורד PMO עם 4 KPIs סגולים + Capacity warning + RAG + Risk trend
+
 ### 🗨️ סבב 8: לוגו מפ"י + טאבים חדשים + אירועי יומן + מצגת
 
 **👤 משתמש:**

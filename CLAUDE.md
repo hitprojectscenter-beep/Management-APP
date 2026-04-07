@@ -189,6 +189,44 @@
 
 ---
 
+## 🆕 סבב פיתוח 5 - מסך ניהול אדמין + KPIs לפי תפקיד (PM vs PMO)
+
+### מה נוסף:
+1. **דף Admin חדש** (`/admin`) עם 4 טאבים:
+   - **משתמשים** - טבלה מלאה עם חיפוש, סינון לפי תפקיד, הוספה/עריכה/מחיקה (Dialog)
+   - **תפקידים והרשאות** - 5 תפקידים + מטריצת הרשאות 12×5 (12 הרשאות, 5 תפקידים)
+   - **סוגי משימות ופרויקטים** - 14 סוגים מובנים (Bug, Feature, Project type וכו') עם hover-to-edit, color picker, emoji picker, מחיקה
+   - **שיוך היררכי** - העברת פרויקטים בין תוכניות + שיוך משימות לפריטי WBS דרך selectors
+2. **RBAC guard** - רק admin רואה את הדף, אחרת access denied page
+3. **`u6` הועלה ל-admin** (היה manager) כדי שהמשתמש הנוכחי יוכל לגשת
+4. **`mockItemTypes`** - טבלה חדשה ב-mock data עם 14 סוגי פריטים מובנים
+5. **`Shield` icon** ב-sidebar עם פריט "ניהול מערכת"
+6. **דשבורדי KPI לפי תפקיד** - אחד הרכיבים החזקים ביותר במערכת:
+   - **Role Switcher** - בחירה בין "מנהל פרויקט" ל"מנהל PMO/פורטפוליו"
+   - **Project Manager view** (תפעולי) עם 4 KPIs:
+     - חריגת לו"ז (Schedule Variance) - בימים
+     - אבני דרך באיחור (Milestone Slippage)
+     - Throughput שבועי (מתוכנן מול ביצוע)
+     - ניצול תקציב (Budget Adherence)
+     - + 2 גרפים: Throughput chart, Workload chart
+   - **PMO Manager view** (אסטרטגי) עם 4 KPIs:
+     - יישור אסטרטגי (Strategic Alignment)
+     - ROI פורטפוליו
+     - ניצולת משאבים (Capacity vs Demand) - **אזהרת burnout מעל 85%!**
+     - מגמת סיכונים (Risk Trend)
+     - + 4 רכיבים נוספים: Portfolio Health (RAG), Risk Trend line chart, EVM metrics (CPI/SPI), Cost Analysis (CapEx/OpEx)
+
+### עקרונות שיושמו:
+- **RBAC bouncer pattern** - הדף עצמו בודק תפקיד לפני הצגת תוכן
+- **Local state for demo** - השינויים נשמרים ב-React state, לא ב-DB אמיתי (toast notifications)
+- **System types lock** - סוגים מובנים נעולים נגד מחיקה (`isSystem: true`)
+- **Persona-driven dashboards** - לכל תפקיד דשבורד שמתאים לשאלה הספציפית שלו
+- **Visual differentiation** - PM (כחול) ו-PMO (סגול) צבעים שונים בכל מקום
+- **EVM standard metrics** - CPI ו-SPI הם מדדים סטנדרטיים בניהול פרויקטים מורכבים
+- **RAG status** - traffic light פשוט וקליל למנהלים
+
+---
+
 ## 🆕 סבב פיתוח 4 - לוגו מפ"י + טאבים חדשים + אירועי יומן + מצגת
 
 ### מה נוסף:
