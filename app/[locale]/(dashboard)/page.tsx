@@ -59,22 +59,22 @@ export default async function LandingPage({
   const projects = getProjects();
 
   return (
-    <div className="p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           {currentUser && (
             <Avatar
               src={currentUser.image}
               fallback={currentUser.name[0]}
-              className="size-14 ring-2 ring-primary/20"
+              className="size-12 sm:size-14 ring-2 ring-primary/20"
             />
           )}
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               {isHe ? `שלום, ${currentUser?.name?.split(" ")[0]} 👋` : `Hello, ${currentUser?.name?.split(" ")[0]} 👋`}
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               {isHe
                 ? "כל המשימות שעדיין לא נסגרו - מסודרות לפי דחיפות"
                 : "All tasks that are still open - sorted by urgency"}
