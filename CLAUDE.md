@@ -189,6 +189,93 @@
 
 ---
 
+## 🆕 סבב פיתוח 10 - עוזר אישי (Agentic AI) + משתמשים אמיתיים + מובייל
+
+### חלק א': משתמשים אמיתיים
+החלפת 6 המשתמשים הפיקטיביים בצוות האמיתי:
+- **u1: מארק ישראל** (admin) - Salesforce Program Manager + Technical PM (CURRENT_USER)
+- **u2: ניר ברלוביץ'** (manager) - מנהל כלל הפעילויות
+- **u3: אלעד אסרף** (manager) - בעלים Salesforce Marketing & Sales
+- **u4: אפרים ג'יאן** (manager) - בעלים Salesforce CRM
+- **u5: אסתר מהרטו** (manager) - אחראית תכניות עבודה
+- **u6: חגי רונן** (admin) - מנכ"ל
+
+mockUsers + mockProjectMembers + task assignments + comments + Topbar hardcoded ref כולם עודכנו.
+
+### חלק ב': התאמה למובייל/PWA
+- `Sheet` primitive חדש (Radix) → mobile drawer sidebar עם slide-in RTL
+- `NAV_ITEMS` נשלף לקובץ משותף, Sidebar התפצל ל-SidebarContent + Sidebar
+- Topbar עם hamburger button `<lg`, responsive paddings, touch targets 44×44
+- `public/manifest.json` חדש עם שם עברי, theme Mapi blue, standalone mode
+- `app/layout.tsx` עם Metadata + Viewport API מלא: appleWebApp, theme-color light/dark, viewportFit cover
+- globals.css: env(safe-area-inset), -webkit-text-size-adjust, touch-action manipulation, min-height 44px, 16px inputs on mobile
+
+### חלק ג': עוזר אישי (Agentic AI) - הפיצ'ר הגדול של הסבב
+
+**ארכיטקטורה:**
+- `lib/ai/assistant-engine.ts` - Intent schema, Gap analysis, Conflict detection, Name resolution, Entity merging, Confirmation summary, Audit logging
+- `lib/ai/assistant-prompts.ts` - Claude system prompt (he/en) עם strict JSON schema + heuristic fallback
+- `app/api/assistant/route.ts` - POST (parse intent) + PUT (execute confirmed action)
+- `components/assistant/use-speech-recognition.ts` - Web Speech API hook עם he-IL support + TTS helper
+- `components/assistant/personal-assistant.tsx` - רכיב UI מלא (~500 שורות)
+
+**יכולות ליבה:**
+1. **Speech-to-Text**: `webkitSpeechRecognition` / `SpeechRecognition` - תמיכה ב-he-IL ו-en-US, interim results live
+2. **Intent Recognition**: Claude עם system prompt מחמיר המחזיר JSON עם action/entities/confidence/responseText
+3. **Name Resolution**: projectNameHint + assigneeNameHint → IDs דרך fuzzy matching
+4. **Gap Analysis**: לפי `REQUIRED_FIELDS_FOR_ACTION` - מזהה אילו שדות חובה חסרים
+5. **Conflict Detection**:
+   - **RBAC** - דרך CASL abilities, דוחה אם לחבר צוות אין הרשאה
+   - **Date logic** - plannedEnd < plannedStart
+   - **Overload** - assignee > 80% FTE
+6. **Dialog State Machine**: idle → listening → processing → awaiting_clarification → awaiting_confirmation → executing → done
+7. **Carryover Context**: entities ו-action נשמרים בין turns של שיחה
+8. **Human-in-the-loop**: Confirmation card חובה לפני כל פעולת mutation
+9. **Audit Log**: `logAssistantAction()` רושם כל פעולה עם viaAssistant: true + timestamp + actor
+10. **TTS Optional**: speechSynthesis לקריאת תגובות בקול
+
+**זרימת עבודה לדוגמה (יצירת משימה):**
+```
+User (voice): "פתח משימה חדשה לבדיקת שרתים מיום ראשון עד חמישי"
+→ STT → "פתח משימה חדשה..."
+→ API POST /api/assistant
+→ Claude parses: { action: "create_task", entities: {title, plannedStart, plannedEnd} }
+→ Gap analysis: חסר projectId + assigneeId
+→ Stage: clarification
+→ Assistant: "לאיזה פרויקט לשייך את המשימה? ומי האחראי?"
+→ User: "פרויקט תשתיות, הקצה לדנה"
+→ API POST (with carryover) → resolve hints to IDs → all gaps closed
+→ Conflict check: דנה ב-90% FTE → warning (non-blocking)
+→ Stage: confirmation → Confirmation card with summary
+→ User clicks "אשר"
+→ API PUT → mockTasks.push(newTask) + audit log
+→ Stage: done + toast
+```
+
+**אבטחה ופרטיות:**
+- כל קריאת API מקבלת RBAC guard לפני execution
+- Zero Data Retention: Claude API נקרא ללא שמירת נתונים
+- Audit log עם `performedBy: "ai_assistant"` - ניתן להבחין בין פעולות אנושיות ל-AI
+- Human-in-the-loop חובה - ה-AI אף פעם לא מבצע פעולות mutation "עיוורות"
+
+**UI:**
+- כפתור צף סגול-וויולט בפינה (bottom start, לא חופף ל-help bot)
+- Chat drawer 440×680 עם header gradient
+- אינדיקטורי state: listening (pulse red), processing (amber), ready (green)
+- Mic toggle + text input dual mode
+- Suggestion chips לפרויקטים/משתמשים בזמן clarification
+- Confirmation card עם borders violet, summary formatted, conflicts shown as warnings
+- TTS toggle button
+- Footer hint על RBAC + Audit Log + Confirmation
+
+**המגבלות הנוכחיות** (לציון בייצור):
+- Mock data mode - השינויים בזיכרון בלבד, אובדים ב-restart
+- Meeting intelligence (summarize_meeting): ה-action מוגדר אבל לא ממומש מלא
+- TTS ו-STT תלויים בדפדפן - Firefox לא נתמך
+- Claude API fallback ל-heuristic parser פשוט אם אין API key
+
+---
+
 ## 🆕 סבב פיתוח 8 - תוכנית ניהול סיכונים אקטיבית של ה-AI
 
 ### מה נוסף:

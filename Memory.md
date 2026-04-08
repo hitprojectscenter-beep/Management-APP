@@ -204,6 +204,81 @@
    - Screenshot validation: דף הנחיתה החדש בעברית RTL מלא עם כל הרכיבים
    - Project detail עם משתתפים מוצג נכון
 
+### 🗨️ סבב 13: עוזר אישי (Agentic AI) + משתמשים אמיתיים + מובייל
+
+**👤 משתמש (סבב 13.1):**
+> אנא, הסר משתמשים פיקטיביים. המשתמשים האמיתיים הם: אני - מארק ישראל - אדמין ומנהל פרוגרמת סיילספורס, מנהל פרויקטים טכני של כלל הפרויקטים בפרוגרמה. ניר ברלוביץ' - מנהל כלל הפעילויות. אלעד אסרף - בעלים של שירותי שיווק ומכירות מבוססי Salesforce. אפרים ג'יאן - בעלים של CRM מבוסס Salesforce. אסתר מהרטו - אחראית ארגונית על תכניות עבודה. חגי רונן - מנכ"ל.
+
+**👤 משתמש (סבב 13.2):**
+> כמו-כן, אנא, התאם את היישום לטלפונים ניידים, טאבלטים, IOS, Android.
+
+**👤 משתמש (סבב 13.3):**
+> שלום רב. אני רוצה להוסיף פונקציונליות של "עוזר אישי" ביישום. מהות הפונקציונליות - יכולת לתקשר מילולית עם היישום, כלומר, לנהל דו-שיח. לתת הנחיות, לפתוח משימות חדשות, להוסיף סיכומי פגישות הנוגעות למשימה/פרויקט/פרוגרמה... [אפיון מלא של Agentic AI]
+
+**🤖 Claude:**
+
+**חלק א': משתמשים אמיתיים**
+- `mockUsers` נכתב מחדש עם 6 שמות אמיתיים, emails `@mapi.gov.il`, skills תואמי תפקיד, performance scores
+- `CURRENT_USER_ID` עבר מ-u6 ל-u1 (מארק ישראל)
+- `mockProjectMembers` נכתב מחדש עם התפקידים האמיתיים:
+  - Salesforce Program: מארק Program Manager, חגי CEO Sponsor, ניר פיקוח תפעולי, אסתר תכניות עבודה
+  - CRM: אפרים Owner, מארק Technical PM
+  - Marketing: אלעד Owner, מארק Technical PM
+  - Task Management: מארק Owner+PM
+- כל משימות Salesforce שויכו לבעלים הנכונים
+- Topbar עכשיו קורא currentUser דינאמית
+
+**חלק ב': מובייל/PWA**
+- Sheet primitive חדש + mobile drawer sidebar (slide-in RTL)
+- NAV_ITEMS נשלף, SidebarContent + Sidebar מפוצלים
+- Topbar responsive עם hamburger `<lg`, touch targets 44×44
+- manifest.json + Metadata+Viewport API מלאים (appleWebApp, theme-color, viewportFit cover)
+- globals.css עם env(safe-area-inset), touch-action, min 16px input font
+
+**חלק ג': עוזר אישי (Agentic AI)** - הפיצ'ר המרכזי של הסבב
+
+1. **`lib/ai/assistant-engine.ts`** (~400 שורות):
+   - Types: ParsedIntent, TaskEntities, Gap, Conflict, AssistantTurn, AuditEntry
+   - REQUIRED_FIELDS_FOR_ACTION map
+   - `analyzeGaps()` - מזהה שדות חובה חסרים ומחזיר שאלות + suggestions
+   - `detectConflicts()` - RBAC (CASL), date logic, overload (>80% FTE)
+   - `resolveProjectByName()` / `resolveUserByName()` - fuzzy matching של hints ל-IDs
+   - `mergeEntities()` - carryover context across dialog turns
+   - `buildConfirmationSummary()` - natural language summary לאישור
+   - `logAssistantAction()` - audit log עם viaAssistant flag
+
+2. **`lib/ai/assistant-prompts.ts`**:
+   - System prompt בעברית ואנגלית
+   - הוראות מחמירות: אל תמציא, תאריכים יחסיים → ISO, החזר JSON בלבד
+   - סכמה ברורה: { action, entities: {title, assigneeNameHint, ...}, confidence, responseText }
+   - `heuristicParse()` fallback כש-ANTHROPIC_API_KEY חסר
+
+3. **`app/api/assistant/route.ts`**:
+   - **POST** = parse intent: Claude → merge carryover → resolve names → gap analysis → conflict detection → return stage (clarification/confirmation/blocked/query_response)
+   - **PUT** = execute confirmed action: validate required, push to mockTasks, write audit log
+
+4. **`components/assistant/use-speech-recognition.ts`**:
+   - Web Speech API hook (webkitSpeechRecognition / SpeechRecognition)
+   - he-IL ו-en-US support
+   - interim + final results, auto-submit on final
+   - speak() helper for TTS (speechSynthesis)
+   - Graceful fallback אם הדפדפן לא תומך
+
+5. **`components/assistant/personal-assistant.tsx`** (~500 שורות):
+   - Floating violet button (bottom start, נפרד מ-help bot)
+   - Chat drawer 440×680 עם header gradient
+   - State machine: idle/listening/processing/clarification/confirmation/blocked/executing/done
+   - Live interim transcript display while listening
+   - Suggestion chips לפרויקטים/משתמשים
+   - Confirmation card עם summary formatted + conflicts + אשר/בטל
+   - TTS toggle
+   - Footer hint על RBAC + Audit + Confirmation
+
+6. **ולידציה**:
+   - Build עבר (טעון תיקון זמני של conflict duplicate key ב-assistant-engine.ts)
+   - `/api/assistant` מופיע ב-routes list
+   - PersonalAssistant חובר ל-dashboard layout אחרי HelpFloatingButton
+
 ### 🗨️ סבב 12: תוכנית ניהול סיכונים אקטיבית של ה-AI
 
 **👤 משתמש:**

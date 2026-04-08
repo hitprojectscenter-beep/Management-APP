@@ -4,6 +4,7 @@ import { HelpProvider } from "@/components/help/help-provider";
 import { WelcomeTour } from "@/components/help/welcome-tour";
 import { HelpBot } from "@/components/help/help-bot";
 import { HelpFloatingButton } from "@/components/help/help-trigger";
+import { PersonalAssistant } from "@/components/assistant/personal-assistant";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -18,6 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <WelcomeTour />
       <HelpBot />
       <HelpFloatingButton />
+      <PersonalAssistant />
     </HelpProvider>
   );
 }
