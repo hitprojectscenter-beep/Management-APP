@@ -91,9 +91,9 @@ export interface MockProjectMember {
 /**
  * The currently logged-in user (for demo mode).
  * בייצור זה יגיע מה-session של Auth.js.
- * מוגדר ל-"u6" (אתה - משתמש המרכז למיפוי).
+ * מוגדר ל-"u1" (מארק ישראל - מנהל פרוגרמת Salesforce ומנהל פרויקטים טכני).
  */
-export const CURRENT_USER_ID = "u6";
+export const CURRENT_USER_ID = "u1";
 
 // ============================================
 // Users
@@ -101,68 +101,68 @@ export const CURRENT_USER_ID = "u6";
 export const mockUsers: MockUser[] = [
   {
     id: "u1",
-    name: "אורי מרקוביץ'",
-    email: "ori@workos.demo",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=Ori",
+    name: "מארק ישראל",
+    email: "mark.israel@mapi.gov.il",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Mark%20Israel",
     locale: "he",
     role: "admin",
-    skills: ["pmo", "strategy", "compliance", "soc2", "salesforce"],
+    skills: ["salesforce", "pmo", "technical-pm", "architecture", "strategy", "integration"],
     performanceScore: 92,
     hourlyCapacity: 40,
   },
   {
     id: "u2",
-    name: "שרה כהן",
-    email: "sara@workos.demo",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=Sara",
+    name: "ניר ברלוביץ'",
+    email: "nir.berlowitz@mapi.gov.il",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Nir%20Berlowitz",
     locale: "he",
     role: "manager",
-    skills: ["pmo", "procurement", "vendor-management", "rfp", "salesforce"],
-    performanceScore: 88,
+    skills: ["operations", "pmo", "management", "strategy", "planning"],
+    performanceScore: 90,
     hourlyCapacity: 40,
   },
   {
     id: "u3",
-    name: "David Levi",
-    email: "david@workos.demo",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=David",
-    locale: "en",
-    role: "member",
-    skills: ["aws", "kubernetes", "devops", "terraform", "salesforce", "backend"],
-    performanceScore: 85,
+    name: "אלעד אסרף",
+    email: "elad.asraf@mapi.gov.il",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Elad%20Asraf",
+    locale: "he",
+    role: "manager",
+    skills: ["salesforce", "marketing", "sales", "crm", "rfp", "procurement"],
+    performanceScore: 87,
     hourlyCapacity: 40,
   },
   {
     id: "u4",
-    name: "מאיה רוזן",
-    email: "maya@workos.demo",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=Maya",
+    name: "אפרים ג'יאן",
+    email: "ephraim.gian@mapi.gov.il",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Ephraim%20Gian",
     locale: "he",
-    role: "member",
-    skills: ["ai", "ml", "rag", "python", "claude-api", "data"],
-    performanceScore: 78,
+    role: "manager",
+    skills: ["salesforce", "crm", "apex", "lightning", "maintenance", "support"],
+    performanceScore: 89,
     hourlyCapacity: 40,
   },
   {
     id: "u5",
-    name: "יוסי אברהם",
-    email: "yossi@workos.demo",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=Yossi",
+    name: "אסתר מהרטו",
+    email: "esther.maharato@mapi.gov.il",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Esther%20Maharato",
     locale: "he",
-    role: "member",
-    skills: ["qa", "testing", "automation", "uat", "frontend"],
+    role: "manager",
+    skills: ["pmo", "planning", "work-plans", "compliance", "reporting", "government"],
     performanceScore: 91,
     hourlyCapacity: 40,
   },
   {
     id: "u6",
-    name: "משתמש המרכז למיפוי",
-    email: "user@mapi.gov.il",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=Mapi",
+    name: "חגי רונן",
+    email: "hagai.ronen@mapi.gov.il",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Hagai%20Ronen",
     locale: "he",
     role: "admin",
-    skills: ["pmo", "salesforce", "procurement", "compliance", "government"],
-    performanceScore: 87,
+    skills: ["leadership", "strategy", "stakeholder-management", "executive"],
+    performanceScore: 95,
     hourlyCapacity: 40,
   },
 ];
@@ -467,7 +467,7 @@ export const mockTasks: MockTask[] = [
     description: "הקמת cluster Kubernetes חדש בסביבת staging עם 3 node groups",
     status: "in_progress",
     priority: "high",
-    assigneeId: "u3",
+    assigneeId: "u2",
     plannedStart: daysFromNow(-7),
     plannedEnd: daysFromNow(-3),
     actualStart: daysFromNow(-7),
@@ -486,7 +486,7 @@ export const mockTasks: MockTask[] = [
     titleEn: "Database migration scripts",
     status: "blocked",
     priority: "critical",
-    assigneeId: "u4",
+    assigneeId: "u2",
     plannedStart: daysFromNow(-3),
     plannedEnd: daysFromNow(4),
     actualStart: daysFromNow(-3),
@@ -544,7 +544,7 @@ export const mockTasks: MockTask[] = [
     description: "בניית POC לאינטגרציה עם Claude API לסיכום אוטומטי של פגישות",
     status: "review",
     priority: "medium",
-    assigneeId: "u3",
+    assigneeId: "u2",
     plannedStart: daysFromNow(-10),
     plannedEnd: daysFromNow(-5),
     actualStart: daysFromNow(-10),
@@ -563,7 +563,7 @@ export const mockTasks: MockTask[] = [
     titleEn: "RAG infrastructure on internal docs",
     status: "in_progress",
     priority: "high",
-    assigneeId: "u4",
+    assigneeId: "u2",
     plannedStart: daysFromNow(-5),
     plannedEnd: daysFromNow(5),
     actualStart: daysFromNow(-5),
@@ -608,7 +608,7 @@ export const mockTasks: MockTask[] = [
       "תחזוקה חודשית של מערכת ה-CRM: עדכוני אבטחה, גיבויים, ניטור ביצועים, וטיפול בתקלות שוטפות.",
     status: "in_progress",
     priority: "medium",
-    assigneeId: "u6",
+    assigneeId: "u4",
     plannedStart: "2026-03-20T00:00:00.000Z",
     plannedEnd: "2026-12-31T00:00:00.000Z",
     actualStart: "2026-03-20T00:00:00.000Z",
@@ -629,7 +629,7 @@ export const mockTasks: MockTask[] = [
       "מסמך retrospective על הפרויקט שהסתיים עם חריגה של 3 חודשים. ניתוח גורמים, המלצות לפרויקטים הבאים.",
     status: "done",
     priority: "high",
-    assigneeId: "u6",
+    assigneeId: "u4",
     plannedStart: "2026-03-15T00:00:00.000Z",
     plannedEnd: "2026-03-30T00:00:00.000Z",
     actualStart: "2026-03-21T00:00:00.000Z",
@@ -656,7 +656,7 @@ export const mockTasks: MockTask[] = [
       "ניסוח מסמך הדרישות הפונקציונליות והלא-פונקציונליות ל-RFI שיפורסם לספקי Salesforce.",
     status: "done",
     priority: "high",
-    assigneeId: "u6",
+    assigneeId: "u3",
     plannedStart: "2025-09-01T00:00:00.000Z",
     plannedEnd: "2025-11-30T00:00:00.000Z",
     actualStart: "2025-09-01T00:00:00.000Z",
@@ -677,7 +677,7 @@ export const mockTasks: MockTask[] = [
       "פרסום ה-RFI הסופי בערוצי הרכש הממשלתיים. כולל מענה לשאלות ספקים ואירוע הצגה.",
     status: "in_progress",
     priority: "high",
-    assigneeId: "u6",
+    assigneeId: "u3",
     plannedStart: "2026-01-15T00:00:00.000Z",
     plannedEnd: "2026-04-30T00:00:00.000Z",
     actualStart: "2026-02-01T00:00:00.000Z",
@@ -698,7 +698,7 @@ export const mockTasks: MockTask[] = [
       "כינוס ועדת בחינה, ניקוד הצעות לפי קריטריונים, ראיונות עם ספקים, והמלצה לבחירה.",
     status: "not_started",
     priority: "critical",
-    assigneeId: "u6",
+    assigneeId: "u3",
     plannedStart: "2026-05-01T00:00:00.000Z",
     plannedEnd: "2026-08-31T00:00:00.000Z",
     actualStart: null,
@@ -718,7 +718,7 @@ export const mockTasks: MockTask[] = [
     description: "ניסוח, משא ומתן וחתימה על חוזה ההתקשרות.",
     status: "not_started",
     priority: "critical",
-    assigneeId: "u6",
+    assigneeId: "u3",
     plannedStart: "2026-09-01T00:00:00.000Z",
     plannedEnd: "2026-11-30T00:00:00.000Z",
     actualStart: null,
@@ -744,7 +744,7 @@ export const mockTasks: MockTask[] = [
       "אפיון מלא של פונקציונליות, מודל נתונים ו-workflows למערכת ניהול המשימות מבוססת Salesforce.",
     status: "done",
     priority: "high",
-    assigneeId: "u6",
+    assigneeId: "u1",
     plannedStart: "2025-08-01T00:00:00.000Z",
     plannedEnd: "2025-10-31T00:00:00.000Z",
     actualStart: "2025-08-01T00:00:00.000Z",
@@ -765,7 +765,7 @@ export const mockTasks: MockTask[] = [
       "בניית Custom Objects, Fields, Relationships, Page Layouts ו-Validation Rules.",
     status: "in_progress",
     priority: "critical",
-    assigneeId: "u6",
+    assigneeId: "u1",
     plannedStart: "2025-11-01T00:00:00.000Z",
     plannedEnd: "2026-01-31T00:00:00.000Z",
     actualStart: "2025-12-15T00:00:00.000Z",
@@ -786,7 +786,7 @@ export const mockTasks: MockTask[] = [
       "חיבור מערכת ניהול המשימות החדשה למערכות הקיימות במרכז למיפוי ישראל (ERP, HR, Active Directory).",
     status: "blocked",
     priority: "critical",
-    assigneeId: "u6",
+    assigneeId: "u1",
     plannedStart: "2026-02-01T00:00:00.000Z",
     plannedEnd: "2026-02-26T00:00:00.000Z",
     actualStart: "2026-02-15T00:00:00.000Z",
@@ -807,7 +807,7 @@ export const mockTasks: MockTask[] = [
       "User Acceptance Testing מול משתמשי קצה, איסוף משוב, תיקונים ומעבר לייצור.",
     status: "not_started",
     priority: "critical",
-    assigneeId: "u6",
+    assigneeId: "u1",
     plannedStart: "2026-02-15T00:00:00.000Z",
     plannedEnd: "2026-02-26T00:00:00.000Z",
     actualStart: null,
@@ -891,8 +891,8 @@ export const mockComments: MockComment[] = [
   {
     id: "c3",
     taskId: "task-5",
-    authorId: "u4",
-    body: "אני חסומה - צוות ה-DBA לא מוכן לתת לי גישה ל-snapshot של production. צריך escalation.",
+    authorId: "u2",
+    body: "אני חסום - צוות ה-DBA לא מוכן לתת גישה ל-snapshot של production. צריך escalation.",
     createdAt: daysFromNow(-1),
   },
 ];
@@ -902,217 +902,225 @@ export const mockComments: MockComment[] = [
 // כולל תפקיד ואחוז משרה (FTE)
 // ============================================
 export const mockProjectMembers: MockProjectMember[] = [
+  // ============================================
   // Portfolio: Digital Transformation 2026
+  // ============================================
   {
     id: "pm-1",
     wbsNodeId: "wbs-portfolio-1",
-    userId: "u1",
-    roleInProject: "מנהל פורטפוליו",
-    roleInProjectEn: "Portfolio Manager",
-    ftePercent: 50,
+    userId: "u6", // חגי רונן - CEO
+    roleInProject: "חסות בכירה (מנכ״ל)",
+    roleInProjectEn: "Executive Sponsor (CEO)",
+    ftePercent: 10,
     joinedAt: "2026-01-01",
   },
   {
     id: "pm-2",
     wbsNodeId: "wbs-portfolio-1",
-    userId: "u2",
-    roleInProject: "PMO Lead",
-    roleInProjectEn: "PMO Lead",
-    ftePercent: 30,
-    joinedAt: "2026-01-15",
+    userId: "u2", // ניר ברלוביץ' - מנהל כלל הפעילויות
+    roleInProject: "מנהל כלל הפעילויות",
+    roleInProjectEn: "Head of Operations",
+    ftePercent: 25,
+    joinedAt: "2026-01-01",
   },
-
-  // Program: Cloud & Infrastructure
   {
     id: "pm-3",
-    wbsNodeId: "wbs-program-1",
-    userId: "u1",
-    roleInProject: "Sponsor",
-    roleInProjectEn: "Sponsor",
-    ftePercent: 20,
-    joinedAt: "2026-01-10",
+    wbsNodeId: "wbs-portfolio-1",
+    userId: "u5", // אסתר מהרטו - אחראית תכניות עבודה
+    roleInProject: "אחראית תכניות עבודה",
+    roleInProjectEn: "Work Plans Lead",
+    ftePercent: 30,
+    joinedAt: "2026-01-01",
   },
+
+  // ============================================
+  // Program: Cloud & Infrastructure (legacy)
+  // ============================================
   {
     id: "pm-4",
     wbsNodeId: "wbs-program-1",
-    userId: "u2",
-    roleInProject: "מנהלת תוכנית",
+    userId: "u2", // ניר - מנהל כלל הפעילויות
+    roleInProject: "מנהל תוכנית",
     roleInProjectEn: "Program Manager",
-    ftePercent: 60,
+    ftePercent: 20,
     joinedAt: "2026-01-10",
   },
+
+  // Program: AI & Automation (legacy)
   {
     id: "pm-5",
-    wbsNodeId: "wbs-program-1",
-    userId: "u3",
-    roleInProject: "Architect",
-    roleInProjectEn: "Architect",
-    ftePercent: 40,
-    joinedAt: "2026-01-20",
-  },
-
-  // Program: AI & Automation
-  {
-    id: "pm-6",
     wbsNodeId: "wbs-program-2",
-    userId: "u1",
-    roleInProject: "Executive Sponsor",
-    roleInProjectEn: "Executive Sponsor",
+    userId: "u2", // ניר
+    roleInProject: "מנהל תוכנית",
+    roleInProjectEn: "Program Manager",
     ftePercent: 15,
     joinedAt: "2026-02-01",
+  },
+
+  // Project: AWS Migration (legacy - kept for historical tasks)
+  {
+    id: "pm-6",
+    wbsNodeId: "wbs-project-1",
+    userId: "u2", // ניר
+    roleInProject: "מנהל פרויקט",
+    roleInProjectEn: "Project Manager",
+    ftePercent: 20,
+    joinedAt: "2026-02-15",
   },
   {
     id: "pm-7",
-    wbsNodeId: "wbs-program-2",
-    userId: "u4",
-    roleInProject: "מנהלת AI",
-    roleInProjectEn: "AI Lead",
-    ftePercent: 80,
-    joinedAt: "2026-02-01",
+    wbsNodeId: "wbs-project-1",
+    userId: "u5", // אסתר
+    roleInProject: "תכניות עבודה ותיעוד",
+    roleInProjectEn: "Planning & Documentation",
+    ftePercent: 10,
+    joinedAt: "2026-02-15",
   },
 
-  // Project: AWS Migration
+  // Project: Internal AI Platform (legacy)
   {
     id: "pm-8",
-    wbsNodeId: "wbs-project-1",
-    userId: "u1",
-    roleInProject: "Project Owner",
-    roleInProjectEn: "Project Owner",
-    ftePercent: 30,
-    joinedAt: "2026-02-15",
-  },
-  {
-    id: "pm-9",
-    wbsNodeId: "wbs-project-1",
-    userId: "u2",
-    roleInProject: "מנהלת פרויקט",
-    roleInProjectEn: "Project Manager",
-    ftePercent: 70,
-    joinedAt: "2026-02-15",
-  },
-  {
-    id: "pm-10",
-    wbsNodeId: "wbs-project-1",
-    userId: "u3",
-    roleInProject: "Tech Lead",
-    roleInProjectEn: "Tech Lead",
-    ftePercent: 75,
-    joinedAt: "2026-02-20",
-  },
-  {
-    id: "pm-11",
-    wbsNodeId: "wbs-project-1",
-    userId: "u4",
-    roleInProject: "DevOps Engineer",
-    roleInProjectEn: "DevOps Engineer",
-    ftePercent: 50,
-    joinedAt: "2026-03-01",
-  },
-  {
-    id: "pm-12",
-    wbsNodeId: "wbs-project-1",
-    userId: "u5",
-    roleInProject: "QA Lead",
-    roleInProjectEn: "QA Lead",
-    ftePercent: 40,
-    joinedAt: "2026-03-05",
-  },
-
-  // Project: Internal AI Platform
-  {
-    id: "pm-13",
     wbsNodeId: "wbs-project-2",
-    userId: "u1",
-    roleInProject: "Stakeholder",
-    roleInProjectEn: "Stakeholder",
+    userId: "u2",
+    roleInProject: "מנהל פרויקט",
+    roleInProjectEn: "Project Manager",
     ftePercent: 10,
     joinedAt: "2026-02-25",
   },
+
+  // ============================================
+  // Salesforce Program (המוקד הארגוני העיקרי)
+  // מארק ישראל - מנהל פרוגרמה ומנהל פרויקטים טכני
+  // ============================================
   {
-    id: "pm-14",
-    wbsNodeId: "wbs-project-2",
-    userId: "u4",
-    roleInProject: "מובילת AI",
-    roleInProjectEn: "AI Lead",
-    ftePercent: 60,
-    joinedAt: "2026-02-25",
+    id: "pm-sf-1",
+    wbsNodeId: "wbs-program-sf",
+    userId: "u1", // מארק ישראל
+    roleInProject: "מנהל פרוגרמת Salesforce",
+    roleInProjectEn: "Salesforce Program Manager",
+    ftePercent: 50,
+    joinedAt: "2025-08-01",
   },
   {
-    id: "pm-15",
-    wbsNodeId: "wbs-project-2",
-    userId: "u3",
-    roleInProject: "Backend Engineer",
-    roleInProjectEn: "Backend Engineer",
-    ftePercent: 50,
-    joinedAt: "2026-03-01",
+    id: "pm-sf-2",
+    wbsNodeId: "wbs-program-sf",
+    userId: "u6", // חגי רונן - מנכ״ל
+    roleInProject: "חסות מנכ״ל",
+    roleInProjectEn: "CEO Sponsor",
+    ftePercent: 5,
+    joinedAt: "2025-08-01",
   },
   {
-    id: "pm-16",
-    wbsNodeId: "wbs-project-2",
-    userId: "u5",
-    roleInProject: "Frontend Engineer",
-    roleInProjectEn: "Frontend Engineer",
-    ftePercent: 50,
-    joinedAt: "2026-03-10",
+    id: "pm-sf-3",
+    wbsNodeId: "wbs-program-sf",
+    userId: "u2", // ניר ברלוביץ'
+    roleInProject: "פיקוח תפעולי",
+    roleInProjectEn: "Operations Oversight",
+    ftePercent: 10,
+    joinedAt: "2025-08-01",
+  },
+  {
+    id: "pm-sf-4",
+    wbsNodeId: "wbs-program-sf",
+    userId: "u5", // אסתר מהרטו
+    roleInProject: "תכניות עבודה",
+    roleInProjectEn: "Work Plans",
+    ftePercent: 15,
+    joinedAt: "2025-08-01",
   },
 
   // ============================================
-  // Current user (u6) - Salesforce program ownership
+  // Project: CRM מבוסס Salesforce - בעלים: אפרים ג'יאן
   // ============================================
   {
-    id: "pm-17",
-    wbsNodeId: "wbs-program-sf",
-    userId: "u6",
-    roleInProject: "מנהל תוכנית Salesforce",
-    roleInProjectEn: "Salesforce Program Manager",
-    ftePercent: 30,
-    joinedAt: "2025-08-01",
-  },
-  {
-    id: "pm-18",
+    id: "pm-sf-crm-1",
     wbsNodeId: "wbs-project-sf-crm",
-    userId: "u6",
-    roleInProject: "אחראי תחזוקה",
-    roleInProjectEn: "Maintenance Owner",
-    ftePercent: 15,
-    joinedAt: "2026-03-20",
+    userId: "u4", // אפרים ג'יאן
+    roleInProject: "בעלים - CRM",
+    roleInProjectEn: "CRM Product Owner",
+    ftePercent: 40,
+    joinedAt: "2025-04-15",
   },
   {
-    id: "pm-19",
+    id: "pm-sf-crm-2",
+    wbsNodeId: "wbs-project-sf-crm",
+    userId: "u1", // מארק ישראל
+    roleInProject: "מנהל פרויקטים טכני",
+    roleInProjectEn: "Technical Project Manager",
+    ftePercent: 15,
+    joinedAt: "2025-04-15",
+  },
+  {
+    id: "pm-sf-crm-3",
+    wbsNodeId: "wbs-project-sf-crm",
+    userId: "u5", // אסתר מהרטו
+    roleInProject: "תיעוד ותכניות",
+    roleInProjectEn: "Documentation & Plans",
+    ftePercent: 10,
+    joinedAt: "2026-03-01",
+  },
+
+  // ============================================
+  // Project: שירותי שיווק ומכירות - בעלים: אלעד אסרף
+  // ============================================
+  {
+    id: "pm-sf-mkt-1",
     wbsNodeId: "wbs-project-sf-marketing",
-    userId: "u6",
-    roleInProject: "מנהל פרויקט",
-    roleInProjectEn: "Project Manager",
-    ftePercent: 25,
+    userId: "u3", // אלעד אסרף
+    roleInProject: "בעלים - שיווק ומכירות",
+    roleInProjectEn: "Marketing & Sales Owner",
+    ftePercent: 50,
     joinedAt: "2025-09-01",
   },
   {
-    id: "pm-20",
+    id: "pm-sf-mkt-2",
+    wbsNodeId: "wbs-project-sf-marketing",
+    userId: "u1", // מארק ישראל
+    roleInProject: "מנהל פרויקטים טכני",
+    roleInProjectEn: "Technical Project Manager",
+    ftePercent: 20,
+    joinedAt: "2025-09-01",
+  },
+  {
+    id: "pm-sf-mkt-3",
+    wbsNodeId: "wbs-project-sf-marketing",
+    userId: "u2", // ניר ברלוביץ'
+    roleInProject: "פיקוח תפעולי",
+    roleInProjectEn: "Operations Oversight",
+    ftePercent: 5,
+    joinedAt: "2025-09-01",
+  },
+  {
+    id: "pm-sf-mkt-4",
+    wbsNodeId: "wbs-project-sf-marketing",
+    userId: "u5", // אסתר
+    roleInProject: "תיעוד ותכניות",
+    roleInProjectEn: "Documentation & Plans",
+    ftePercent: 10,
+    joinedAt: "2025-09-01",
+  },
+
+  // ============================================
+  // Project: יישום ניהול משימות (sub-project)
+  // מארק ישראל כ-Owner + Technical PM
+  // ============================================
+  {
+    id: "pm-sf-tsk-1",
     wbsNodeId: "wbs-project-sf-tasks",
-    userId: "u6",
-    roleInProject: "Project Owner",
-    roleInProjectEn: "Project Owner",
-    ftePercent: 30,
+    userId: "u1", // מארק ישראל
+    roleInProject: "בעלים + מנהל פרויקטים טכני",
+    roleInProjectEn: "Owner + Technical Project Manager",
+    ftePercent: 15,
     joinedAt: "2025-08-01",
   },
-  // Add team members to Salesforce projects so the team panel isn't empty
   {
-    id: "pm-21",
+    id: "pm-sf-tsk-2",
     wbsNodeId: "wbs-project-sf-tasks",
-    userId: "u3",
-    roleInProject: "Salesforce Developer",
-    roleInProjectEn: "Salesforce Developer",
-    ftePercent: 60,
-    joinedAt: "2025-11-01",
-  },
-  {
-    id: "pm-22",
-    wbsNodeId: "wbs-project-sf-marketing",
-    userId: "u2",
-    roleInProject: "אחראית רכש",
-    roleInProjectEn: "Procurement Lead",
-    ftePercent: 40,
-    joinedAt: "2025-09-01",
+    userId: "u5", // אסתר
+    roleInProject: "תיעוד ותכניות",
+    roleInProjectEn: "Documentation & Plans",
+    ftePercent: 10,
+    joinedAt: "2025-08-01",
   },
 ];
 

@@ -9,6 +9,8 @@ import { Avatar } from "@/components/ui/avatar";
 import { HelpTrigger } from "@/components/help/help-trigger";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { CURRENT_USER_ID, getUserById } from "@/lib/db/mock-data";
+import { ROLE_LABELS } from "@/lib/rbac/abilities";
 
 export function Topbar() {
   const t = useTranslations("common");
@@ -18,6 +20,7 @@ export function Topbar() {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const currentUser = getUserById(CURRENT_USER_ID);
 
   useEffect(() => setMounted(true), []);
 
@@ -69,17 +72,21 @@ export function Topbar() {
           <span className="absolute top-1.5 end-1.5 size-2 rounded-full bg-red-500" />
         </Button>
 
-        <div className="ms-2 flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent cursor-pointer">
-          <Avatar
-            src="https://api.dicebear.com/7.x/initials/svg?seed=Ori"
-            fallback="או"
-            className="size-7"
-          />
-          <div className="hidden md:block">
-            <div className="text-xs font-medium">אורי מרקוביץ'</div>
-            <div className="text-[10px] text-muted-foreground">{tNav("settings")}</div>
+        {currentUser && (
+          <div className="ms-2 flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent cursor-pointer">
+            <Avatar
+              src={currentUser.image}
+              fallback={currentUser.name[0]}
+              className="size-7"
+            />
+            <div className="hidden md:block">
+              <div className="text-xs font-medium">{currentUser.name}</div>
+              <div className="text-[10px] text-muted-foreground">
+                {ROLE_LABELS[currentUser.role][locale as "he" | "en"]}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </header>
   );
