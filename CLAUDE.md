@@ -189,6 +189,44 @@
 
 ---
 
+## 🆕 סבב פיתוח 13 - תיקון עוזר אישי מלא + PDF export + QA
+
+### בעיות שדווחו:
+1. **עוזר אישי לא עובד בנייד** - הקלטה לא פועלת, טקסט נחתך, תמיד מחזיר "Understood"
+2. **כפתור PDF בדוחות לא פעיל** - היה כפתור מת ללא `onClick`
+3. **בקשת QA כוללת** על כל היישום
+
+### תיקונים:
+
+**עוזר אישי - שכתוב מלא של `heuristicParse()`:**
+- הפונקציה הקודמת הייתה placeholder שמחזיר "Understood" באנגלית
+- הפונקציה החדשה (~200 שורות) מנהלת דו-שיח אמיתי בעברית:
+  - שלום/ברכה → סיכום מצב אישי + תפריט אפשרויות
+  - "מה הסיכונים?" → סורק `mockTasks` ומחזיר ספירה + שמות משימות חסומות/באיחור
+  - "מה המצב?" → `calculateProjectHealth` + רשימת משימות פתוחות של המשתמש
+  - "מי עמוס?" → workload per user עם FTE% ואזהרות
+  - "פתח משימה" → `create_task` עם חילוץ כותרת/פרויקט/אחראי מהטקסט
+  - "עזרה" → תפריט מלא של יכולות
+  - unknown → הודעה ידידותית עם דוגמאות (לא "Understood"!)
+
+**עוזר אישי - תיקוני UI:**
+- `Input` הוחלף ב-`textarea` עם auto-grow (min 44px → max 120px)
+- `font-size: 16px` inline למניעת zoom ב-iOS
+- `stage` חוזר ל-`idle` אחרי query/clarification (לא נתקע)
+- fallback response תמיד עברי
+
+**PDF Export:**
+- `ExportPdfButton` - client component חדש
+- `window.print()` עם dynamic print CSS שמסתיר sidebar/topbar/floating buttons
+- `@page { size: A4 landscape }` + `print-color-adjust: exact`
+- Toast notifications (מכין → מוכן)
+
+### QA Results (15 דפים + 2 APIs + 2 assets):
+כל 19 ה-endpoints מחזירים HTTP 200.
+Assistant API מחזיר תשובות עבריות מלאות עם נתונים אמיתיים.
+
+---
+
 ## 🆕 סבב פיתוח 12 - לוגו מפ"י המקורי (PNG מקובץ מקומי)
 
 ### מה השתנה:

@@ -149,20 +149,24 @@ export function PersonalAssistant() {
       // Generate assistant reply based on stage
       let reply = "";
       if (data.stage === "blocked") {
-        setStage("blocked");
+        setStage("idle"); // back to idle so user can retry
         reply = data.conflicts
           .filter((c) => c.blocking)
           .map((c) => `⛔ ${c.message[locale]}${c.suggestion ? `\n💡 ${c.suggestion[locale]}` : ""}`)
           .join("\n\n");
       } else if (data.stage === "clarification") {
-        setStage("clarification");
+        setStage("idle"); // idle so user can type/speak a reply
         reply = data.gaps.map((g) => `❓ ${g.prompt[locale]}`).join("\n");
       } else if (data.stage === "confirmation") {
         setStage("confirmation");
-        reply = isHe ? "הבנתי! בוא נוודא שהכל נכון:" : "Got it! Let me confirm:";
+        reply = isHe ? "✅ הבנתי! בוא נוודא שהכל נכון:" : "✅ Got it! Let me confirm:";
       } else if (data.stage === "query_response") {
         setStage("idle");
-        reply = data.intent?.responseText || (isHe ? "ענה על השאלה מהדשבורדים" : "Check the dashboards");
+        reply = data.intent?.responseText || (isHe ? "אין מספיק נתונים לתשובה. נסה שאלה אחרת." : "Not enough data. Try another question.");
+      } else {
+        // Fallback - always go back to idle
+        setStage("idle");
+        reply = data.intent?.responseText || (isHe ? "במה עוד אוכל לעזור?" : "What else can I help with?");
       }
 
       const assistantTurn: Turn = { role: "assistant", text: reply, timestamp: Date.now() };
@@ -500,14 +504,19 @@ export function PersonalAssistant() {
           </Button>
         )}
 
-        {/* Text input - always editable. Only disabled while the server is
-            actually processing/executing a request. Recording does NOT
-            disable it, so the user can correct dictated text in-place. */}
-        <Input
-          ref={inputRef}
-          type="text"
+        {/* Flexible textarea that grows with content.
+            Always editable - only disabled while server is processing.
+            Recording does NOT disable it. */}
+        <textarea
+          ref={inputRef as any}
           value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
+          onChange={(e) => {
+            setInputText(e.target.value);
+            // Auto-grow the textarea
+            const el = e.target;
+            el.style.height = "auto";
+            el.style.height = Math.min(el.scrollHeight, 120) + "px";
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -519,16 +528,18 @@ export function PersonalAssistant() {
           placeholder={
             listening
               ? isHe
-                ? "מקשיב... (אפשר גם לכתוב)"
-                : "Listening... (you can also type)"
+                ? "🎤 מקשיב... (אפשר גם לכתוב)"
+                : "🎤 Listening... (you can also type)"
               : isHe
-                ? "כתוב הודעה או לחץ על המיקרופון להקלטה..."
-                : "Type a message or tap the mic to record..."
+                ? "כתוב הודעה או לחץ על 🎤..."
+                : "Type a message or tap 🎤..."
           }
           disabled={stage === "processing" || stage === "executing"}
           autoComplete="off"
           spellCheck={false}
-          className="flex-1 bg-muted/30 border-0 h-11 text-base"
+          rows={1}
+          className="flex-1 bg-muted/30 border-0 min-h-[44px] max-h-[120px] py-2.5 px-3 text-base rounded-md resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring placeholder:text-muted-foreground"
+          style={{ fontSize: "16px" }}
         />
 
         {/* Send button - works for both typed and dictated text */}

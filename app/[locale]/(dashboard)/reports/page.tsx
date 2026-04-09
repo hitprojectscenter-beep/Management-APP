@@ -1,7 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart3, FileText, Download, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BarChart3, FileText, Info } from "lucide-react";
+import { ExportPdfButton } from "@/components/reports/export-pdf-button";
 import { mockTasks, mockUsers } from "@/lib/db/mock-data";
 import { calculateProjectHealth } from "@/lib/ai/risk-engine";
 import { ProgressChart } from "@/components/dashboard/progress-chart";
@@ -30,10 +30,7 @@ export default async function ReportsPage({
             {locale === "he" ? "תובנות מעמיקות על ביצועי הצוות והפרויקטים" : "Deep insights into team and project performance"}
           </p>
         </div>
-        <Button variant="outline">
-          <Download className="size-4" />
-          {locale === "he" ? "ייצוא PDF" : "Export PDF"}
-        </Button>
+        <ExportPdfButton locale={locale} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
