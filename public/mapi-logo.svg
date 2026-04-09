@@ -1,38 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="המרכז למיפוי ישראל">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" role="img" aria-label="המרכז למיפוי ישראל">
   <defs>
-    <!-- Path for curved Hebrew text along bottom -->
-    <path id="textCircle" d="M 30,120 A 90,90 0 0 0 210,120" fill="none" />
+    <!-- Curved path for Hebrew text along the bottom arc -->
+    <path id="mapiTextPath" d="M 35,130 A 95,95 0 0 0 225,130" fill="none"/>
   </defs>
 
   <!-- Outer blue ring -->
-  <circle cx="120" cy="120" r="100" fill="none" stroke="#1e5fa8" stroke-width="3"/>
+  <circle cx="130" cy="130" r="105" fill="none" stroke="#1e5fa8" stroke-width="4"/>
 
-  <!-- Inner emblem area -->
-  <g transform="translate(120, 110)">
-    <!-- Globe/grid background (subtle latitude/longitude lines) -->
-    <ellipse cx="0" cy="0" rx="62" ry="62" fill="none" stroke="#1e5fa8" stroke-width="1.5" opacity="0.5"/>
-    <ellipse cx="0" cy="0" rx="62" ry="44" fill="none" stroke="#1e5fa8" stroke-width="1.2" opacity="0.4"/>
-    <ellipse cx="0" cy="0" rx="62" ry="22" fill="none" stroke="#1e5fa8" stroke-width="1.2" opacity="0.4"/>
-    <line x1="0" y1="-62" x2="0" y2="62" stroke="#1e5fa8" stroke-width="1.2" opacity="0.4"/>
-    <line x1="-62" y1="0" x2="62" y2="0" stroke="#1e5fa8" stroke-width="1.2" opacity="0.4"/>
+  <!-- Globe / grid background centered -->
+  <g transform="translate(130, 118)">
+    <!-- Outer circle of the globe (lighter) -->
+    <circle cx="0" cy="0" r="68" fill="#ffffff" stroke="#1e5fa8" stroke-width="2.5"/>
 
-    <!-- Stylized abstract emblem in center (curved shape representing mapping/measurement) -->
+    <!-- Latitude lines (horizontal ellipses) -->
+    <ellipse cx="0" cy="0" rx="68" ry="22" fill="none" stroke="#1e5fa8" stroke-width="1.5" opacity="0.7"/>
+    <ellipse cx="0" cy="0" rx="68" ry="44" fill="none" stroke="#1e5fa8" stroke-width="1.5" opacity="0.7"/>
+
+    <!-- Equator -->
+    <line x1="-68" y1="0" x2="68" y2="0" stroke="#1e5fa8" stroke-width="1.8"/>
+
+    <!-- Longitude lines (vertical ellipses / meridians) -->
+    <line x1="0" y1="-68" x2="0" y2="68" stroke="#1e5fa8" stroke-width="1.8"/>
+    <ellipse cx="0" cy="0" rx="22" ry="68" fill="none" stroke="#1e5fa8" stroke-width="1.5" opacity="0.7"/>
+    <ellipse cx="0" cy="0" rx="44" ry="68" fill="none" stroke="#1e5fa8" stroke-width="1.5" opacity="0.7"/>
+
+    <!-- Stylized central emblem - abstract key/tower shape -->
     <g fill="#1e5fa8">
-      <!-- Top arc - "head" of the symbol -->
-      <path d="M -28,-50 Q -10,-58 12,-50 Q 30,-42 32,-22 Q 28,-8 14,-2 Q 0,4 -14,-2 Q -28,-8 -32,-22 Q -30,-42 -28,-50 Z" />
-      <!-- Inner cutout to give it depth -->
-      <path d="M -18,-42 Q -4,-46 10,-42 Q 22,-36 22,-22 Q 18,-12 8,-10 Q -2,-8 -10,-12 Q -20,-16 -20,-26 Q -20,-36 -18,-42 Z" fill="#ffffff"/>
-      <!-- Vertical descender / "tail" -->
-      <path d="M -8,-10 L -8,42 L 8,42 L 8,-10 Z"/>
-      <!-- Wave/swoosh below -->
-      <path d="M -36,28 Q -12,52 14,40 Q 32,32 38,18 L 32,14 Q 26,26 12,30 Q -8,38 -32,22 Z"/>
+      <!-- Top rounded head -->
+      <ellipse cx="0" cy="-42" rx="18" ry="14"/>
+      <!-- Inner cutout -->
+      <ellipse cx="0" cy="-42" rx="9" ry="6" fill="#ffffff"/>
+      <!-- Vertical shaft connecting head to swoosh -->
+      <rect x="-5" y="-32" width="10" height="42" rx="2"/>
+      <!-- Curved swoosh at bottom (wave / mapping line) -->
+      <path d="M -42,18 Q -20,38 8,30 Q 28,24 42,10 L 38,4 Q 26,18 8,22 Q -16,28 -38,12 Z"/>
     </g>
+
+    <!-- Center accent dot -->
+    <circle cx="0" cy="0" r="3" fill="#ffffff"/>
   </g>
 
-  <!-- Curved Hebrew text along bottom -->
-  <text font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#1e5fa8" letter-spacing="1">
-    <textPath href="#textCircle" startOffset="50%" text-anchor="middle">
+  <!-- Curved Hebrew text along bottom arc -->
+  <text font-family="Arial, 'Assistant', 'Heebo', sans-serif" font-size="19" font-weight="700" fill="#1e5fa8" letter-spacing="0.5">
+    <textPath href="#mapiTextPath" startOffset="50%" text-anchor="middle">
       המרכז למיפוי ישראל
     </textPath>
   </text>

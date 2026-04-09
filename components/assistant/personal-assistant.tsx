@@ -72,10 +72,13 @@ export function PersonalAssistant() {
   } = useSpeechRecognition({
     lang: isHe ? "he-IL" : "en-US",
     continuous: false,
+    // When final text is recognized, drop it into the input field so the
+    // user can review / edit / append before submitting. This is friendlier
+    // than auto-submitting - voice is just a typing shortcut.
     onFinalResult: (text) => {
-      setInputText(text);
-      // auto-submit voice input after a brief pause
-      setTimeout(() => submitText(text), 300);
+      setInputText((prev) => (prev.trim() ? prev + " " + text : text));
+      // Return focus to the input so the user can immediately edit or press Enter
+      setTimeout(() => inputRef.current?.focus(), 50);
     },
   });
 
@@ -106,6 +109,13 @@ export function PersonalAssistant() {
 
   const submitText = async (text: string) => {
     if (!text.trim() || stage === "processing" || stage === "executing") return;
+
+    // If user is mid-recording, stop listening first so we don't double-submit
+    if (listening) {
+      try {
+        stopListening();
+      } catch {}
+    }
 
     const userTurn: Turn = { role: "user", text, timestamp: Date.now() };
     setTurns((prev) => [...prev, userTurn]);
@@ -229,8 +239,11 @@ export function PersonalAssistant() {
     ]);
   };
 
-  const handleSuggestionClick = (field: string, value: string, label: string) => {
-    // User selected a suggestion from the clarification UI
+  const handleSuggestionClick = (_field: string, _value: string, label: string) => {
+    // User tapped a suggestion chip during clarification.
+    // Submit the label as a free-text reply; the server will re-parse and
+    // resolve it against real projects/users via fuzzy name matching.
+    if (stage === "processing" || stage === "executing") return;
     submitText(label);
   };
 
@@ -439,7 +452,10 @@ export function PersonalAssistant() {
         )}
       </div>
 
-      {/* Input area */}
+      {/* Input area - both typing and recording work together.
+          The user can: type freely, press Enter to send, click the mic to
+          record (optional), and press the send button. Typing is never
+          blocked by recording. */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -447,7 +463,7 @@ export function PersonalAssistant() {
         }}
         className="p-3 border-t bg-card flex gap-2 items-center"
       >
-        {/* Mic button */}
+        {/* Mic button (optional input mode) */}
         {speechSupported ? (
           <Button
             type="button"
@@ -458,7 +474,16 @@ export function PersonalAssistant() {
               "min-w-[44px] min-h-[44px] shrink-0",
               listening && "animate-pulse"
             )}
-            title={listening ? (isHe ? "הפסק הקלטה" : "Stop") : (isHe ? "דבר אלי" : "Speak")}
+            title={
+              listening
+                ? isHe ? "הפסק הקלטה" : "Stop recording"
+                : isHe ? "הקלט הודעה קולית" : "Record voice message"
+            }
+            aria-label={
+              listening
+                ? isHe ? "הפסק הקלטה" : "Stop recording"
+                : isHe ? "התחל הקלטה" : "Start recording"
+            }
           >
             {listening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
           </Button>
@@ -468,35 +493,52 @@ export function PersonalAssistant() {
             size="icon"
             variant="outline"
             disabled
-            title={isHe ? "הדפדפן שלך לא תומך בזיהוי דיבור" : "Speech not supported"}
+            title={isHe ? "הדפדפן שלך לא תומך בזיהוי דיבור" : "Speech not supported in this browser"}
             className="min-w-[44px] min-h-[44px] shrink-0"
           >
             <MicOff className="size-4 opacity-50" />
           </Button>
         )}
 
+        {/* Text input - always editable. Only disabled while the server is
+            actually processing/executing a request. Recording does NOT
+            disable it, so the user can correct dictated text in-place. */}
         <Input
           ref={inputRef}
+          type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              if (inputText.trim() && stage !== "processing" && stage !== "executing") {
+                submitText(inputText);
+              }
+            }
+          }}
           placeholder={
             listening
               ? isHe
-                ? "מקשיב..."
-                : "Listening..."
+                ? "מקשיב... (אפשר גם לכתוב)"
+                : "Listening... (you can also type)"
               : isHe
-                ? "דבר או כתוב בקשה..."
-                : "Speak or type a request..."
+                ? "כתוב הודעה או לחץ על המיקרופון להקלטה..."
+                : "Type a message or tap the mic to record..."
           }
-          disabled={stage === "processing" || stage === "executing" || listening}
-          className="flex-1 bg-muted/30 border-0 h-11"
+          disabled={stage === "processing" || stage === "executing"}
+          autoComplete="off"
+          spellCheck={false}
+          className="flex-1 bg-muted/30 border-0 h-11 text-base"
         />
 
+        {/* Send button - works for both typed and dictated text */}
         <Button
           type="submit"
           size="icon"
           disabled={!inputText.trim() || stage === "processing" || stage === "executing"}
           className="min-w-[44px] min-h-[44px] shrink-0"
+          aria-label={isHe ? "שלח" : "Send"}
+          title={isHe ? "שלח הודעה (Enter)" : "Send message (Enter)"}
         >
           <Send className="size-4" />
         </Button>
