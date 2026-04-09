@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     capable: true,
     title: "Work OS",
     statusBarStyle: "black-translucent",
-    startupImage: "/mapi-logo.svg",
+    startupImage: "/mapi-logo.png",
   },
   formatDetection: {
     telephone: false,
@@ -24,19 +24,19 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/mapi-logo.svg", type: "image/svg+xml" },
+      { url: "/mapi-logo.png", type: "image/png" },
     ],
     apple: [
-      { url: "/mapi-logo.svg", sizes: "180x180", type: "image/svg+xml" },
+      { url: "/mapi-logo.png", sizes: "180x180", type: "image/png" },
     ],
-    shortcut: "/mapi-logo.svg",
+    shortcut: "/mapi-logo.png",
   },
   openGraph: {
     type: "website",
     siteName: "Work OS",
     title: "Work OS - המרכז למיפוי ישראל",
     description: "פלטפורמת ניהול פרויקטים פנים-ארגונית",
-    images: [{ url: "/mapi-logo.svg" }],
+    images: [{ url: "/mapi-logo.png" }],
   },
 };
 

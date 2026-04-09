@@ -204,6 +204,18 @@
    - Screenshot validation: דף הנחיתה החדש בעברית RTL מלא עם כל הרכיבים
    - Project detail עם משתתפים מוצג נכון
 
+### 🗨️ סבב 15: לוגו מפ"י מקורי מקובץ מקומי
+
+**👤 משתמש:**
+> הי, הלוגו לא הוחלף. אנא, תשתמש בקובץ השמור בתיקייה: C:\Users\imark\Desktop\יישום ניהול משימות\work-os. הקובץ הינו: לוגו מפי.png
+
+**🤖 Claude:**
+- מצאתי את הקובץ `לוגו מפי.png` (5.9KB) בתיקיית הפרויקט
+- העתקתי ל-`public/mapi-logo.png`
+- עדכנתי sidebar, layout.tsx, manifest.json - כולם מצביעים עכשיו על PNG
+- שינוי type מ-`image/svg+xml` ל-`image/png`
+- SVG הישן נשאר ב-public אבל לא בשימוש
+
 ### 🗨️ סבב 14: תיקון 3 באגים שדווחו + Vercel deploy fix
 
 **👤 משתמש:**

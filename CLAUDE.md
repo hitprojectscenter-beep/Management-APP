@@ -189,6 +189,22 @@
 
 ---
 
+## 🆕 סבב פיתוח 12 - לוגו מפ"י המקורי (PNG מקובץ מקומי)
+
+### מה השתנה:
+- **מצאתי את הקובץ המקורי** `לוגו מפי.png` בתיקיית הפרויקט (5.9KB)
+- העתקתי ל-`public/mapi-logo.png`
+- **עדכנתי את כל ההפניות** מ-SVG ל-PNG:
+  - `components/layout/sidebar.tsx` - `src="/mapi-logo.png"` + `object-contain` + bg-white
+  - `app/layout.tsx` - icons, apple-touch-icon, startupImage, og:image
+  - `public/manifest.json` - PWA icons
+- **type עודכן** מ-`image/svg+xml` ל-`image/png` בכל המקומות
+
+### לקח חשוב:
+כשהמשתמש מעלה תמונה לצ'אט - היא לא נשמרת כקובץ במערכת הקבצים. אבל כשהמשתמש שומר קובץ ידנית בתיקייה ואומר לי את השם - אני יכול למצוא ולהשתמש בו ישירות.
+
+---
+
 ## 🆕 סבב פיתוח 11 - תיקון 3 באגים שדווחו ע"י המשתמש + Vercel deploy
 
 ### באגים שתוקנו:

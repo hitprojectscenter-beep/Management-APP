@@ -19,13 +19,14 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       <div className="px-5 py-5 border-b border-sidebar-border">
         <Link href="/" onClick={onNavigate} className="flex items-center gap-3 group">
-          <div className="size-12 rounded-lg bg-white/95 flex items-center justify-center shadow-lg shrink-0 p-1.5">
+          <div className="size-12 rounded-lg bg-white flex items-center justify-center shadow-lg shrink-0 p-1">
             <Image
-              src="/mapi-logo.svg"
+              src="/mapi-logo.png"
               alt="המרכז למיפוי ישראל"
-              width={36}
-              height={36}
+              width={40}
+              height={40}
               priority
+              className="object-contain"
             />
           </div>
           <div className="min-w-0">
