@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Workflow, Plus, Zap, ArrowRight, ArrowLeft } from "lucide-react";
 import { mockAutomations } from "@/lib/db/mock-data";
+import { AutomationBuilder } from "@/components/automations/automation-builder";
 
 export default async function AutomationsPage({
   params,
@@ -29,10 +30,12 @@ export default async function AutomationsPage({
               : "Build smart workflows that reduce manual work"}
           </p>
         </div>
-        <Button>
-          <Plus className="size-4" />
-          {locale === "he" ? "אוטומציה חדשה" : "New automation"}
-        </Button>
+        <AutomationBuilder locale={locale}>
+          <Button className="min-h-[44px]">
+            <Plus className="size-4" />
+            {locale === "he" ? "אוטומציה חדשה" : "New automation"}
+          </Button>
+        </AutomationBuilder>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
