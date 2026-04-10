@@ -114,34 +114,33 @@ export default async function ProjectDetailPage({
         </Card>
       </div>
 
-      {/* WBS + Views */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        <div className="xl:col-span-1 space-y-4">
-          <Card className="max-h-[40vh] overflow-auto">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <GitBranch className="size-4" />
-                {locale === "he" ? "מבנה היררכי (WBS)" : "Work Breakdown Structure"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <WbsTree nodes={childNodes} allNodes={mockWbsNodes} locale={locale} />
-            </CardContent>
-          </Card>
+      {/* Project Views (Kanban/Gantt/List/Calendar) - full width for mobile */}
+      <Card>
+        <CardContent className="p-0">
+          <ProjectViews tasks={tasks} users={mockUsers} locale={locale} />
+        </CardContent>
+      </Card>
 
-          <ProjectMembers
-            members={members}
-            users={mockUsers}
-            locale={locale}
-            title={locale === "he" ? "צוות הפרויקט" : "Project Team"}
-          />
-        </div>
-
-        <Card className="xl:col-span-3">
-          <CardContent className="p-0">
-            <ProjectViews tasks={tasks} users={mockUsers} locale={locale} />
+      {/* WBS Tree + Team - side by side on desktop, stacked on mobile */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="max-h-[50vh] overflow-auto">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <GitBranch className="size-4" />
+              {locale === "he" ? "מבנה היררכי (WBS)" : "Work Breakdown Structure"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <WbsTree nodes={childNodes} allNodes={mockWbsNodes} locale={locale} />
           </CardContent>
         </Card>
+
+        <ProjectMembers
+          members={members}
+          users={mockUsers}
+          locale={locale}
+          title={locale === "he" ? "צוות הפרויקט" : "Project Team"}
+        />
       </div>
     </div>
   );

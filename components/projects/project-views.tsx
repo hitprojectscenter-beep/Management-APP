@@ -30,7 +30,7 @@ export function ProjectViews({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b px-4 flex items-center gap-1">
+      <div className="border-b px-2 sm:px-4 flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-none">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = view === tab.key;
@@ -39,10 +39,10 @@ export function ProjectViews({
               key={tab.key}
               onClick={() => setView(tab.key)}
               className={cn(
-                "flex items-center gap-2 px-3 py-3 text-sm font-medium border-b-2 transition-colors",
+                "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap min-h-[44px]",
                 active
                   ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground active:text-foreground"
               )}
             >
               <Icon className="size-4" />
@@ -52,7 +52,7 @@ export function ProjectViews({
         })}
       </div>
 
-      <div className="p-4">
+      <div className="p-2 sm:p-4">
         {view === "list" && <TaskList tasks={tasks} users={users} locale={locale} />}
         {view === "kanban" && <TaskKanban tasks={tasks} users={users} locale={locale} />}
         {view === "gantt" && <TaskGantt tasks={tasks} users={users} locale={locale} />}

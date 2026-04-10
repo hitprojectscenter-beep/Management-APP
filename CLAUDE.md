@@ -189,6 +189,20 @@
 
 ---
 
+## 🆕 סבב פיתוח 15+16 - הקלטה, טופס משימות, הזמנת חבר, WBS/Gantt מובייל
+
+### סבב 15 (commit a0f1eec):
+- **הקלטת שמע**: ארכיטקטורה דו-מצבית (Web Speech API + MediaRecorder fallback ל-iOS/Firefox)
+- **טופס הוספת משימה**: סוג משימה (chips), שיוך פרויקט/פרוגרמה (toggle), תיאור (300 תווים), צוות (multi-select), תאריכים, עדיפות, מקור (החלטת מנהל/פגישה/אחר+100 תווים)
+- **דו-שיח**: כל הודעה מציגה "מארק:" / "עוזר:" כ-label
+
+### סבב 16 (commit נוכחי):
+- **טופס הזמנת חבר צוות**: שם*, תפקיד, חטיבה, אגף, טל'*, מייל* + שליחת קישור הזמנה
+- **Gantt/WBS layout**: שונה מ-4-column grid ל-full-width ProjectViews + 2-column WBS/Team
+- **מובייל**: project view tabs עם scrollbar-none, min-h-[44px], responsive padding
+
+---
+
 ## 🆕 סבב פיתוח 14 - נתוני פרויקט אמיתיים מ-Excel + תיקוני UI
 
 ### נתונים אמיתיים מקובץ Excel:

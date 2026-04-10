@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Mail, UserPlus, Crown } from "lucide-react";
 import { mockUsers, mockTasks } from "@/lib/db/mock-data";
 import { ROLE_LABELS } from "@/lib/rbac/abilities";
+import { InviteMemberDialog } from "@/components/team/invite-member-dialog";
 
 export default async function TeamPage({
   params,
@@ -26,10 +27,12 @@ export default async function TeamPage({
             {mockUsers.length} {locale === "he" ? "חברי צוות" : "team members"}
           </p>
         </div>
-        <Button>
-          <UserPlus className="size-4" />
-          {locale === "he" ? "הזמן חבר" : "Invite member"}
-        </Button>
+        <InviteMemberDialog locale={locale}>
+          <Button className="min-h-[44px]">
+            <UserPlus className="size-4" />
+            {locale === "he" ? "הזמן חבר" : "Invite member"}
+          </Button>
+        </InviteMemberDialog>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
