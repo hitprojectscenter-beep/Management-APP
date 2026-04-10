@@ -1,0 +1,143 @@
+{
+  "app": {
+    "name": "Work OS",
+    "tagline": "Plateforme de gestion de projets",
+    "description": "Stratégie et exécution en un seul lieu"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "portfolios": "Portefeuille",
+    "programs": "Programmes",
+    "projects": "Projets",
+    "tasks": "Tâches",
+    "calendar": "Calendrier",
+    "ai": "Centre IA",
+    "reports": "Rapports",
+    "settings": "Paramètres",
+    "team": "Équipe",
+    "automations": "Automatisations",
+    "logout": "Déconnexion"
+  },
+  "common": {
+    "save": "Enregistrer", "cancel": "Annuler", "delete": "Supprimer",
+    "edit": "Modifier", "create": "Créer", "search": "Rechercher",
+    "filter": "Filtrer", "sort": "Trier", "loading": "Chargement...",
+    "noData": "Aucune donnée", "actions": "Actions", "name": "Nom",
+    "description": "Description", "status": "Statut", "priority": "Priorité",
+    "assignee": "Responsable", "dueDate": "Échéance", "startDate": "Début",
+    "endDate": "Fin", "progress": "Progression", "all": "Tout",
+    "yes": "Oui", "no": "Non", "back": "Retour", "next": "Suivant",
+    "submit": "Soumettre", "close": "Fermer", "open": "Ouvrir",
+    "view": "Voir", "add": "Ajouter", "remove": "Retirer",
+    "more": "Plus", "less": "Moins"
+  },
+  "auth": {
+    "login": "Connexion", "logout": "Déconnexion",
+    "loginWithGoogle": "Se connecter avec Google",
+    "email": "E-mail", "password": "Mot de passe",
+    "welcomeBack": "Bienvenue", "loginPrompt": "Connectez-vous pour continuer",
+    "demoMode": "Mode démo — cliquez pour entrer"
+  },
+  "landing": {
+    "title": "Mes tâches",
+    "subtitle": "Toutes les tâches ouvertes — triées par urgence",
+    "tabs": {
+      "all": "Toutes", "inProgress": "En cours", "notStarted": "Non démarrées",
+      "blocked": "Bloquées", "review": "En revue", "overdue": "En retard",
+      "byProject": "Par projet", "byPortfolio": "Par portefeuille"
+    },
+    "noTasks": "Aucune tâche ouverte dans cette catégorie",
+    "addTask": "Ajouter une tâche",
+    "myProjects": "Mes projets",
+    "myParticipation": "Ma participation",
+    "fteTotal": "Allocation totale",
+    "remaining": "Restant",
+    "stats": {
+      "total": "Tâches ouvertes", "inProgress": "En cours",
+      "overdue": "En retard", "dueThisWeek": "Cette semaine"
+    }
+  },
+  "addTask": {
+    "title": "Nouvelle tâche", "description": "Créer une tâche dans un projet",
+    "fields": {
+      "title": "Titre", "titlePlaceholder": "Que faut-il faire ?",
+      "description": "Description", "descriptionPlaceholder": "Détails (optionnel)",
+      "project": "Projet", "selectProject": "Choisir un projet",
+      "assignee": "Responsable", "selectAssignee": "Choisir un membre",
+      "status": "Statut", "priority": "Priorité",
+      "plannedStart": "Début", "plannedEnd": "Échéance", "estimateHours": "Heures estimées"
+    },
+    "submit": "Créer", "submitting": "Création...", "cancel": "Annuler"
+  },
+  "members": {
+    "title": "Membres", "totalCount": "{count} membres",
+    "role": "Rôle", "fte": "% ETP", "joined": "Rejoint le",
+    "noMembers": "Aucun membre", "addMember": "Ajouter"
+  },
+  "dashboard": {
+    "title": "Tableau de bord", "welcome": "Bonjour, {name}", "overview": "Aperçu",
+    "stats": {
+      "activeProjects": "Projets actifs", "openTasks": "Tâches ouvertes",
+      "completedThisWeek": "Terminées cette semaine", "atRisk": "À risque",
+      "onTime": "Dans les délais", "overdue": "En retard",
+      "teamMembers": "Membres", "completion": "% achèvement"
+    },
+    "charts": {
+      "progressOverTime": "Progression dans le temps",
+      "taskDistribution": "Répartition des tâches",
+      "workload": "Charge de travail", "velocity": "Vélocité"
+    }
+  },
+  "tasks": {
+    "title": "Tâches", "newTask": "Nouvelle tâche", "addTask": "Ajouter",
+    "noTasks": "Aucune tâche", "createFirst": "Créez votre première tâche",
+    "fields": {
+      "title": "Titre", "description": "Description", "status": "Statut",
+      "priority": "Priorité", "assignee": "Responsable", "dueDate": "Échéance",
+      "tags": "Tags", "estimate": "Estimation", "actual": "Réel", "deliverable": "Livrable"
+    },
+    "status": {
+      "notStarted": "Non démarrée", "inProgress": "En cours", "review": "En revue",
+      "done": "Terminée", "blocked": "Bloquée", "cancelled": "Annulée"
+    },
+    "priority": { "low": "Basse", "medium": "Moyenne", "high": "Haute", "critical": "Critique" },
+    "tabs": {
+      "details": "Détails", "comments": "Commentaires", "attachments": "Fichiers",
+      "history": "Historique", "dependencies": "Dépendances", "subtasks": "Sous-tâches"
+    }
+  },
+  "projects": {
+    "title": "Projets", "newProject": "Nouveau projet",
+    "myProjects": "Mes projets", "allProjects": "Tous les projets", "wbs": "SDP",
+    "views": { "list": "Liste", "kanban": "Kanban", "gantt": "Gantt", "calendar": "Calendrier", "timeline": "Chronologie", "dashboard": "Tableau" }
+  },
+  "wbs": {
+    "title": "Structure de découpage du projet",
+    "levels": { "goal": "Objectif", "milestone": "Jalon", "activity": "Activité", "task": "Tâche", "subtask": "Sous-tâche" },
+    "addChild": "Ajouter", "expand": "Développer", "collapse": "Réduire"
+  },
+  "ai": {
+    "title": "Centre Claude AI", "sidekick": "Assistant IA",
+    "askQuestion": "Posez une question sur le projet...",
+    "risks": "Analyse des risques", "insights": "Perspectives", "summarize": "Résumer",
+    "noRisks": "Aucun risque actif",
+    "credits": "{used} sur {total} crédits",
+    "riskLevels": { "low": "Faible", "medium": "Moyen", "high": "Élevé", "critical": "Critique" }
+  },
+  "calendar": {
+    "title": "Calendrier", "syncWithGoogle": "Synchroniser avec Google Calendar",
+    "syncStatus": "Statut de synchronisation", "lastSync": "Dernière synchro", "syncNow": "Synchroniser"
+  },
+  "settings": {
+    "title": "Paramètres", "general": "Général", "account": "Compte",
+    "appearance": "Apparence", "language": "Langue", "theme": "Thème",
+    "themes": { "light": "Clair", "dark": "Sombre", "system": "Système" },
+    "notifications": "Notifications", "permissions": "Permissions",
+    "integrations": "Intégrations", "team": "Équipe", "automation": "Automatisation"
+  },
+  "rbac": {
+    "roles": { "admin": "Administrateur", "manager": "Gestionnaire", "member": "Membre", "viewer": "Observateur", "guest": "Invité" },
+    "noPermission": "Vous n'avez pas les droits pour cette action"
+  },
+  "footer": { "copyright": "© 2026 Work OS. Tous droits réservés.", "privacy": "Confidentialité", "terms": "Conditions" }
+}

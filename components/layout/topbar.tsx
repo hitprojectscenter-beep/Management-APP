@@ -11,8 +11,10 @@ import { HelpTrigger } from "@/components/help/help-trigger";
 import { SidebarContent } from "./sidebar";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import { CURRENT_USER_ID, getUserById } from "@/lib/db/mock-data";
 import { ROLE_LABELS } from "@/lib/rbac/abilities";
+import { locales, localeNames, localeFlags, type Locale } from "@/lib/i18n/config";
 
 export function Topbar() {
   const t = useTranslations("common");
@@ -22,14 +24,15 @@ export function Topbar() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const currentUser = getUserById(CURRENT_USER_ID);
   const isHe = locale === "he";
 
   useEffect(() => setMounted(true), []);
 
-  const switchLocale = () => {
-    const next = locale === "he" ? "en" : "he";
+  const switchToLocale = (next: string) => {
     router.replace(pathname, { locale: next });
+    setLangMenuOpen(false);
   };
 
   return (
@@ -62,19 +65,43 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-0.5 sm:gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={switchLocale}
-          title="Switch language"
-          data-tour="language-toggle"
-          className="min-w-[44px] min-h-[44px]"
-        >
-          <Globe className="size-4" />
-          <span className="text-xs font-semibold ms-1 hidden sm:inline">
-            {locale === "he" ? "EN" : "עב"}
-          </span>
-        </Button>
+        <div className="relative" data-tour="language-toggle">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLangMenuOpen(!langMenuOpen)}
+            title="Switch language"
+            className="min-w-[44px] min-h-[44px]"
+          >
+            <Globe className="size-4" />
+            <span className="text-xs font-semibold ms-1 hidden sm:inline">
+              {localeFlags[locale as Locale]}
+            </span>
+          </Button>
+          {langMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} />
+              <div className="absolute z-50 mt-1 w-44 rounded-lg bg-card border shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 end-0">
+                {locales.map((loc) => (
+                  <button
+                    key={loc}
+                    onClick={() => switchToLocale(loc)}
+                    className={cn(
+                      "w-full px-3 py-2.5 text-sm flex items-center gap-2 min-h-[44px] transition-colors",
+                      locale === loc
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "hover:bg-accent"
+                    )}
+                  >
+                    <span className="text-base">{localeFlags[loc]}</span>
+                    <span>{localeNames[loc]}</span>
+                    {locale === loc && <span className="ms-auto text-xs">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         {mounted && (
           <Button

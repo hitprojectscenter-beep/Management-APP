@@ -1,0 +1,265 @@
+{
+  "app": {
+    "name": "Work OS",
+    "tagline": "Платформа управления проектами",
+    "description": "Стратегия и исполнение в одном месте"
+  },
+  "nav": {
+    "dashboard": "Панель управления",
+    "portfolios": "Портфолио",
+    "programs": "Программы",
+    "projects": "Проекты",
+    "tasks": "Задачи",
+    "calendar": "Календарь",
+    "ai": "Центр AI",
+    "reports": "Отчёты",
+    "settings": "Настройки",
+    "team": "Команда",
+    "automations": "Автоматизация",
+    "logout": "Выход"
+  },
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "create": "Создать",
+    "search": "Поиск",
+    "filter": "Фильтр",
+    "sort": "Сортировка",
+    "loading": "Загрузка...",
+    "noData": "Нет данных",
+    "actions": "Действия",
+    "name": "Имя",
+    "description": "Описание",
+    "status": "Статус",
+    "priority": "Приоритет",
+    "assignee": "Ответственный",
+    "dueDate": "Срок",
+    "startDate": "Дата начала",
+    "endDate": "Дата окончания",
+    "progress": "Прогресс",
+    "all": "Все",
+    "yes": "Да",
+    "no": "Нет",
+    "back": "Назад",
+    "next": "Далее",
+    "submit": "Отправить",
+    "close": "Закрыть",
+    "open": "Открыть",
+    "view": "Просмотр",
+    "add": "Добавить",
+    "remove": "Удалить",
+    "more": "Ещё",
+    "less": "Меньше"
+  },
+  "auth": {
+    "login": "Вход",
+    "logout": "Выход",
+    "loginWithGoogle": "Войти через Google",
+    "email": "Эл. почта",
+    "password": "Пароль",
+    "welcomeBack": "С возвращением",
+    "loginPrompt": "Войдите для продолжения",
+    "demoMode": "Демо-режим — нажмите для входа"
+  },
+  "landing": {
+    "title": "Мои задачи",
+    "subtitle": "Все незакрытые задачи — отсортированы по срочности",
+    "tabs": {
+      "all": "Все",
+      "inProgress": "В работе",
+      "notStarted": "Не начаты",
+      "blocked": "Заблокированы",
+      "review": "На проверке",
+      "overdue": "Просрочены",
+      "byProject": "По проекту",
+      "byPortfolio": "По портфолио"
+    },
+    "noTasks": "Нет открытых задач в этой категории",
+    "addTask": "Добавить задачу",
+    "myProjects": "Мои проекты",
+    "myParticipation": "Моё участие",
+    "fteTotal": "Общая загрузка",
+    "remaining": "Осталось",
+    "stats": {
+      "total": "Всего открытых",
+      "inProgress": "В работе",
+      "overdue": "Просрочено",
+      "dueThisWeek": "На этой неделе"
+    }
+  },
+  "addTask": {
+    "title": "Новая задача",
+    "description": "Создать задачу в существующем проекте",
+    "fields": {
+      "title": "Название",
+      "titlePlaceholder": "Что нужно сделать?",
+      "description": "Описание",
+      "descriptionPlaceholder": "Доп. детали (необязательно)",
+      "project": "Проект",
+      "selectProject": "Выберите проект",
+      "assignee": "Ответственный",
+      "selectAssignee": "Выберите сотрудника",
+      "status": "Статус",
+      "priority": "Приоритет",
+      "plannedStart": "Дата начала",
+      "plannedEnd": "Срок",
+      "estimateHours": "Оценка часов"
+    },
+    "submit": "Создать задачу",
+    "submitting": "Создание...",
+    "cancel": "Отмена"
+  },
+  "members": {
+    "title": "Участники",
+    "totalCount": "{count} участников",
+    "role": "Роль",
+    "fte": "% загрузки",
+    "joined": "Присоединился",
+    "noMembers": "Нет участников",
+    "addMember": "Добавить"
+  },
+  "dashboard": {
+    "title": "Панель управления",
+    "welcome": "Здравствуйте, {name}",
+    "overview": "Обзор",
+    "stats": {
+      "activeProjects": "Активные проекты",
+      "openTasks": "Открытые задачи",
+      "completedThisWeek": "Завершено за неделю",
+      "atRisk": "Под угрозой",
+      "onTime": "В срок",
+      "overdue": "Просрочено",
+      "teamMembers": "Участники команды",
+      "completion": "% выполнения"
+    },
+    "charts": {
+      "progressOverTime": "Прогресс по времени",
+      "taskDistribution": "Распределение задач",
+      "workload": "Загрузка",
+      "velocity": "Скорость команды"
+    }
+  },
+  "tasks": {
+    "title": "Задачи",
+    "newTask": "Новая задача",
+    "addTask": "Добавить задачу",
+    "noTasks": "Нет задач",
+    "createFirst": "Создайте первую задачу",
+    "fields": {
+      "title": "Название",
+      "description": "Описание",
+      "status": "Статус",
+      "priority": "Приоритет",
+      "assignee": "Ответственный",
+      "dueDate": "Срок",
+      "tags": "Теги",
+      "estimate": "Оценка",
+      "actual": "Факт",
+      "deliverable": "Результат"
+    },
+    "status": {
+      "notStarted": "Не начата",
+      "inProgress": "В работе",
+      "review": "Проверка",
+      "done": "Завершена",
+      "blocked": "Заблокирована",
+      "cancelled": "Отменена"
+    },
+    "priority": {
+      "low": "Низкий",
+      "medium": "Средний",
+      "high": "Высокий",
+      "critical": "Критический"
+    },
+    "tabs": {
+      "details": "Детали",
+      "comments": "Комментарии",
+      "attachments": "Файлы",
+      "history": "История",
+      "dependencies": "Зависимости",
+      "subtasks": "Подзадачи"
+    }
+  },
+  "projects": {
+    "title": "Проекты",
+    "newProject": "Новый проект",
+    "myProjects": "Мои проекты",
+    "allProjects": "Все проекты",
+    "wbs": "СРР",
+    "views": {
+      "list": "Список",
+      "kanban": "Канбан",
+      "gantt": "Гант",
+      "calendar": "Календарь",
+      "timeline": "Таймлайн",
+      "dashboard": "Панель"
+    }
+  },
+  "wbs": {
+    "title": "Структурная разбивка работ",
+    "levels": {
+      "goal": "Цель",
+      "milestone": "Веха",
+      "activity": "Активность",
+      "task": "Задача",
+      "subtask": "Подзадача"
+    },
+    "addChild": "Добавить",
+    "expand": "Развернуть",
+    "collapse": "Свернуть"
+  },
+  "ai": {
+    "title": "Центр Claude AI",
+    "sidekick": "AI-помощник",
+    "askQuestion": "Задайте вопрос о проекте...",
+    "risks": "Анализ рисков",
+    "insights": "Инсайты",
+    "summarize": "Резюме",
+    "noRisks": "Активных рисков нет",
+    "credits": "{used} из {total} кредитов",
+    "riskLevels": {
+      "low": "Низкий",
+      "medium": "Средний",
+      "high": "Высокий",
+      "critical": "Критический"
+    }
+  },
+  "calendar": {
+    "title": "Календарь",
+    "syncWithGoogle": "Синхронизация с Google Calendar",
+    "syncStatus": "Статус синхронизации",
+    "lastSync": "Последняя синхронизация",
+    "syncNow": "Синхронизировать"
+  },
+  "settings": {
+    "title": "Настройки",
+    "general": "Общие",
+    "account": "Аккаунт",
+    "appearance": "Оформление",
+    "language": "Язык",
+    "theme": "Тема",
+    "themes": { "light": "Светлая", "dark": "Тёмная", "system": "Системная" },
+    "notifications": "Уведомления",
+    "permissions": "Права доступа",
+    "integrations": "Интеграции",
+    "team": "Команда",
+    "automation": "Автоматизация"
+  },
+  "rbac": {
+    "roles": {
+      "admin": "Администратор",
+      "manager": "Менеджер",
+      "member": "Участник",
+      "viewer": "Наблюдатель",
+      "guest": "Гость"
+    },
+    "noPermission": "У вас нет прав для этого действия"
+  },
+  "footer": {
+    "copyright": "© 2026 Work OS. Все права защищены.",
+    "privacy": "Конфиденциальность",
+    "terms": "Условия"
+  }
+}
