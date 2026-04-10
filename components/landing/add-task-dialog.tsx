@@ -32,6 +32,7 @@ const TASK_SOURCES = [
 interface AddTaskFormData {
   title: string;
   taskType: string;
+  taskTypeOther: string; // free text when taskType === "tt-other"
   parentType: "project" | "program";
   parentId: string;
   description: string;
@@ -41,6 +42,7 @@ interface AddTaskFormData {
   source: string;
   sourceOther: string; // free text when source === "other"
   priority: string;
+  attachments: File[]; // files up to 5MB each
 }
 
 export function AddTaskDialog({
@@ -64,6 +66,7 @@ export function AddTaskDialog({
   const [form, setForm] = useState<AddTaskFormData>({
     title: "",
     taskType: taskTypes[0]?.id || "",
+    taskTypeOther: "",
     parentType: "project",
     parentId: projectsOnly[0]?.id || "",
     description: "",
@@ -73,6 +76,7 @@ export function AddTaskDialog({
     source: "manager_decision",
     sourceOther: "",
     priority: "medium",
+    attachments: [],
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof AddTaskFormData, string>>>({});
@@ -94,6 +98,19 @@ export function AddTaskDialog({
     }
     if (form.source === "other" && form.sourceOther.length > 100) {
       errs.sourceOther = isHe ? `עד 100 תווים (${form.sourceOther.length})` : `Max 100 chars`;
+    }
+    if (form.taskType === "tt-other" && !form.taskTypeOther.trim()) {
+      errs.taskTypeOther = isHe ? "חובה לציין סוג משימה" : "Task type required";
+    }
+    if (form.taskType === "tt-other" && form.taskTypeOther.length > 100) {
+      errs.taskTypeOther = isHe ? `עד 100 תווים` : `Max 100 chars`;
+    }
+    // Attachments - max 5MB each
+    for (const file of form.attachments) {
+      if (file.size > 5 * 1024 * 1024) {
+        errs.attachments = isHe ? `הקובץ ${file.name} חורג מ-5MB` : `File ${file.name} exceeds 5MB`;
+        break;
+      }
     }
     if (form.teamMembers.length === 0) {
       errs.teamMembers = isHe ? "חובה לבחור לפחות חבר צוות אחד" : "Select at least one member";
@@ -177,7 +194,7 @@ export function AddTaskDialog({
                 <button
                   key={tt.id}
                   type="button"
-                  onClick={() => setForm({ ...form, taskType: tt.id })}
+                  onClick={() => setForm({ ...form, taskType: tt.id, taskTypeOther: "" })}
                   className={cn(
                     "px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all min-h-[36px]",
                     form.taskType === tt.id
@@ -189,6 +206,20 @@ export function AddTaskDialog({
                 </button>
               ))}
             </div>
+            {/* "Other" free text - 100 chars */}
+            {form.taskType === "tt-other" && (
+              <div className="mt-2">
+                <Input
+                  value={form.taskTypeOther}
+                  onChange={(e) => setForm({ ...form, taskTypeOther: e.target.value.slice(0, 100) })}
+                  placeholder={isHe ? "הזן סוג משימה..." : "Enter task type..."}
+                  maxLength={100}
+                  className={cn("min-h-[44px]", errors.taskTypeOther ? "border-red-500" : "")}
+                />
+                <div className="text-[10px] text-muted-foreground text-end mt-0.5">{form.taskTypeOther.length}/100</div>
+                {errors.taskTypeOther && <p className="text-xs text-red-500">{errors.taskTypeOther}</p>}
+              </div>
+            )}
           </div>
 
           {/* Assignment: Project or Program */}
@@ -397,6 +428,56 @@ export function AddTaskDialog({
                 {errors.sourceOther && <p className="text-xs text-red-500">{errors.sourceOther}</p>}
               </div>
             )}
+          </div>
+
+          {/* File Attachments (max 5MB each) */}
+          <div className="space-y-1.5">
+            <Label>
+              {isHe ? "צירוף מסמכים" : "Attachments"}{" "}
+              <span className="text-muted-foreground text-[10px]">({isHe ? "עד 5MB לקובץ" : "max 5MB each"})</span>
+            </Label>
+            <div className="border-2 border-dashed rounded-lg p-3 text-center">
+              <input
+                type="file"
+                multiple
+                id="file-upload"
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  const valid = files.filter((f) => f.size <= 5 * 1024 * 1024);
+                  const rejected = files.length - valid.length;
+                  if (rejected > 0) {
+                    toast.error(isHe ? `${rejected} קבצים חרגו מ-5MB ולא נוספו` : `${rejected} files exceeded 5MB`);
+                  }
+                  setForm({ ...form, attachments: [...form.attachments, ...valid] });
+                  e.target.value = ""; // reset input
+                }}
+              />
+              <label
+                htmlFor="file-upload"
+                className="cursor-pointer text-sm text-primary hover:underline font-medium"
+              >
+                {isHe ? "📎 לחץ לצירוף קבצים" : "📎 Click to attach files"}
+              </label>
+              <div className="text-[10px] text-muted-foreground mt-1">
+                {isHe ? "כל פורמט · עד 5MB לקובץ" : "Any format · Max 5MB per file"}
+              </div>
+            </div>
+            {form.attachments.length > 0 && (
+              <div className="space-y-1">
+                {form.attachments.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs bg-muted/40 px-2 py-1.5 rounded">
+                    <span className="truncate flex-1">📄 {file.name} ({(file.size / 1024).toFixed(0)}KB)</span>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, attachments: form.attachments.filter((_, i) => i !== idx) })}
+                      className="text-red-500 hover:text-red-700 ms-2 shrink-0"
+                    >✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {errors.attachments && <p className="text-xs text-red-500">{errors.attachments}</p>}
           </div>
 
           {/* Footer */}

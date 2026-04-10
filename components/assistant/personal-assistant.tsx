@@ -124,6 +124,11 @@ export function PersonalAssistant() {
     setInputText("");
     setStage("processing");
     resetSpeech();
+    // Reset textarea height
+    try {
+      const ta = (inputRef as any).current;
+      if (ta) ta.style.height = "44px";
+    } catch {}
 
     try {
       const res = await fetch("/api/assistant", {
@@ -526,9 +531,9 @@ export function PersonalAssistant() {
           value={inputText}
           onChange={(e) => {
             setInputText(e.target.value);
-            // Auto-grow the textarea
+            // Auto-grow: reset to 1 row then expand to content
             const el = e.target;
-            el.style.height = "auto";
+            el.style.height = "44px";
             el.style.height = Math.min(el.scrollHeight, 120) + "px";
           }}
           onKeyDown={(e) => {
@@ -536,8 +541,15 @@ export function PersonalAssistant() {
               e.preventDefault();
               if (inputText.trim() && stage !== "processing" && stage !== "executing") {
                 submitText(inputText);
+                // Reset textarea height after submit
+                const el = e.target as HTMLTextAreaElement;
+                setTimeout(() => { el.style.height = "44px"; }, 50);
               }
             }
+          }}
+          onFocus={(e) => {
+            // On mobile: scroll into view when keyboard appears
+            setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "nearest" }), 300);
           }}
           placeholder={
             listening
@@ -550,10 +562,11 @@ export function PersonalAssistant() {
           }
           disabled={stage === "processing" || stage === "executing"}
           autoComplete="off"
+          autoCorrect="off"
           spellCheck={false}
           rows={1}
-          className="flex-1 bg-muted/30 border-0 min-h-[44px] max-h-[120px] py-2.5 px-3 text-base rounded-md resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring placeholder:text-muted-foreground"
-          style={{ fontSize: "16px" }}
+          className="flex-1 bg-muted/30 border rounded-lg min-h-[44px] max-h-[120px] py-2.5 px-3 text-base resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring placeholder:text-muted-foreground"
+          style={{ fontSize: "16px", lineHeight: "1.4" }}
         />
 
         {/* Send button - works for both typed and dictated text */}

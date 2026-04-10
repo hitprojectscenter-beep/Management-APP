@@ -2,6 +2,7 @@ import {
   Home,
   LayoutDashboard,
   GanttChartSquare,
+  GitBranch,
   Briefcase,
   CheckSquare,
   Calendar,
@@ -27,7 +28,8 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { key: "home", icon: Home, href: "/", labelHe: "המשימות שלי", labelEn: "My Tasks" },
   { key: "dashboard", icon: LayoutDashboard, href: "/dashboard", labelHe: "דשבורדים ו-KPI", labelEn: "Dashboards & KPI" },
-  { key: "gantt", icon: GanttChartSquare, href: "/gantt", labelHe: "גאנט ו-WBS", labelEn: "Gantt & WBS" },
+  { key: "gantt", icon: GanttChartSquare, href: "/gantt", labelHe: "לוח גאנט", labelEn: "Gantt Chart" },
+  { key: "wbs", icon: GitBranch, href: "/wbs", labelHe: "WBS - חבילות עבודה", labelEn: "WBS - Work Packages" },
   { key: "risks", icon: ShieldAlert, href: "/risks", labelHe: "ניהול סיכונים", labelEn: "Risk Management" },
   { key: "portfolios", icon: Boxes, href: "/portfolios", labelHe: "פורטפוליו", labelEn: "Portfolios" },
   { key: "projects", icon: Briefcase, href: "/projects", labelHe: "פרויקטים", labelEn: "Projects" },

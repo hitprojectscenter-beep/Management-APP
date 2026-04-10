@@ -198,6 +198,18 @@ export const mockItemTypes: MockItemType[] = [
     color: "#F59E0B", description: "ישיבה, סקירה, או הצגה", isSystem: false },
   { id: "tt-procurement", scope: "task", nameHe: "רכש", nameEn: "Procurement", icon: "🛒",
     color: "#06B6D4", description: "תהליך רכישה ופרסום מכרזים", isSystem: false },
+  { id: "tt-meeting-summary", scope: "task", nameHe: "סיכום פגישה", nameEn: "Meeting Summary", icon: "📋",
+    color: "#7C3AED", description: "סיכום פגישה כולל החלטות ופעולות לביצוע", isSystem: false },
+  { id: "tt-meeting-prep", scope: "task", nameHe: "הכנה לפגישה", nameEn: "Meeting Preparation", icon: "📎",
+    color: "#059669", description: "הכנת חומרים ונקודות דיון לקראת פגישה", isSystem: false },
+  { id: "tt-meeting-followup", scope: "task", nameHe: "פעולה בהמשך לפגישה", nameEn: "Meeting Follow-up", icon: "✅",
+    color: "#0891B2", description: "פעולה שנדרשת בעקבות החלטה בפגישה", isSystem: false },
+  { id: "tt-create-doc", scope: "task", nameHe: "יצירת מסמך", nameEn: "Create Document", icon: "📄",
+    color: "#6366F1", description: "כתיבה או עריכה של מסמך", isSystem: false },
+  { id: "tt-respond", scope: "task", nameHe: "מענה על פניה", nameEn: "Respond to Request", icon: "💬",
+    color: "#EC4899", description: "מענה על פניה או שאלה שנתקבלה", isSystem: false },
+  { id: "tt-other", scope: "task", nameHe: "אחר", nameEn: "Other", icon: "📌",
+    color: "#94A3B8", description: "סוג משימה מותאם אישית", isSystem: false },
 
   // Project types
   { id: "pt-dev", scope: "project", nameHe: "פיתוח", nameEn: "Development", icon: "💻",
