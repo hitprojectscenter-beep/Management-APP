@@ -190,12 +190,71 @@ export function heuristicParse(
       ? `שלום ${currentUser?.name?.split(" ")[0] || ""}! 👋\nיש לך ${myTasks.length} משימות פתוחות.\n\nאיך אוכל לעזור? אפשר:\n• "פתח משימה חדשה..."\n• "מה הסיכונים?"\n• "מה המצב בפרויקט CRM?"\n• "מי הכי עמוס?"`
       : `Hello ${currentUser?.name?.split(" ")[0] || ""}! You have ${myTasks.length} open tasks. How can I help?`;
   }
+  // CRITICAL PATH EXPLANATION
+  else if (/נתיב קריטי|critical path|נת"ק/.test(lower)) {
+    action = "query_risks";
+    const { computeCriticalPath } = require("../gantt/critical-path");
+    const cpm = computeCriticalPath(mockTasks);
+    const criticalTasks = mockTasks.filter((t) => cpm.criticalTaskIds.has(t.id));
+    responseText = isHe
+      ? `📊 **נתיב קריטי**:\n\nהנתיב הקריטי הוא שרשרת המשימות הארוכה ביותר שכל עיכוב בה יגרור עיכוב בסיום הפרויקט כולו.\n\n🔴 נמצאו **${cpm.criticalTaskIds.size} משימות** בנתיב הקריטי (מתוך ${mockTasks.length} סה"כ):\n${
+          criticalTasks.slice(0, 6).map((t) => {
+            const status = t.status === "done" ? "✅" : t.status === "blocked" ? "🚫" : t.status === "in_progress" ? "🔵" : "⚪";
+            return `  ${status} "${t.title}" (${t.progressPercent}%)`;
+          }).join("\n")
+        }\n\n⏱️ משך כולל של הנתיב: **${Math.round(cpm.totalDays)} ימי עבודה**\n\n💡 כל עיכוב באחת ממשימות אלו ידחה את סיום הפרויקט. מומלץ לתת להן עדיפות עליונה.`
+      : `Critical Path: ${cpm.criticalTaskIds.size} tasks, ${Math.round(cpm.totalDays)} work days total.`;
+  }
+  // RISK MANAGEMENT PLAN EXPLANATION
+  else if (/תכנית.*סיכונ|ניהול סיכונ|risk management|mitigation|גידור/.test(lower)) {
+    action = "query_risks";
+    const { generateMitigationPlan } = require("./mitigation-engine");
+    const plan = generateMitigationPlan(mockTasks, mockUsers, mockProjectMembers);
+    responseText = isHe
+      ? `🛡️ **תכנית ניהול סיכונים**:\n\n📊 סה"כ: **${plan.summary.totalActions} פעולות** מומלצות (${plan.summary.immediateActions} מיידיות)\n\n🔄 **שיבוצים מחדש מומלצים**: ${plan.reassignments.length}\n${
+          plan.reassignments.slice(0, 3).map((r: any) => `  • העבר "${r.taskTitle}" מ-${r.fromUserName} ל-${r.toUserName} (התאמה: ${r.matchScore}%)`).join("\n")
+        }\n\n🔧 **אסטרטגיות גידור**: ${plan.strategies.length}\n${
+          plan.strategies.slice(0, 3).map((s: any) => `  • "${s.taskTitle}": ${s.preferredAction.title}`).join("\n")
+        }\n\n⚠️ **התרעות מוקדמות**: ${plan.earlyWarnings.length}\n${
+          plan.earlyWarnings.slice(0, 3).map((w: string) => `  • ${w}`).join("\n")
+        }\n\n💡 לפרטים מלאים — עבור לדף "ניהול סיכונים" בתפריט.`
+      : `Mitigation Plan: ${plan.summary.totalActions} actions, ${plan.reassignments.length} reassignments, ${plan.earlyWarnings.length} warnings.`;
+  }
+  // REASSIGN TASK
+  else if (/שייך מחדש|שיוך מחדש|reassign|העבר.*משימה|העבר.*ל/.test(lower)) {
+    action = "assign_task";
+    // Try to extract task name and target user
+    const taskMatch = text.match(/(?:משימה|את)\s+[""]?(.+?)[""]?\s+(?:ל|אל)\s+(\S+)/);
+    if (taskMatch) {
+      entities.title = taskMatch[1].trim();
+      entities.assigneeNameHint = taskMatch[2].trim();
+    }
+    responseText = isHe
+      ? `🔄 הבנתי שאתה רוצה לשייך מחדש${entities.title ? ` את "${entities.title}"` : " משימה"}${entities.assigneeNameHint ? ` ל-${entities.assigneeNameHint}` : ""}.\n\nשים לב: רק מי שפתח את המשימה יכול לשייך אותה מחדש.\n\n${!entities.title ? "📌 ציין את שם המשימה ואת שם המשתמש החדש." : "אבדוק ואמשיך..."}`
+      : `Reassigning${entities.title ? ` "${entities.title}"` : ""}${entities.assigneeNameHint ? ` to ${entities.assigneeNameHint}` : ""}. Only task creator can reassign.`;
+  }
+  // DAILY SUMMARY
+  else if (/סיכום יומי|daily summary|סיכום.*יום|דו"ח יומי|מה עשיתי היום|recap/.test(lower)) {
+    action = "query_tasks";
+    const myTasks = currentUser ? getOpenTasksForUser(currentUser.id) : [];
+    const doneTasks = mockTasks.filter((t) => t.assigneeId === currentUser?.id && t.status === "done");
+    const inProgressTasks = myTasks.filter((t) => t.status === "in_progress");
+    const blockedTasks = myTasks.filter((t) => t.status === "blocked");
+    const overdueTasks = myTasks.filter((t) => {
+      if (!t.plannedEnd || t.status === "done") return false;
+      return new Date(t.plannedEnd).getTime() < Date.now();
+    });
+
+    responseText = isHe
+      ? `📅 **סיכום יומי עבור ${currentUser?.name || ""}**:\n\n✅ **הושלמו**: ${doneTasks.length} משימות${doneTasks.length > 0 && doneTasks.length <= 3 ? ":\n" + doneTasks.slice(-3).map((t) => `  • "${t.title}"`).join("\n") : ""}\n\n🔵 **בביצוע**: ${inProgressTasks.length} משימות${inProgressTasks.length > 0 && inProgressTasks.length <= 5 ? ":\n" + inProgressTasks.map((t) => `  • "${t.title}" (${t.progressPercent}%)`).join("\n") : ""}\n\n${blockedTasks.length > 0 ? `🚫 **חסומות**: ${blockedTasks.length}\n${blockedTasks.map((t) => `  • "${t.title}"`).join("\n")}\n\n` : ""}${overdueTasks.length > 0 ? `⚠️ **באיחור**: ${overdueTasks.length}\n${overdueTasks.map((t) => `  • "${t.title}"`).join("\n")}\n\n` : ""}📊 **סך פתוחות**: ${myTasks.length}\n🎯 **מומלץ להתמקד**: ${blockedTasks.length > 0 ? `פתרון חסימה ב-"${blockedTasks[0].title}"` : inProgressTasks.length > 0 ? `השלמת "${inProgressTasks[0].title}" (${inProgressTasks[0].progressPercent}%)` : "אין משימות דחופות 🎉"}`
+      : `Daily summary for ${currentUser?.name}: ${doneTasks.length} done, ${inProgressTasks.length} in progress, ${blockedTasks.length} blocked, ${overdueTasks.length} overdue.`;
+  }
   // HELP
   else if (/עזרה|help|מה אתה יכול|מה אפשר/.test(lower)) {
     action = "query_tasks";
     responseText = isHe
-      ? "🤖 אני יכול לעזור עם:\n\n📋 **משימות**: \"פתח משימה חדשה לבדיקת שרתים\"\n📊 **סטטוס**: \"מה המצב?\" / \"תן לי סיכום\"\n⚠️ **סיכונים**: \"מה הסיכונים?\" / \"מה בסיכון?\"\n👥 **עומסים**: \"מי הכי עמוס?\" / \"מי פנוי?\"\n📝 **פגישות**: \"סכם את הפגישה\"\n\nאפשר לכתוב או להקליט 🎤"
-      : "I can help with: creating tasks, checking status, risks, workload, and meeting summaries.";
+      ? "🤖 אני יכול לעזור עם:\n\n📋 **משימות**: \"פתח משימה חדשה...\"\n🔄 **שיוך מחדש**: \"שייך מחדש את המשימה X ל-Y\"\n📊 **סטטוס**: \"מה המצב?\" / \"סיכום יומי\"\n⚠️ **סיכונים**: \"מה הסיכונים?\" / \"הסבר נתיב קריטי\"\n🛡️ **תכנית גידור**: \"מה תכנית ניהול הסיכונים?\"\n👥 **עומסים**: \"מי הכי עמוס?\"\n📝 **פגישות**: \"סכם את הפגישה\"\n📅 **סיכום יומי**: \"תן לי סיכום יומי\"\n\n🎤 אפשר לכתוב או להקליט!"
+      : "I can help with: tasks, reassignment, status, risks, critical path, mitigation plan, workload, meetings, daily summary. Voice or text! 🎤";
   }
   // UNKNOWN - give helpful response instead of "Understood"
   else {
