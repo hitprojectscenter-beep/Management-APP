@@ -67,6 +67,8 @@ export function PersonalAssistant() {
   const {
     supported: speechSupported,
     listening,
+    error: speechError,
+    mode,
     interim,
     start: startListening,
     stop: stopListening,
@@ -582,11 +584,18 @@ export function PersonalAssistant() {
         </Button>
       </form>
 
+      {/* Speech error display - shows mic permission instructions */}
+      {speechError && (
+        <div className="px-3 py-2 border-t bg-red-50 dark:bg-red-950/30 text-xs text-red-700 dark:text-red-300 whitespace-pre-line">
+          {speechError}
+        </div>
+      )}
+
       {/* Footer hint */}
       <div className="px-3 py-1.5 border-t bg-muted/10 text-[10px] text-muted-foreground text-center">
         {isHe
-          ? "🔒 הפעולות מוגנות ב-RBAC, מתועדות ב-Audit Log, ודורשות אישור לפני ביצוע"
-          : "🔒 Actions are RBAC-protected, audit-logged, and require confirmation before execution"}
+          ? `🔒 RBAC + Audit Log + אישור לפני ביצוע · מצב הקלטה: ${mode === "speech-api" ? "זיהוי דיבור ✅" : mode === "media-recorder" ? "הקלטת אודיו 🎤" : "לא זמין ❌"}`
+          : `🔒 RBAC + Audit + Confirmation · Recording: ${mode === "speech-api" ? "Speech API ✅" : mode === "media-recorder" ? "Audio Recorder 🎤" : "N/A ❌"}`}
       </div>
     </div>
   );
