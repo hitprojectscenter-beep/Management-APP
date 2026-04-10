@@ -204,6 +204,23 @@
    - Screenshot validation: דף הנחיתה החדש בעברית RTL מלא עם כל הרכיבים
    - Project detail עם משתתפים מוצג נכון
 
+### 🗨️ סבב 22-24: שפות + אוטומציות + נתונים אמיתיים + שיוך מחדש + מובייל
+
+**👤 משתמש (סבב 22):** הוספת רוסית, צרפתית, ספרדית. ברירת מחדל לפי מיקום.
+**🤖 Claude:** 3 קבצי messages (ru/fr/es), localeDetection, dropdown עם דגלים, 82 static pages.
+
+**👤 משתמש (סבב 22b):** בריף שיווקי כ-WORD + אנגלית.
+**🤖 Claude:** `generate-brief-docx.js` → 2 קבצי DOCX (HE RTL + EN), לוגו מפ"י, 11 סקציות.
+
+**👤 משתמש (סבב 23):** הוספת אוטומציות ללא קוד.
+**🤖 Claude:** `AutomationBuilder` עם 5 templates + בנייה ויזואלית (trigger→condition→action), 8 actions כולל AI.
+
+**👤 משתמש (סבב 23b):** נתוני פרויקט אמיתיים מ-Excel + סוגי משימות חדשים + קבצים + WBS/Gantt נפרדים + סגירת משימה.
+**🤖 Claude:** קריאת Excel (openpyxl), 8 שלבי פרויקט אמיתיים, 6 סוגי משימות חדשים, file upload 5MB, `/wbs` page, `CloseTaskDialog` עם 4 סיבות.
+
+**👤 משתמש (סבב 24):** שיוך מחדש + עוזר אישי: נתיב קריטי, תכנית סיכונים, סיכום יומי + רספונסיביות.
+**🤖 Claude:** `ReassignTaskDialog` (רק פותח המשימה), 4 יכולות חדשות בעוזר (CPM/mitigation/reassign/daily), Dialog mobile-first (`inset-x-2`, `w-[95vw]`, 16px inputs).
+
 ### 🗨️ סבב 18+19: הזמנת חבר + WBS/Gantt + מובייל
 
 **👤 משתמש:**
