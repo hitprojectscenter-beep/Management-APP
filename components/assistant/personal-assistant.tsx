@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useSpeechRecognition, speak } from "./use-speech-recognition";
 import { toast } from "sonner";
+import { CURRENT_USER_ID, getUserById } from "@/lib/db/mock-data";
 
 type Stage = "idle" | "listening" | "processing" | "clarification" | "confirmation" | "blocked" | "executing" | "done";
 
@@ -51,6 +52,7 @@ interface ServerResponse {
 export function PersonalAssistant() {
   const locale = useLocale() as "he" | "en";
   const isHe = locale === "he";
+  const currentUser = getUserById(CURRENT_USER_ID);
   const [isOpen, setIsOpen] = useState(false);
   const [stage, setStage] = useState<Stage>("idle");
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -339,42 +341,54 @@ export function PersonalAssistant() {
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages - dialog format: "מארק:" / "עוזר:" */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/20">
-        {turns.map((turn, idx) => (
-          <div
-            key={idx}
-            className={cn(
-              "flex gap-2 animate-in fade-in slide-in-from-bottom-1 duration-200",
-              turn.role === "user" ? "flex-row-reverse" : "flex-row"
-            )}
-          >
+        {turns.map((turn, idx) => {
+          const senderName =
+            turn.role === "user"
+              ? currentUser?.name?.split(" ")[0] || (isHe ? "אתה" : "You")
+              : isHe
+                ? "עוזר"
+                : "Assistant";
+
+          return (
             <div
+              key={idx}
               className={cn(
-                "size-8 rounded-full flex items-center justify-center shrink-0 shadow-sm",
-                turn.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-gradient-to-br from-violet-600 to-indigo-700 text-white"
+                "flex gap-2 animate-in fade-in slide-in-from-bottom-1 duration-200",
+                turn.role === "user" ? "flex-row-reverse" : "flex-row"
               )}
             >
-              {turn.role === "user" ? (
-                <UserIcon className="size-4" />
-              ) : (
-                <Sparkles className="size-4" />
-              )}
+              <div
+                className={cn(
+                  "size-8 rounded-full flex items-center justify-center shrink-0 shadow-sm text-[10px] font-bold",
+                  turn.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-gradient-to-br from-violet-600 to-indigo-700 text-white"
+                )}
+              >
+                {turn.role === "user" ? (
+                  <UserIcon className="size-4" />
+                ) : (
+                  <Sparkles className="size-4" />
+                )}
+              </div>
+              <div
+                className={cn(
+                  "rounded-2xl px-3.5 py-2 text-sm max-w-[85%] shadow-sm",
+                  turn.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-se-sm"
+                    : "bg-background border rounded-ss-sm"
+                )}
+              >
+                <div className="text-[10px] font-bold mb-0.5 opacity-80">
+                  {senderName}:
+                </div>
+                <div className="whitespace-pre-line">{turn.text}</div>
+              </div>
             </div>
-            <div
-              className={cn(
-                "rounded-2xl px-3.5 py-2 text-sm max-w-[85%] whitespace-pre-line shadow-sm",
-                turn.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-se-sm"
-                  : "bg-background border rounded-ss-sm"
-              )}
-            >
-              {turn.text}
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Interim (live speech-to-text) */}
         {interim && (

@@ -146,7 +146,7 @@ export function MyTasksTabs({
             );
           })}
         </div>
-        <AddTaskDialog projects={projects} users={users} locale={locale}>
+        <AddTaskDialog projects={wbsNodes} users={users} locale={locale}>
           <Button className="shrink-0 shadow-md" data-tour="add-task">
             <Plus className="size-4" />
             {isHe ? "הוסף משימה" : "Add Task"}
