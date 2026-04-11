@@ -60,9 +60,10 @@ export function PersonalAssistant() {
   const [carryover, setCarryover] = useState<any>(null);
   const [carryoverAction, setCarryoverAction] = useState<string | null>(null);
   const [currentResponse, setCurrentResponse] = useState<ServerResponse | null>(null);
-  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true); // TTS ON by default - assistant speaks back
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const submitTextRef = useRef<(text: string) => void>(() => {});
 
   const {
     supported: speechSupported,
@@ -76,13 +77,20 @@ export function PersonalAssistant() {
   } = useSpeechRecognition({
     lang: isHe ? "he-IL" : "en-US",
     continuous: false,
-    // When final text is recognized, drop it into the input field so the
-    // user can review / edit / append before submitting. This is friendlier
-    // than auto-submitting - voice is just a typing shortcut.
+    // When speech recognition returns final text → AUTO-SUBMIT immediately.
+    // No need for the user to press Send manually after speaking.
     onFinalResult: (text) => {
-      setInputText((prev) => (prev.trim() ? prev + " " + text : text));
-      // Return focus to the input so the user can immediately edit or press Enter
-      setTimeout(() => inputRef.current?.focus(), 50);
+      if (text && text.trim() && !text.startsWith("[")) {
+        // Real transcribed text → submit automatically
+        submitTextRef.current(text.trim());
+      } else if (text) {
+        // MediaRecorder placeholder → put in input for user to type over
+        setInputText(text);
+      }
+    },
+    // Show interim (partial) text in real-time while user is speaking
+    onInterim: (text) => {
+      setInputText(text);
     },
   });
 
@@ -90,6 +98,11 @@ export function PersonalAssistant() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [turns, currentResponse, interim]);
+
+  // Keep submitTextRef pointing to the latest submitText function
+  useEffect(() => {
+    submitTextRef.current = submitText;
+  });
 
   // Focus input on open
   useEffect(() => {
