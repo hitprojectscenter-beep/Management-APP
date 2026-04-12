@@ -64,8 +64,9 @@ Actions: "create_task", "create_project", "assign_task", "update_task_status", "
 
 Return valid JSON only.`;
 
-export function buildSystemPrompt(locale: "he" | "en"): string {
+export function buildSystemPrompt(locale: string): string {
   const today = new Date().toISOString().slice(0, 10);
+  // Hebrew system prompt for Hebrew locale, English for all others
   const base = locale === "he" ? ASSISTANT_SYSTEM_PROMPT_HE : ASSISTANT_SYSTEM_PROMPT_EN;
   return base.replace("{{TODAY}}", today);
 }
@@ -77,7 +78,7 @@ export function buildSystemPrompt(locale: "he" | "en"): string {
 
 export function heuristicParse(
   text: string,
-  locale: "he" | "en"
+  locale: string
 ): {
   action: string;
   entities: any;
@@ -85,7 +86,10 @@ export function heuristicParse(
   responseText: string;
 } {
   const lower = text.toLowerCase().trim();
-  const isHe = locale === "he";
+  // The app's data and main audience is Hebrew — respond in Hebrew
+  // for Hebrew locale, and in Hebrew for other locales too (since the
+  // data, project names, and task names are all in Hebrew)
+  const isHe = locale !== "en"; // Hebrew for all locales except English
   const entities: any = {};
   const now = new Date();
   const currentUser = getUserById(CURRENT_USER_ID);

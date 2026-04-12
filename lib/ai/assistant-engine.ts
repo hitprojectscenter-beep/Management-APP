@@ -374,10 +374,10 @@ export function buildConfirmationSummary(
   intent: ParsedIntent,
   projects: MockWbsNode[],
   users: MockUser[],
-  locale: "he" | "en"
+  locale: string
 ): string {
   const e = intent.entities;
-  const isHe = locale === "he";
+  const isHe = locale !== "en"; // Hebrew for all non-English locales
 
   if (intent.action === "create_task") {
     const project = e.projectId ? projects.find((p) => p.id === e.projectId) : null;

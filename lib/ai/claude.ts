@@ -41,7 +41,7 @@ export async function chat(
   return block.type === "text" ? block.text : "";
 }
 
-export async function summarizeText(text: string, locale: "he" | "en" = "he"): Promise<string> {
+export async function summarizeText(text: string, locale: string = "he"): Promise<string> {
   const systemPrompt =
     locale === "he"
       ? "אתה עוזר ב-Work OS, פלטפורמת ניהול פרויקטים. סכם בעברית באופן תמציתי וענייני, עד 3 שורות. התמקד בעובדות, פעולות ותאריכים."

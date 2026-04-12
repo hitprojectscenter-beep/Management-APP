@@ -25,7 +25,7 @@ export const runtime = "nodejs";
 
 interface RequestBody {
   text: string;
-  locale: "he" | "en";
+  locale: string;
   /** Previously extracted entities - passed back during clarification loop */
   carryover?: TaskEntities;
   /** Previous action - if we're continuing a dialog */
