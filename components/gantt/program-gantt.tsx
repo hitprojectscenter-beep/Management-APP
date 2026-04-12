@@ -116,7 +116,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
 
   const today = new Date();
   const todayOffset = ((today.getTime() - startDate.getTime()) / 86400000) * dayWidth;
-  const TABLE_WIDTH = 520;
+  const TABLE_WIDTH = 520; // desktop; on mobile we use CSS classes instead
 
   // Get duration in days
   const getDuration = (start: string | null, end: string | null) => {
@@ -140,7 +140,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
   }, [selected, scopeTasks, users, allNodes, rollups]);
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-card flex flex-col relative" style={{ height: "calc(100vh - 200px)", minHeight: 450 }}>
+    <div className="border rounded-lg overflow-hidden bg-card flex flex-col relative" style={{ height: "calc(100vh - 200px)", minHeight: 300 }}>
       {/* Toolbar */}
       <div className="px-3 py-2 border-b bg-muted/30 flex items-center justify-between gap-2 flex-wrap text-xs">
         <div className="flex items-center gap-1.5">
@@ -165,15 +165,15 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* === LEFT TABLE (MS Project style) === */}
-        <div className="shrink-0 border-e bg-background overflow-y-auto overflow-x-auto" style={{ width: TABLE_WIDTH }}>
+        <div className="shrink-0 border-e bg-background overflow-y-auto overflow-x-auto w-[200px] sm:w-[520px]">
           {/* Column headers */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-900 border-b text-[10px] font-semibold text-muted-foreground sticky top-0 z-10" style={{ height: 28, minWidth: TABLE_WIDTH }}>
-            <div className="w-8 px-1 text-center border-e">#</div>
-            <div className="flex-1 px-2 border-e">{isHe ? "שם משימה" : "Task Name"}</div>
-            <div className="w-16 px-1 text-center border-e">{isHe ? "משך" : "Duration"}</div>
-            <div className="w-20 px-1 text-center border-e">{isHe ? "התחלה" : "Start"}</div>
-            <div className="w-20 px-1 text-center border-e">{isHe ? "סיום" : "Finish"}</div>
-            <div className="w-20 px-1 text-center">{isHe ? "אחראי" : "Resource"}</div>
+          <div className="flex items-center bg-slate-100 dark:bg-slate-900 border-b text-[10px] font-semibold text-muted-foreground sticky top-0 z-10" style={{ height: 28 }}>
+            <div className="w-8 px-1 text-center border-e shrink-0">#</div>
+            <div className="flex-1 px-2 border-e min-w-0">{isHe ? "שם משימה" : "Task Name"}</div>
+            <div className="w-16 px-1 text-center border-e hidden sm:block shrink-0">{isHe ? "משך" : "Duration"}</div>
+            <div className="w-20 px-1 text-center border-e hidden sm:block shrink-0">{isHe ? "התחלה" : "Start"}</div>
+            <div className="w-20 px-1 text-center border-e hidden sm:block shrink-0">{isHe ? "סיום" : "Finish"}</div>
+            <div className="w-20 px-1 text-center hidden sm:block shrink-0">{isHe ? "אחראי" : "Resource"}</div>
           </div>
           {/* Rows */}
           {rows.map((row, idx) => {
@@ -192,28 +192,28 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
               <div
                 key={`row-${idx}`}
                 className={cn(
-                  "flex items-center border-b text-[11px] cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20",
+                  "flex items-center border-b text-[11px] sm:text-[11px] text-[12px] cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20",
                   isCrit && "bg-red-50/60 dark:bg-red-950/10",
                   isWbs && "font-semibold bg-slate-50/50 dark:bg-slate-900/30"
                 )}
-                style={{ height: ROW_HEIGHT, minWidth: TABLE_WIDTH }}
+                style={{ height: ROW_HEIGHT, minHeight: 44 }}
                 onClick={(e) => setSelected({ type: isWbs ? "wbs" : "task", id: isWbs ? n!.id : t!.id, x: e.clientX, y: e.clientY })}
               >
-                <div className="w-8 px-1 text-center text-[9px] text-muted-foreground border-e font-mono">{num || idx + 1}</div>
+                <div className="w-8 px-1 text-center text-[9px] text-muted-foreground border-e font-mono shrink-0">{num || idx + 1}</div>
                 <div className="flex-1 px-1 border-e flex items-center gap-0.5 min-w-0" style={{ paddingInlineStart: (row.depth * 14) + 4 }}>
                   {isWbs && hasChildren && (
-                    <button onClick={(e) => { e.stopPropagation(); toggleCollapse(n!.id); }} className="size-4 flex items-center justify-center shrink-0">
-                      {collapsed.has(n!.id) ? <ChevronRight className="size-3 rtl:rotate-180" /> : <ChevronDown className="size-3" />}
+                    <button onClick={(e) => { e.stopPropagation(); toggleCollapse(n!.id); }} className="size-6 sm:size-4 flex items-center justify-center shrink-0">
+                      {collapsed.has(n!.id) ? <ChevronRight className="size-4 sm:size-3 rtl:rotate-180" /> : <ChevronDown className="size-4 sm:size-3" />}
                     </button>
                   )}
                   {!isWbs && <span className="w-4 shrink-0" />}
                   {isCrit && <Zap className="size-3 text-red-500 shrink-0" />}
                   <span className="truncate">{isWbs ? (isHe ? n!.name : n!.nameEn || n!.name) : (isHe ? t!.title : t!.titleEn || t!.title)}</span>
                 </div>
-                <div className="w-16 px-1 text-center text-[10px] text-muted-foreground border-e">{getDuration(start || null, end || null)}</div>
-                <div className="w-20 px-1 text-center text-[10px] text-muted-foreground border-e">{start ? new Date(start).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }) : "—"}</div>
-                <div className="w-20 px-1 text-center text-[10px] text-muted-foreground border-e">{end ? new Date(end).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }) : "—"}</div>
-                <div className="w-20 px-1 text-[10px] text-muted-foreground truncate">{assignee?.name?.split(" ")[0] || "—"}</div>
+                <div className="w-16 px-1 text-center text-[10px] text-muted-foreground border-e hidden sm:block shrink-0">{getDuration(start || null, end || null)}</div>
+                <div className="w-20 px-1 text-center text-[10px] text-muted-foreground border-e hidden sm:block shrink-0">{start ? new Date(start).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }) : "—"}</div>
+                <div className="w-20 px-1 text-center text-[10px] text-muted-foreground border-e hidden sm:block shrink-0">{end ? new Date(end).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }) : "—"}</div>
+                <div className="w-20 px-1 text-[10px] text-muted-foreground truncate hidden sm:block shrink-0">{assignee?.name?.split(" ")[0] || "—"}</div>
               </div>
             );
           })}
@@ -379,9 +379,9 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
 
       {/* === DETAIL POPUP (click on any entity) === */}
       {selected && selectedData && (
-        <div className="fixed z-50 bg-card border-2 border-blue-300 rounded-xl shadow-2xl p-4 min-w-[280px] max-w-[360px] animate-in fade-in zoom-in-95 duration-150"
-          style={{ left: Math.min(selected.x, window.innerWidth - 380), top: Math.min(selected.y - 20, window.innerHeight - 300) }}>
-          <button onClick={() => setSelected(null)} className="absolute top-2 end-2 size-6 rounded-full bg-muted hover:bg-accent flex items-center justify-center">
+        <div className="fixed z-50 bg-card border-2 border-blue-300 rounded-xl shadow-2xl p-4 animate-in fade-in zoom-in-95 duration-150 inset-x-3 sm:inset-x-auto sm:min-w-[280px] sm:max-w-[360px] max-w-none bottom-4 sm:bottom-auto"
+          style={{ left: typeof window !== "undefined" && window.innerWidth >= 640 ? Math.min(selected.x, window.innerWidth - 380) : undefined, top: typeof window !== "undefined" && window.innerWidth >= 640 ? Math.min(selected.y - 20, window.innerHeight - 300) : undefined }}>
+          <button onClick={() => setSelected(null)} className="absolute top-2 end-2 size-8 sm:size-6 rounded-full bg-muted hover:bg-accent flex items-center justify-center">
             <X className="size-3.5" />
           </button>
           {"task" in selectedData && selectedData.task ? (() => {
@@ -446,13 +446,13 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
       )}
 
       {/* Footer */}
-      <div className="px-3 py-1.5 border-t bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between text-[10px] text-muted-foreground">
-        <div className="flex gap-3">
+      <div className="px-3 py-1.5 border-t bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between text-[10px] text-muted-foreground flex-wrap gap-1">
+        <div className="flex gap-2 sm:gap-3 flex-wrap">
           <span><strong>{rows.filter((r) => r.kind === "wbs").length}</strong> {isHe ? "חבילות עבודה" : "work packages"}</span>
           <span><strong>{scopeTasks.length}</strong> {isHe ? "משימות" : "tasks"}</span>
           <span className="text-red-600"><strong>{cpm.criticalTaskIds.size}</strong> {isHe ? "קריטיות" : "critical"}</span>
         </div>
-        <span>{isHe ? "לחץ על פס או שם לפרטים" : "Click bar or name for details"}</span>
+        <span className="hidden sm:inline">{isHe ? "לחץ על פס או שם לפרטים" : "Click bar or name for details"}</span>
       </div>
     </div>
   );

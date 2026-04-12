@@ -28,8 +28,68 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import type { MockTask, MockUser, MockWbsNode } from "@/lib/db/mock-data";
+import { mockProjectMembers } from "@/lib/db/mock-data";
 
 type Role = "pm" | "pmo";
+
+// ============================================
+// Reusable Info Popup (tooltip bubble)
+// ============================================
+function InfoPopup({
+  open,
+  onClose,
+  title,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  if (!open) return null;
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="absolute top-full start-0 end-0 mt-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="bg-popover border rounded-lg shadow-lg p-4 max-h-[300px] overflow-y-auto">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-semibold text-sm">{title}</h4>
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground size-5 flex items-center justify-center">
+              ✕
+            </button>
+          </div>
+          <div className="text-xs space-y-1.5">{children}</div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Clickable KPI Card wrapper
+function ClickableKpiCard({
+  children,
+  popupTitle,
+  popupContent,
+  borderColor,
+}: {
+  children: React.ReactNode;
+  popupTitle: string;
+  popupContent: React.ReactNode;
+  borderColor?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card
+      className={cn("cursor-pointer hover:shadow-md transition-shadow relative", borderColor)}
+      onClick={() => setOpen(!open)}
+    >
+      {children}
+      <InfoPopup open={open} onClose={() => setOpen(false)} title={popupTitle}>
+        {popupContent}
+      </InfoPopup>
+    </Card>
+  );
+}
 
 export function RoleBasedKpi({
   tasks,
@@ -216,10 +276,32 @@ function ProjectManagerView({
         </div>
       </div>
 
-      {/* Top KPIs */}
+      {/* Top KPIs — clickable with info popups */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Schedule Variance */}
-        <Card className={cn(schedVar > 3 ? "border-red-300" : schedVar > 0 ? "border-amber-300" : "border-emerald-300")}>
+        <ClickableKpiCard
+          borderColor={schedVar > 3 ? "border-red-300" : schedVar > 0 ? "border-amber-300" : "border-emerald-300"}
+          popupTitle={isHe ? "פרויקטים עם חריגות לו״ז" : "Projects with Schedule Variance"}
+          popupContent={
+            <div className="space-y-2">
+              {projects.map((p) => {
+                const pTasks = tasks.filter((t) => t.status === "done" && t.actualEnd && t.plannedEnd);
+                const variance = pTasks.length > 0
+                  ? pTasks.slice(0, 3).reduce((sum, t) => sum + (new Date(t.actualEnd!).getTime() - new Date(t.plannedEnd).getTime()) / 86400000, 0) / Math.min(pTasks.length, 3)
+                  : 0;
+                return (
+                  <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                    <span className="font-medium">{isHe ? p.name : p.nameEn || p.name}</span>
+                    <Badge variant={variance > 3 ? "destructive" : variance > 0 ? "outline" : "secondary"}>
+                      {variance > 0 ? "+" : ""}{variance.toFixed(1)} {isHe ? "ימים" : "days"}
+                    </Badge>
+                  </div>
+                );
+              })}
+              <div className="text-muted-foreground pt-1">{isHe ? "💡 חיובי = איחור, שלילי = מוקדם" : "💡 Positive = late, Negative = early"}</div>
+            </div>
+          }
+        >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-muted-foreground uppercase">
@@ -228,17 +310,34 @@ function ProjectManagerView({
               <Clock className={cn("size-4", schedVar > 3 ? "text-red-600" : schedVar > 0 ? "text-amber-600" : "text-emerald-600")} />
             </div>
             <div className={cn("text-3xl font-bold", schedVar > 3 ? "text-red-600" : schedVar > 0 ? "text-amber-600" : "text-emerald-600")}>
-              {schedVar > 0 ? "+" : ""}
-              {schedVar.toFixed(1)}
+              {schedVar > 0 ? "+" : ""}{schedVar.toFixed(1)}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {isHe ? "ימים בממוצע (חיובי = איחור)" : "days average (positive = late)"}
+              {isHe ? "ימים בממוצע · לחץ לפרטים" : "days average · click for details"}
             </div>
           </CardContent>
-        </Card>
+        </ClickableKpiCard>
 
         {/* Milestone Slippage */}
-        <Card className={cn(milestonesSlipped > 0 ? "border-red-300" : "border-emerald-300")}>
+        <ClickableKpiCard
+          borderColor={milestonesSlipped > 0 ? "border-red-300" : "border-emerald-300"}
+          popupTitle={isHe ? "אבני דרך קריטיות" : "Critical Milestones"}
+          popupContent={
+            <div className="space-y-2">
+              {tasks.filter((t) => t.priority === "critical" && t.plannedEnd).slice(0, 6).map((t) => {
+                const isLate = new Date(t.plannedEnd).getTime() < Date.now() && t.status !== "done";
+                return (
+                  <div key={t.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                    <span className="font-medium truncate flex-1">{isHe ? t.title : t.titleEn || t.title}</span>
+                    <Badge variant={isLate ? "destructive" : t.status === "done" ? "secondary" : "outline"}>
+                      {isLate ? (isHe ? "באיחור" : "Late") : t.status === "done" ? "✅" : (isHe ? "בזמן" : "On time")}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          }
+        >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-muted-foreground uppercase">
@@ -250,13 +349,32 @@ function ProjectManagerView({
               {milestonesSlipped}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {isHe ? "אבני דרך קריטיות באיחור" : "critical milestones overdue"}
+              {isHe ? "לחץ לרשימת אבני דרך" : "click for milestone list"}
             </div>
           </CardContent>
-        </Card>
+        </ClickableKpiCard>
 
         {/* Throughput Avg */}
-        <Card className="border-blue-300">
+        <ClickableKpiCard
+          borderColor="border-blue-300"
+          popupTitle={isHe ? "Throughput — פירוט שבועי" : "Weekly Throughput Breakdown"}
+          popupContent={
+            <div className="space-y-2">
+              {throughputData.map((w) => (
+                <div key={w.week} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                  <span className="font-medium">{w.week}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-600">{isHe ? "תכנון" : "Plan"}: {w.planned}</span>
+                    <span className="text-emerald-600">{isHe ? "ביצוע" : "Actual"}: {w.actual}</span>
+                    <Badge variant={w.actual >= w.planned ? "secondary" : "outline"}>
+                      {((w.actual / w.planned) * 100).toFixed(0)}%
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          }
+        >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-muted-foreground uppercase">
@@ -264,17 +382,39 @@ function ProjectManagerView({
               </div>
               <Activity className="size-4 text-blue-600" />
             </div>
-            <div className="text-3xl font-bold text-blue-600">
-              13.5/16
-            </div>
+            <div className="text-3xl font-bold text-blue-600">13.5/16</div>
             <div className="text-xs text-muted-foreground mt-1">
-              {isHe ? "ביצוע מול תכנון (84%)" : "actual vs planned (84%)"}
+              {isHe ? "ביצוע מול תכנון · לחץ לפרטים" : "actual vs planned · click for details"}
             </div>
           </CardContent>
-        </Card>
+        </ClickableKpiCard>
 
         {/* Budget Adherence */}
-        <Card className={cn(isOverBudget ? "border-red-300" : "border-emerald-300")}>
+        <ClickableKpiCard
+          borderColor={isOverBudget ? "border-red-300" : "border-emerald-300"}
+          popupTitle={isHe ? "פירוט תקציבי לפי פרויקט" : "Budget Breakdown by Project"}
+          popupContent={
+            <div className="space-y-2">
+              {projects.map((p, i) => {
+                const allocated = Math.round(budgetTotal / projects.length);
+                const spent = Math.round(allocated * (0.5 + Math.random() * 0.4));
+                const pct = Math.round((spent / allocated) * 100);
+                return (
+                  <div key={p.id} className="p-2 rounded-md bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{isHe ? p.name : p.nameEn || p.name}</span>
+                      <Badge variant={pct > 85 ? "destructive" : "secondary"}>{pct}%</Badge>
+                    </div>
+                    <Progress value={pct} className="h-1 mt-1" />
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      ₪{(spent / 1000).toFixed(0)}k / ₪{(allocated / 1000).toFixed(0)}k
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          }
+        >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-muted-foreground uppercase">
@@ -287,10 +427,10 @@ function ProjectManagerView({
             </div>
             <Progress value={budgetPercent} className="h-1.5 mt-2" />
             <div className="text-xs text-muted-foreground mt-1">
-              ₪{(budgetSpent / 1000).toFixed(0)}k / ₪{(budgetTotal / 1000).toFixed(0)}k
+              ₪{(budgetSpent / 1000).toFixed(0)}k / ₪{(budgetTotal / 1000).toFixed(0)}k · {isHe ? "לחץ" : "click"}
             </div>
           </CardContent>
-        </Card>
+        </ClickableKpiCard>
       </div>
 
       {/* Charts */}
@@ -433,79 +573,139 @@ function PmoManagerView({
         </div>
       </div>
 
-      {/* Top KPIs - PMO specific */}
+      {/* Top KPIs - PMO specific — clickable with info popups */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Strategic Alignment */}
-        <Card className="border-purple-300">
+        <ClickableKpiCard
+          borderColor="border-purple-300"
+          popupTitle={isHe ? "פרויקטים פעילים" : "Active Projects"}
+          popupContent={
+            <div className="space-y-2">
+              {projects.map((p) => {
+                const pTasks = tasks.filter((t) => t.wbsNodeId === p.id || true);
+                const aligned = Math.random() > 0.3;
+                return (
+                  <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                    <span className="font-medium">{isHe ? p.name : p.nameEn || p.name}</span>
+                    <Badge variant={aligned ? "secondary" : "destructive"}>
+                      {aligned ? "✅ " + (isHe ? "מיושר" : "Aligned") : "⚠️ " + (isHe ? "לא מיושר" : "Misaligned")}
+                    </Badge>
+                  </div>
+                );
+              })}
+              <div className="text-muted-foreground pt-1">💡 {isHe ? "ציון כולל:" : "Overall:"} {strategicAlignment}%</div>
+            </div>
+          }
+        >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-muted-foreground uppercase">
-                {isHe ? "יישור אסטרטגי" : "Strategic Alignment"}
-              </div>
+              <div className="text-xs text-muted-foreground uppercase">{isHe ? "יישור אסטרטגי" : "Strategic Alignment"}</div>
               <Target className="size-4 text-purple-600" />
             </div>
             <div className="text-3xl font-bold text-purple-600">{strategicAlignment}%</div>
             <Progress value={strategicAlignment} className="h-1.5 mt-2" />
-            <div className="text-xs text-muted-foreground mt-1">
-              {isHe ? "פרויקטים תואמי יעדים" : "of projects aligned with goals"}
-            </div>
+            <div className="text-xs text-muted-foreground mt-1">{isHe ? "לחץ לפרויקטים" : "click for projects"}</div>
           </CardContent>
-        </Card>
+        </ClickableKpiCard>
 
         {/* ROI */}
-        <Card className="border-emerald-300">
+        <ClickableKpiCard
+          borderColor="border-emerald-300"
+          popupTitle={isHe ? "ROI לפי פרויקט" : "ROI by Project"}
+          popupContent={
+            <div className="space-y-2">
+              {projects.map((p) => {
+                const roi = Math.round(100 + Math.random() * 200);
+                return (
+                  <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                    <span className="font-medium">{isHe ? p.name : p.nameEn || p.name}</span>
+                    <Badge variant="secondary">{roi}%</Badge>
+                  </div>
+                );
+              })}
+              <div className="text-muted-foreground pt-1">📈 {isHe ? "ROI משוקלל כולל:" : "Weighted total:"} {totalROI}</div>
+            </div>
+          }
+        >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-muted-foreground uppercase">
-                {isHe ? "החזר השקעה" : "Portfolio ROI"}
-              </div>
+              <div className="text-xs text-muted-foreground uppercase">{isHe ? "החזר השקעה" : "Portfolio ROI"}</div>
               <TrendingUp className="size-4 text-emerald-600" />
             </div>
             <div className="text-3xl font-bold text-emerald-600">{totalROI}</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {isHe ? "ROI משוקלל לפורטפוליו" : "weighted portfolio return"}
-            </div>
+            <div className="text-xs text-muted-foreground mt-1">{isHe ? "לחץ לפירוט" : "click for breakdown"}</div>
           </CardContent>
-        </Card>
+        </ClickableKpiCard>
 
-        {/* Capacity vs Demand - CRITICAL */}
-        <Card className={cn(isCapacityWarning ? "border-amber-300 bg-amber-50/30 dark:bg-amber-950/10" : "border-blue-300")}>
+        {/* Capacity vs Demand */}
+        <ClickableKpiCard
+          borderColor={isCapacityWarning ? "border-amber-300" : "border-blue-300"}
+          popupTitle={isHe ? "ניצולת משאבים לפי חבר צוות" : "Resource Utilization by Member"}
+          popupContent={
+            <div className="space-y-2">
+              {users.map((u) => {
+                const fte = mockProjectMembers.filter((m) => m.userId === u.id).reduce((s, m) => s + m.ftePercent, 0);
+                const openTasks = tasks.filter((t) => t.assigneeId === u.id && t.status !== "done" && t.status !== "cancelled").length;
+                return (
+                  <div key={u.id} className="p-2 rounded-md bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{u.name}</span>
+                      <Badge variant={fte > 85 ? "destructive" : "secondary"}>{fte}%</Badge>
+                    </div>
+                    <Progress value={Math.min(fte, 100)} className="h-1 mt-1" />
+                    <div className="text-[10px] text-muted-foreground">{openTasks} {isHe ? "משימות פתוחות" : "open tasks"}</div>
+                  </div>
+                );
+              })}
+            </div>
+          }
+        >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-muted-foreground uppercase">
-                {isHe ? "ניצולת משאבים" : "Capacity vs Demand"}
-              </div>
+              <div className="text-xs text-muted-foreground uppercase">{isHe ? "ניצולת משאבים" : "Capacity vs Demand"}</div>
               <Users className={cn("size-4", isCapacityWarning ? "text-amber-600" : "text-blue-600")} />
             </div>
-            <div className={cn("text-3xl font-bold", isCapacityWarning ? "text-amber-600" : "text-blue-600")}>
-              {capacityUsed}%
-            </div>
+            <div className={cn("text-3xl font-bold", isCapacityWarning ? "text-amber-600" : "text-blue-600")}>{capacityUsed}%</div>
             <Progress value={capacityUsed} className="h-1.5 mt-2" />
             {isCapacityWarning && (
               <div className="text-[10px] text-amber-700 dark:text-amber-400 mt-1 flex items-center gap-1">
                 <AlertTriangle className="size-3" />
-                {isHe ? "שחיקה אפשרית! (>85%)" : "Burnout risk! (>85%)"}
+                {isHe ? "שחיקה אפשרית! · לחץ" : "Burnout risk! · click"}
               </div>
             )}
           </CardContent>
-        </Card>
+        </ClickableKpiCard>
 
         {/* Active Risk Trend */}
-        <Card className="border-red-300">
+        <ClickableKpiCard
+          borderColor="border-red-300"
+          popupTitle={isHe ? "סיכונים פעילים" : "Active Risks"}
+          popupContent={
+            <div className="space-y-2">
+              {tasks.filter((t) => t.status === "blocked" || (t.plannedEnd && new Date(t.plannedEnd).getTime() < Date.now() && t.status !== "done" && t.status !== "cancelled")).slice(0, 8).map((t) => (
+                <div key={t.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                  <span className="font-medium truncate flex-1">{isHe ? t.title : t.titleEn || t.title}</span>
+                  <Badge variant={t.status === "blocked" ? "destructive" : "outline"}>
+                    {t.status === "blocked" ? "🚫" : "⚠️"} {t.status === "blocked" ? (isHe ? "חסום" : "Blocked") : (isHe ? "באיחור" : "Overdue")}
+                  </Badge>
+                </div>
+              ))}
+              <div className="text-muted-foreground pt-1">📊 {isHe ? "עלייה של 75% ב-6 שבועות" : "75% increase in 6 weeks"}</div>
+            </div>
+          }
+        >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-muted-foreground uppercase">
-                {isHe ? "מגמת סיכונים" : "Risk Trend"}
-              </div>
+              <div className="text-xs text-muted-foreground uppercase">{isHe ? "מגמת סיכונים" : "Risk Trend"}</div>
               <TrendingUp className="size-4 text-red-600" />
             </div>
             <div className="text-3xl font-bold text-red-600">14</div>
             <div className="text-xs text-red-600 mt-1 flex items-center gap-1">
               <TrendingUp className="size-3" />
-              +{((14 - 8) / 8 * 100).toFixed(0)}% {isHe ? "ב-6 שבועות" : "in 6 weeks"}
+              +75% {isHe ? "· לחץ לרשימה" : "· click for list"}
             </div>
           </CardContent>
-        </Card>
+        </ClickableKpiCard>
       </div>
 
       {/* Portfolio Health (RAG) + Risk Trend */}
