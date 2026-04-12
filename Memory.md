@@ -758,14 +758,114 @@
 
 ---
 
-## 🎯 המצב הסופי
+---
 
-**🟢 פעיל:** שרת הפיתוח רץ על http://localhost:3000
+### 🗨️ סבב 21: רב-לשוניות מלאה + הסתרת מיילים + יומן אינטראקטיבי
+
+**👤 משתמש:**
+> בטלפון נייד אין שינוי בלוח גאנט. הסתר מיילים. הזמנה לא שולחת מייל. רוסית עולה באנגלית. Calendar לא פעיל.
+
+**🤖 Claude:**
+- יצירת `lib/utils/locale-text.ts` עם `txt()` helper ל-5 שפות
+- עדכון 32 קבצים מ-`isHe` ternary ל-`txt(locale, {...})`
+- הסתרת מיילים: team, gantt popup, reassign dialog, admin
+- יומן: לחיצה על משימה פותחת popup עם פרטים + קישור
+- ROLE_LABELS, NAV_ITEMS, formatDate — הורחבו ל-5 שפות
+
+---
+
+### 🗨️ סבב 22: ידע מערכתי + טבלת הרשאות + תפקיד מנכ"ל
+
+**👤 משתמש:**
+> עוזר אישי ובוט עזרה לא יודעים לענות על שאלות. הוסף טבלת הרשאות. המנכ"ל איננו אדמין.
+
+**🤖 Claude:**
+- Help Bot: 12 כרטיסי ידע חדשים (סה"כ 42) — KPIs, admin, calendar, voice, export
+- עוזר אישי: handler SYSTEM KNOWLEDGE חדש שמחפש ב-Knowledge Base
+- מנכ"ל (u6): שונה מ-admin ל-manager
+- רכיב UserPermissionsTable חדש: 6 משתמשים × 12 הרשאות
+- טאב 5 בניהול מערכת: "טבלת הרשאות"
+
+---
+
+### 🗨️ סבב 23: גאנט רספונסיבי + KPI אינטראקטיבי
+
+**👤 משתמש:**
+> גאנט לא מותאם למובייל. דשבורד KPI לא אינטראקטיבי. לחיצה על פקד לא מציגה מידע.
+
+**🤖 Claude:**
+- גאנט: טבלה רספונסיבית (200px במובייל, 520px בדסקטופ), עמודות מוסתרות ב-sm
+- KPI: 8 כרטיסים (4 PM + 4 PMO) הפכו ללחיצים עם InfoPopup bubbles
+- ClickableKpiCard wrapper + InfoPopup component חדשים
+
+---
+
+### 🗨️ סבב 24: מטריצת הרשאות אינטראקטיבית + תפקיד מותאם
+
+**👤 משתמש:**
+> תפקידים והרשאות - האובייקטים אינם פעילים. "צור תפקיד מותאם" לא עובד.
+
+**🤖 Claude:**
+- מטריצת הרשאות: כל תא הפך ל-toggle button (למעט Admin)
+- כפתורי שמור/אפס, badge "שינויים לא שמורים"
+- דיאלוג יצירת תפקיד מותאם: שם he+en, תבניות, 12 checkboxes
+
+---
+
+### 🗨️ סבב 25: מעבר בין תפקידים + RBAC דינמי
+
+**👤 משתמש:**
+> התאם את היישום לכל תפקיד. הוסף מעבר בין תפקידים בסרגל כלים.
+
+**🤖 Claude:**
+- RoleProvider Context חדש: `currentUser`, `switchUser`, `role`, `can(permission)`
+- Role Switcher בסרגל: כפתור צבעוני + dropdown עם 6 משתמשים
+- Sidebar מסנן nav items לפי הרשאות
+- Add Task נעלם ל-viewer/guest, Invite נעלם ללא manage_team
+- Admin page: Access Denied לכל מי שאינו admin
+- RoleGate component לשימוש חוזר
+
+---
+
+### 🗨️ סבב 26: החלפת שמות + גאנט מורחב + שפות + עוזר בעברית
+
+**👤 משתמש:**
+> החלף שמות לתפקידים. הוסף תלויות בגאנט. שפר אינטראקטיביות. תקן שפות. העוזר לא מדבר עברית.
+
+**🤖 Claude:**
+- u1: "מארק ישראל" → "מנהל פרוגרמת Salesforce"
+- Gantt popup: תאריכים, תלויות (depends on/blocks), tags, priority, assignee+role
+- 346 דפוסי `isHe` נוספים הומרו ל-`txt()` ב-18 קבצים
+- עוזר אישי: `isHe` שונה ל-`locale !== "en"` — עברית ברירת מחדל
+- חתימות טיפוסים: `"he"|"en"` → `string` ב-4 קבצי AI
+
+---
+
+## 🎯 המצב הסופי (12 באפריל 2026)
+
+**🟢 פעיל:** Vercel production — https://management-app-henna.vercel.app
 
 **📁 מיקום הפרויקט:** `C:\Users\imark\Desktop\יישום ניהול משימות\work-os\`
 
 **🔗 GitHub:** https://github.com/hitprojectscenter-beep/Management-APP
 
-**📋 דפים זמינים:**
-- `/he` (עברית RTL) ו-`/en` (אנגלית LTR)
-- 12 דפים מלאים: dashboard, portfolios, projects, tasks, calendar, ai, automations, team, reports, settings + 2 dynamic routes
+**📋 15 דפים + 2 dynamic routes:**
+- `/` המשימות שלי, `/dashboard` דשבורדים, `/gantt` גאנט, `/wbs` WBS
+- `/risks` סיכונים, `/portfolios`, `/projects`, `/tasks`, `/calendar` יומן
+- `/ai` מרכז AI, `/reports` דוחות, `/automations` אוטומציות
+- `/team` צוות, `/admin` ניהול מערכת, `/settings` הגדרות
+- `/tasks/[id]` דף משימה, `/projects/[id]` דף פרויקט
+
+**🌐 5 שפות:** עברית 🇮🇱, אנגלית 🇬🇧, רוסית 🇷🇺, צרפתית 🇫🇷, ספרדית 🇪🇸
+
+**👥 6 משתמשים (תפקידים):**
+- u1: מנהל פרוגרמת Salesforce (admin)
+- u2: מנהל כלל הפעילויות (manager)
+- u3: בעלים - שיווק ומכירות (manager)
+- u4: בעלים - CRM (manager)
+- u5: אחראית תכניות עבודה (manager)
+- u6: מנכ"ל (manager — צפייה מלאה, ללא ניהול משתמשים)
+
+**🔐 RBAC:** 5 תפקידים × 12 הרשאות, Role Switcher בסרגל, UI דינמי לפי תפקיד
+
+**סה"כ commits בסשן:** 8 | **קבצים שהשתנו:** ~50
