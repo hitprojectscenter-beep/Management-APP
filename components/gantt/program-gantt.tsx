@@ -387,26 +387,92 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
           {"task" in selectedData && selectedData.task ? (() => {
             const t = selectedData.task;
             const a = selectedData.assignee;
+            const isCrit = cpm.criticalTaskIds.has(t.id);
+            const depTasks = t.dependencies.map((dId) => scopeTasks.find((st) => st.id === dId)).filter(Boolean);
+            const successors = scopeTasks.filter((st) => st.dependencies.includes(t.id));
+            const durDays = t.plannedStart && t.plannedEnd ? Math.ceil((new Date(t.plannedEnd).getTime() - new Date(t.plannedStart).getTime()) / 86400000) : null;
+            const fmtD = (d: string) => new Date(d).toLocaleDateString(isHe ? "he-IL" : "en-US", { day: "2-digit", month: "2-digit", year: "2-digit" });
             return (
               <div className="space-y-2.5">
                 <div>
-                  <Badge variant={t.status === "done" ? "success" : t.status === "blocked" ? "destructive" : "default"} className="text-[10px] mb-1.5">
-                    {t.status}
-                  </Badge>
+                  <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                    <Badge variant={t.status === "done" ? "secondary" : t.status === "blocked" ? "destructive" : "default"} className="text-[10px]">{t.status}</Badge>
+                    <Badge variant="outline" className="text-[10px]">{t.priority}</Badge>
+                    {isCrit && <Badge className="text-[10px] bg-red-600">⚡ {isHe ? "קריטי" : "Critical"}</Badge>}
+                  </div>
                   <h3 className="font-bold text-sm leading-tight">{isHe ? t.title : t.titleEn || t.title}</h3>
                 </div>
                 {t.description && <p className="text-xs text-muted-foreground line-clamp-2">{t.description}</p>}
+
+                {/* Dates section */}
+                <div className="bg-muted/30 rounded-md p-2 space-y-1.5 text-xs">
+                  <div className="font-semibold text-[10px] uppercase text-muted-foreground">{isHe ? "תאריכים" : "Dates"}</div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                    <div className="flex items-center gap-1"><Calendar className="size-3 text-blue-600" />{isHe ? "תכנון" : "Plan"}: <strong>{t.plannedStart ? fmtD(t.plannedStart) : "—"}</strong></div>
+                    <div className="flex items-center gap-1"><Calendar className="size-3 text-blue-600" />{isHe ? "עד" : "Due"}: <strong>{t.plannedEnd ? fmtD(t.plannedEnd) : "—"}</strong></div>
+                    {(t.actualStart || t.actualEnd) && (
+                      <>
+                        <div className="flex items-center gap-1"><Calendar className="size-3 text-emerald-600" />{isHe ? "בפועל" : "Actual"}: <strong>{t.actualStart ? fmtD(t.actualStart) : "—"}</strong></div>
+                        <div className="flex items-center gap-1"><Calendar className="size-3 text-emerald-600" />{isHe ? "סיום" : "End"}: <strong>{t.actualEnd ? fmtD(t.actualEnd) : "—"}</strong></div>
+                      </>
+                    )}
+                  </div>
+                  {durDays && <div className="text-[10px] text-muted-foreground">{isHe ? "משך" : "Duration"}: {durDays} {isHe ? "ימים" : "days"}</div>}
+                </div>
+
+                {/* Progress */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="flex items-center gap-1"><Calendar className="size-3 text-blue-600" />{isHe ? "התחלה" : "Start"}: <strong>{t.plannedStart ? new Date(t.plannedStart).toLocaleDateString("he-IL") : "—"}</strong></div>
-                  <div className="flex items-center gap-1"><Calendar className="size-3 text-red-600" />{isHe ? "סיום" : "End"}: <strong>{t.plannedEnd ? new Date(t.plannedEnd).toLocaleDateString("he-IL") : "—"}</strong></div>
                   <div className="flex items-center gap-1"><Clock className="size-3" />{isHe ? "שעות" : "Hours"}: <strong>{t.actualHours}/{t.estimateHours}</strong></div>
                   <div className="flex items-center gap-1"><Target className="size-3" />{isHe ? "התקדמות" : "Progress"}: <strong>{t.progressPercent}%</strong></div>
                 </div>
                 <Progress value={t.progressPercent} className="h-2" />
+
+                {/* Dependencies */}
+                {(depTasks.length > 0 || successors.length > 0) && (
+                  <div className="bg-indigo-50 dark:bg-indigo-950/20 rounded-md p-2 space-y-1 text-xs">
+                    <div className="font-semibold text-[10px] uppercase text-indigo-600">{isHe ? "תלויות" : "Dependencies"}</div>
+                    {depTasks.length > 0 && (
+                      <div>
+                        <span className="text-muted-foreground">{isHe ? "תלוי ב:" : "Depends on:"}</span>
+                        {depTasks.map((dep) => (
+                          <div key={dep!.id} className="flex items-center gap-1 ms-2">
+                            <span className="text-indigo-600">←</span>
+                            <span className="truncate">{isHe ? dep!.title : dep!.titleEn || dep!.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {successors.length > 0 && (
+                      <div>
+                        <span className="text-muted-foreground">{isHe ? "חוסם את:" : "Blocks:"}</span>
+                        {successors.map((suc) => (
+                          <div key={suc.id} className="flex items-center gap-1 ms-2">
+                            <span className="text-red-500">→</span>
+                            <span className="truncate">{isHe ? suc.title : suc.titleEn || suc.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tags */}
+                {t.tags.length > 0 && (
+                  <div className="flex gap-1 flex-wrap">
+                    {t.tags.map((tag) => (
+                      <span key={tag} className="text-[9px] bg-muted px-1.5 py-0.5 rounded">{tag}</span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Assignee */}
                 {a && (
                   <div className="flex items-center gap-2 pt-1 border-t">
                     <Avatar src={a.image} fallback={a.name[0]} className="size-6" />
-                    <div className="text-xs"><div className="font-medium">{a.name}</div></div>
+                    <div className="text-xs">
+                      <div className="font-medium">{a.name}</div>
+                      <div className="text-[10px] text-muted-foreground">{a.role}</div>
+                    </div>
                   </div>
                 )}
                 <Link href={`/tasks/${t.id}`} className="text-xs text-blue-600 hover:underline block pt-1">
@@ -417,6 +483,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
           })() : "node" in selectedData && selectedData.node ? (() => {
             const n = selectedData.node!;
             const r = selectedData.rollup;
+            const fmtD = (d: string) => new Date(d).toLocaleDateString(isHe ? "he-IL" : "en-US", { day: "2-digit", month: "2-digit", year: "2-digit" });
             return (
               <div className="space-y-2.5">
                 <div>
@@ -425,10 +492,24 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
                   {n.description && <p className="text-xs text-muted-foreground mt-1">{n.description}</p>}
                   {n.deliverable && <p className="text-xs mt-1">📦 {isHe ? "תוצר" : "Deliverable"}: {n.deliverable}</p>}
                 </div>
+
+                {/* Dates from rollup */}
+                {r && (r.plannedStart || r.plannedEnd) && (
+                  <div className="bg-muted/30 rounded-md p-2 text-xs space-y-1">
+                    <div className="font-semibold text-[10px] uppercase text-muted-foreground">{isHe ? "תאריכים (אגרגציה)" : "Dates (rolled up)"}</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {r.plannedStart && <div><Calendar className="size-3 text-blue-600 inline me-1" />{isHe ? "התחלה" : "Start"}: <strong>{fmtD(r.plannedStart)}</strong></div>}
+                      {r.plannedEnd && <div><Calendar className="size-3 text-blue-600 inline me-1" />{isHe ? "סיום" : "End"}: <strong>{fmtD(r.plannedEnd)}</strong></div>}
+                    </div>
+                  </div>
+                )}
+
                 {r && (
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>{isHe ? "משימות" : "Tasks"}: <strong>{r.taskCount}</strong></div>
                     <div>{isHe ? "הושלמו" : "Done"}: <strong>{r.doneCount}</strong></div>
+                    <div>{isHe ? "חסומות" : "Blocked"}: <strong>{r.blockedCount}</strong></div>
+                    <div>{isHe ? "באיחור" : "Overdue"}: <strong>{r.overdueCount}</strong></div>
                     <div>{isHe ? "שעות" : "Hours"}: <strong>{Math.round(r.totalActualHours)}/{Math.round(r.totalEstimateHours)}</strong></div>
                     <div>{isHe ? "התקדמות" : "Progress"}: <strong>{Math.round(r.weightedProgress)}%</strong></div>
                   </div>
@@ -451,6 +532,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
           <span><strong>{rows.filter((r) => r.kind === "wbs").length}</strong> {isHe ? "חבילות עבודה" : "work packages"}</span>
           <span><strong>{scopeTasks.length}</strong> {isHe ? "משימות" : "tasks"}</span>
           <span className="text-red-600"><strong>{cpm.criticalTaskIds.size}</strong> {isHe ? "קריטיות" : "critical"}</span>
+          <span className="text-indigo-600"><strong>{scopeTasks.reduce((s, t) => s + t.dependencies.length, 0)}</strong> {isHe ? "תלויות" : "dependencies"}</span>
         </div>
         <span className="hidden sm:inline">{isHe ? "לחץ על פס או שם לפרטים" : "Click bar or name for details"}</span>
       </div>

@@ -91,7 +91,7 @@ export interface MockProjectMember {
 /**
  * The currently logged-in user (for demo mode).
  * בייצור זה יגיע מה-session של Auth.js.
- * מוגדר ל-"u1" (מארק ישראל - מנהל פרוגרמת Salesforce ומנהל פרויקטים טכני).
+ * מוגדר ל-"u1" (מנהל פרוגרמת Salesforce - מנהל פרוגרמת Salesforce ומנהל פרויקטים טכני).
  */
 export const CURRENT_USER_ID = "u1";
 
@@ -101,9 +101,9 @@ export const CURRENT_USER_ID = "u1";
 export const mockUsers: MockUser[] = [
   {
     id: "u1",
-    name: "מארק ישראל",
+    name: "מנהל פרוגרמת Salesforce",
     email: "mark.israel@mapi.gov.il",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=Mark%20Israel",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=SalesforceManager",
     locale: "he",
     role: "admin",
     skills: ["salesforce", "pmo", "technical-pm", "architecture", "strategy", "integration"],
@@ -726,7 +726,7 @@ export const mockTasks: MockTask[] = [
       "איסוף דרישות לקוח, כתיבת מסמך בריף (RFP) בהתאם לדרישות שנאספו. קבלת אישורים מועדת מכרזים עליונה ופרסום המסמך לקבלת הצעות המחיר.",
     status: "done",
     priority: "high",
-    assigneeId: "u1", // מארק ישראל 50%
+    assigneeId: "u1", // מנהל פרוגרמת Salesforce 50%
     plannedStart: "2025-09-01T00:00:00.000Z",
     plannedEnd: "2025-12-30T00:00:00.000Z",
     actualStart: "2025-09-01T00:00:00.000Z",
@@ -747,7 +747,7 @@ export const mockTasks: MockTask[] = [
       "קיום כנס ספקים, מענה לשאלות הבהרה, קיום ראיונות ספקים, קבלת הצעות מחיר ובחירת הספק הזוכה.",
     status: "done",
     priority: "critical",
-    assigneeId: "u1", // מארק ישראל 30%
+    assigneeId: "u1", // מנהל פרוגרמת Salesforce 30%
     plannedStart: "2025-12-25T00:00:00.000Z",
     plannedEnd: "2026-03-01T00:00:00.000Z",
     actualStart: "2025-12-25T00:00:00.000Z",
@@ -768,7 +768,7 @@ export const mockTasks: MockTask[] = [
       "אפיון יישום ועלייה לאוויר עם 3 מסלולי מכירה הראשונים שנבחרו. 3 מתוך 14.",
     status: "in_progress",
     priority: "high",
-    assigneeId: "u1", // מארק ישראל 70%
+    assigneeId: "u1", // מנהל פרוגרמת Salesforce 70%
     plannedStart: "2026-05-01T00:00:00.000Z",
     plannedEnd: "2026-07-30T00:00:00.000Z",
     actualStart: "2026-05-01T00:00:00.000Z",
@@ -852,7 +852,7 @@ export const mockTasks: MockTask[] = [
       "אפיון יישום ועלייה לאוויר של שו\"שים, תיקונים והתאמות.",
     status: "not_started",
     priority: "critical",
-    assigneeId: "u1", // מארק ישראל 80%
+    assigneeId: "u1", // מנהל פרוגרמת Salesforce 80%
     plannedStart: "2027-05-01T00:00:00.000Z",
     plannedEnd: "2027-07-30T00:00:00.000Z",
     actualStart: null,
@@ -873,7 +873,7 @@ export const mockTasks: MockTask[] = [
       "מתן מענה טכני לסוגיות שהתעוררו במערכת במהלך השימוש בה.",
     status: "not_started",
     priority: "medium",
-    assigneeId: "u1", // מארק ישראל 15%
+    assigneeId: "u1", // מנהל פרוגרמת Salesforce 15%
     plannedStart: "2027-08-01T00:00:00.000Z",
     plannedEnd: "2028-07-30T00:00:00.000Z",
     actualStart: null,
@@ -1063,7 +1063,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-1",
     wbsNodeId: "wbs-portfolio-1",
-    userId: "u6", // חגי רונן - CEO
+    userId: "u6", // מנכ״ל - CEO
     roleInProject: "חסות בכירה (מנכ״ל)",
     roleInProjectEn: "Executive Sponsor (CEO)",
     ftePercent: 10,
@@ -1072,7 +1072,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-2",
     wbsNodeId: "wbs-portfolio-1",
-    userId: "u2", // ניר ברלוביץ' - מנהל כלל הפעילויות
+    userId: "u2", // מנהל כלל הפעילויות
     roleInProject: "מנהל כלל הפעילויות",
     roleInProjectEn: "Head of Operations",
     ftePercent: 25,
@@ -1081,7 +1081,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-3",
     wbsNodeId: "wbs-portfolio-1",
-    userId: "u5", // אסתר מהרטו - אחראית תכניות עבודה
+    userId: "u5", // אחראית תכניות עבודה
     roleInProject: "אחראית תכניות עבודה",
     roleInProjectEn: "Work Plans Lead",
     ftePercent: 30,
@@ -1145,12 +1145,12 @@ export const mockProjectMembers: MockProjectMember[] = [
 
   // ============================================
   // Salesforce Program (המוקד הארגוני העיקרי)
-  // מארק ישראל - מנהל פרוגרמה ומנהל פרויקטים טכני
+  // מנהל פרוגרמת Salesforce - מנהל פרוגרמה ומנהל פרויקטים טכני
   // ============================================
   {
     id: "pm-sf-1",
     wbsNodeId: "wbs-program-sf",
-    userId: "u1", // מארק ישראל
+    userId: "u1", // מנהל פרוגרמת Salesforce
     roleInProject: "מנהל פרוגרמת Salesforce",
     roleInProjectEn: "Salesforce Program Manager",
     ftePercent: 50,
@@ -1159,7 +1159,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-sf-2",
     wbsNodeId: "wbs-program-sf",
-    userId: "u6", // חגי רונן - מנכ״ל
+    userId: "u6", // מנכ״ל
     roleInProject: "חסות מנכ״ל",
     roleInProjectEn: "CEO Sponsor",
     ftePercent: 5,
@@ -1168,7 +1168,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-sf-3",
     wbsNodeId: "wbs-program-sf",
-    userId: "u2", // ניר ברלוביץ'
+    userId: "u2", // מנהל כלל הפעילויות
     roleInProject: "פיקוח תפעולי",
     roleInProjectEn: "Operations Oversight",
     ftePercent: 10,
@@ -1177,7 +1177,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-sf-4",
     wbsNodeId: "wbs-program-sf",
-    userId: "u5", // אסתר מהרטו
+    userId: "u5", // אחראית תכניות עבודה
     roleInProject: "תכניות עבודה",
     roleInProjectEn: "Work Plans",
     ftePercent: 15,
@@ -1185,12 +1185,12 @@ export const mockProjectMembers: MockProjectMember[] = [
   },
 
   // ============================================
-  // Project: CRM מבוסס Salesforce - בעלים: אפרים ג'יאן
+  // Project: CRM מבוסס Salesforce - בעלים: בעלים - CRM
   // ============================================
   {
     id: "pm-sf-crm-1",
     wbsNodeId: "wbs-project-sf-crm",
-    userId: "u4", // אפרים ג'יאן
+    userId: "u4", // בעלים - CRM
     roleInProject: "בעלים - CRM",
     roleInProjectEn: "CRM Product Owner",
     ftePercent: 40,
@@ -1199,7 +1199,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-sf-crm-2",
     wbsNodeId: "wbs-project-sf-crm",
-    userId: "u1", // מארק ישראל
+    userId: "u1", // מנהל פרוגרמת Salesforce
     roleInProject: "מנהל פרויקטים טכני",
     roleInProjectEn: "Technical Project Manager",
     ftePercent: 15,
@@ -1208,7 +1208,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-sf-crm-3",
     wbsNodeId: "wbs-project-sf-crm",
-    userId: "u5", // אסתר מהרטו
+    userId: "u5", // אחראית תכניות עבודה
     roleInProject: "תיעוד ותכניות",
     roleInProjectEn: "Documentation & Plans",
     ftePercent: 10,
@@ -1222,7 +1222,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-sf-mkt-1",
     wbsNodeId: "wbs-project-sf-marketing",
-    userId: "u1", // מארק ישראל - 50-70% across phases
+    userId: "u1", // מנהל פרוגרמת Salesforce - 50-70% across phases
     roleInProject: "מנהל פרויקטים טכני",
     roleInProjectEn: "Technical Project Manager",
     ftePercent: 50,
@@ -1231,7 +1231,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-sf-mkt-2",
     wbsNodeId: "wbs-project-sf-marketing",
-    userId: "u3", // אלעד אסרף - 20-50% across phases
+    userId: "u3", // בעלים - שיווק ומכירות - 20-50% across phases
     roleInProject: "בעלים - שיווק מכירות והכנסות",
     roleInProjectEn: "Marketing, Sales & Revenue Owner",
     ftePercent: 30,
@@ -1240,7 +1240,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-sf-mkt-3",
     wbsNodeId: "wbs-project-sf-marketing",
-    userId: "u2", // ניר ברלוביץ' - 10-20%
+    userId: "u2", // מנהל כלל הפעילויות - 10-20%
     roleInProject: "פיקוח תפעולי",
     roleInProjectEn: "Operations Oversight",
     ftePercent: 10,
@@ -1249,12 +1249,12 @@ export const mockProjectMembers: MockProjectMember[] = [
 
   // ============================================
   // Project: יישום ניהול משימות (sub-project)
-  // מארק ישראל כ-Owner + Technical PM
+  // מנהל פרוגרמת Salesforce כ-Owner + Technical PM
   // ============================================
   {
     id: "pm-sf-tsk-1",
     wbsNodeId: "wbs-project-sf-tasks",
-    userId: "u1", // מארק ישראל
+    userId: "u1", // מנהל פרוגרמת Salesforce
     roleInProject: "בעלים + מנהל פרויקטים טכני",
     roleInProjectEn: "Owner + Technical Project Manager",
     ftePercent: 15,
@@ -1263,7 +1263,7 @@ export const mockProjectMembers: MockProjectMember[] = [
   {
     id: "pm-sf-tsk-2",
     wbsNodeId: "wbs-project-sf-tasks",
-    userId: "u5", // אסתר
+    userId: "u5", // אחראית תכניות עבודה
     roleInProject: "תיעוד ותכניות",
     roleInProjectEn: "Documentation & Plans",
     ftePercent: 10,
