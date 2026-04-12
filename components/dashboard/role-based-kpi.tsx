@@ -27,6 +27,7 @@ import {
   RadialBarChart, RadialBar, Legend, PieChart, Pie, Cell,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import type { MockTask, MockUser, MockWbsNode } from "@/lib/db/mock-data";
 import { mockProjectMembers } from "@/lib/db/mock-data";
 
@@ -104,7 +105,7 @@ export function RoleBasedKpi({
   programs: MockWbsNode[];
   locale: string;
 }) {
-  const isHe = locale === "he";
+
   const [role, setRole] = useState<Role>("pm");
 
   return (
@@ -134,15 +135,13 @@ export function RoleBasedKpi({
                 </div>
                 <div>
                   <div className="font-bold text-base">
-                    {isHe ? "מנהל פרויקט" : "Project Manager"}
+                    {txt(locale, { he: "מנהל פרויקט", en: "Project Manager", ru: "Менеджер проекта", fr: "Chef de projet", es: "Gerente de proyecto" })}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    {isHe ? "Project Manager · תצוגה תפעולית" : "Operational tactical view"}
+                    {txt(locale, { he: "Project Manager · תצוגה תפעולית", en: "Operational tactical view", ru: "Оперативный тактический обзор", fr: "Vue opérationnelle tactique", es: "Vista operativa táctica" })}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-2 line-clamp-2">
-                    {isHe
-                      ? '"האם המשימות בפרויקט מסתיימות בזמן ובתקציב?"'
-                      : '"Are project tasks completing on time and on budget?"'}
+                    {txt(locale, { he: '"האם המשימות בפרויקט מסתיימות בזמן ובתקציב?"', en: '"Are project tasks completing on time and on budget?"' })}
                   </div>
                 </div>
               </div>
@@ -169,15 +168,13 @@ export function RoleBasedKpi({
                 </div>
                 <div>
                   <div className="font-bold text-base">
-                    {isHe ? "מנהל פורטפוליו / PMO" : "Portfolio / PMO Manager"}
+                    {txt(locale, { he: "מנהל פורטפוליו / PMO", en: "Portfolio / PMO Manager", ru: "Менеджер портфеля / PMO", fr: "Responsable portefeuille / PMO", es: "Gestor de cartera / PMO" })}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    {isHe ? "PMO · ראיית-על אסטרטגית" : "Strategic oversight view"}
+                    {txt(locale, { he: "PMO · ראיית-על אסטרטגית", en: "Strategic oversight view", ru: "Стратегический обзор", fr: "Vue stratégique", es: "Vista estratégica" })}
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-2 line-clamp-2">
-                    {isHe
-                      ? '"האם אנו עובדים על הפרויקטים הנכונים?"'
-                      : '"Are we working on the right projects?"'}
+                    {txt(locale, { he: '"האם אנו עובדים על הפרויקטים הנכונים?"', en: '"Are we working on the right projects?"' })}
                   </div>
                 </div>
               </div>
@@ -208,7 +205,7 @@ function ProjectManagerView({
   projects: MockWbsNode[];
   locale: string;
 }) {
-  const isHe = locale === "he";
+
 
   // KPI 1: Schedule Variance (in days)
   const completedTasks = tasks.filter((t) => t.status === "done" && t.actualEnd && t.plannedEnd);
@@ -266,12 +263,10 @@ function ProjectManagerView({
         </div>
         <div>
           <div className="font-semibold text-blue-900 dark:text-blue-300">
-            {isHe ? "תצוגת מנהל פרויקט - דשבורד תפעולי" : "Project Manager Dashboard - Operational view"}
+            {txt(locale, { he: "תצוגת מנהל פרויקט - דשבורד תפעולי", en: "Project Manager Dashboard - Operational view", ru: "Панель менеджера проекта — оперативный обзор", fr: "Tableau de bord Chef de projet — vue opérationnelle", es: "Panel del Gerente de proyecto — vista operativa" })}
           </div>
           <div className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
-            {isHe
-              ? "מדדי ביצוע ברמת הפרויקט הבודד: לוחות זמנים, throughput, תקציב, ועומס צוות"
-              : "Project-level KPIs: schedule, throughput, budget, and team workload"}
+            {txt(locale, { he: "מדדי ביצוע ברמת הפרויקט הבודד: לוחות זמנים, throughput, תקציב, ועומס צוות", en: "Project-level KPIs: schedule, throughput, budget, and team workload" })}
           </div>
         </div>
       </div>
@@ -281,7 +276,7 @@ function ProjectManagerView({
         {/* Schedule Variance */}
         <ClickableKpiCard
           borderColor={schedVar > 3 ? "border-red-300" : schedVar > 0 ? "border-amber-300" : "border-emerald-300"}
-          popupTitle={isHe ? "פרויקטים עם חריגות לו״ז" : "Projects with Schedule Variance"}
+          popupTitle={txt(locale, { he: "פרויקטים עם חריגות לו״ז", en: "Projects with Schedule Variance" })}
           popupContent={
             <div className="space-y-2">
               {projects.map((p) => {
@@ -291,21 +286,21 @@ function ProjectManagerView({
                   : 0;
                 return (
                   <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <span className="font-medium">{isHe ? p.name : p.nameEn || p.name}</span>
+                    <span className="font-medium">{locale === "he" ? p.name : p.nameEn || p.name}</span>
                     <Badge variant={variance > 3 ? "destructive" : variance > 0 ? "outline" : "secondary"}>
-                      {variance > 0 ? "+" : ""}{variance.toFixed(1)} {isHe ? "ימים" : "days"}
+                      {variance > 0 ? "+" : ""}{variance.toFixed(1)} {txt(locale, { he: "ימים", en: "days" })}
                     </Badge>
                   </div>
                 );
               })}
-              <div className="text-muted-foreground pt-1">{isHe ? "💡 חיובי = איחור, שלילי = מוקדם" : "💡 Positive = late, Negative = early"}</div>
+              <div className="text-muted-foreground pt-1">{txt(locale, { he: "💡 חיובי = איחור, שלילי = מוקדם", en: "💡 Positive = late, Negative = early" })}</div>
             </div>
           }
         >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-muted-foreground uppercase">
-                {isHe ? "חריגת לו״ז" : "Schedule Variance"}
+                {txt(locale, { he: "חריגת לו״ז", en: "Schedule Variance" })}
               </div>
               <Clock className={cn("size-4", schedVar > 3 ? "text-red-600" : schedVar > 0 ? "text-amber-600" : "text-emerald-600")} />
             </div>
@@ -313,7 +308,7 @@ function ProjectManagerView({
               {schedVar > 0 ? "+" : ""}{schedVar.toFixed(1)}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {isHe ? "ימים בממוצע · לחץ לפרטים" : "days average · click for details"}
+              {txt(locale, { he: "ימים בממוצע · לחץ לפרטים", en: "days average · click for details" })}
             </div>
           </CardContent>
         </ClickableKpiCard>
@@ -321,16 +316,16 @@ function ProjectManagerView({
         {/* Milestone Slippage */}
         <ClickableKpiCard
           borderColor={milestonesSlipped > 0 ? "border-red-300" : "border-emerald-300"}
-          popupTitle={isHe ? "אבני דרך קריטיות" : "Critical Milestones"}
+          popupTitle={txt(locale, { he: "אבני דרך קריטיות", en: "Critical Milestones" })}
           popupContent={
             <div className="space-y-2">
               {tasks.filter((t) => t.priority === "critical" && t.plannedEnd).slice(0, 6).map((t) => {
                 const isLate = new Date(t.plannedEnd).getTime() < Date.now() && t.status !== "done";
                 return (
                   <div key={t.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <span className="font-medium truncate flex-1">{isHe ? t.title : t.titleEn || t.title}</span>
+                    <span className="font-medium truncate flex-1">{locale === "he" ? t.title : t.titleEn || t.title}</span>
                     <Badge variant={isLate ? "destructive" : t.status === "done" ? "secondary" : "outline"}>
-                      {isLate ? (isHe ? "באיחור" : "Late") : t.status === "done" ? "✅" : (isHe ? "בזמן" : "On time")}
+                      {isLate ? txt(locale, { he: "באיחור", en: "Late" }) : t.status === "done" ? "✅" : txt(locale, { he: "בזמן", en: "On time" })}
                     </Badge>
                   </div>
                 );
@@ -341,7 +336,7 @@ function ProjectManagerView({
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-muted-foreground uppercase">
-                {isHe ? "אבני דרך באיחור" : "Milestone Slippage"}
+                {txt(locale, { he: "אבני דרך באיחור", en: "Milestone Slippage" })}
               </div>
               <Flag className={cn("size-4", milestonesSlipped > 0 ? "text-red-600" : "text-emerald-600")} />
             </div>
@@ -349,7 +344,7 @@ function ProjectManagerView({
               {milestonesSlipped}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {isHe ? "לחץ לרשימת אבני דרך" : "click for milestone list"}
+              {txt(locale, { he: "לחץ לרשימת אבני דרך", en: "click for milestone list" })}
             </div>
           </CardContent>
         </ClickableKpiCard>
@@ -357,15 +352,15 @@ function ProjectManagerView({
         {/* Throughput Avg */}
         <ClickableKpiCard
           borderColor="border-blue-300"
-          popupTitle={isHe ? "Throughput — פירוט שבועי" : "Weekly Throughput Breakdown"}
+          popupTitle={txt(locale, { he: "Throughput — פירוט שבועי", en: "Weekly Throughput Breakdown" })}
           popupContent={
             <div className="space-y-2">
               {throughputData.map((w) => (
                 <div key={w.week} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
                   <span className="font-medium">{w.week}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-blue-600">{isHe ? "תכנון" : "Plan"}: {w.planned}</span>
-                    <span className="text-emerald-600">{isHe ? "ביצוע" : "Actual"}: {w.actual}</span>
+                    <span className="text-blue-600">{txt(locale, { he: "תכנון", en: "Plan" })}: {w.planned}</span>
+                    <span className="text-emerald-600">{txt(locale, { he: "ביצוע", en: "Actual" })}: {w.actual}</span>
                     <Badge variant={w.actual >= w.planned ? "secondary" : "outline"}>
                       {((w.actual / w.planned) * 100).toFixed(0)}%
                     </Badge>
@@ -378,13 +373,13 @@ function ProjectManagerView({
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-muted-foreground uppercase">
-                {isHe ? "Throughput שבועי" : "Weekly Throughput"}
+                {txt(locale, { he: "Throughput שבועי", en: "Weekly Throughput" })}
               </div>
               <Activity className="size-4 text-blue-600" />
             </div>
             <div className="text-3xl font-bold text-blue-600">13.5/16</div>
             <div className="text-xs text-muted-foreground mt-1">
-              {isHe ? "ביצוע מול תכנון · לחץ לפרטים" : "actual vs planned · click for details"}
+              {txt(locale, { he: "ביצוע מול תכנון · לחץ לפרטים", en: "actual vs planned · click for details" })}
             </div>
           </CardContent>
         </ClickableKpiCard>
@@ -392,7 +387,7 @@ function ProjectManagerView({
         {/* Budget Adherence */}
         <ClickableKpiCard
           borderColor={isOverBudget ? "border-red-300" : "border-emerald-300"}
-          popupTitle={isHe ? "פירוט תקציבי לפי פרויקט" : "Budget Breakdown by Project"}
+          popupTitle={txt(locale, { he: "פירוט תקציבי לפי פרויקט", en: "Budget Breakdown by Project" })}
           popupContent={
             <div className="space-y-2">
               {projects.map((p, i) => {
@@ -402,7 +397,7 @@ function ProjectManagerView({
                 return (
                   <div key={p.id} className="p-2 rounded-md bg-muted/30">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{isHe ? p.name : p.nameEn || p.name}</span>
+                      <span className="font-medium">{locale === "he" ? p.name : p.nameEn || p.name}</span>
                       <Badge variant={pct > 85 ? "destructive" : "secondary"}>{pct}%</Badge>
                     </div>
                     <Progress value={pct} className="h-1 mt-1" />
@@ -418,7 +413,7 @@ function ProjectManagerView({
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-muted-foreground uppercase">
-                {isHe ? "ניצול תקציב" : "Budget Adherence"}
+                {txt(locale, { he: "ניצול תקציב", en: "Budget Adherence" })}
               </div>
               <DollarSign className={cn("size-4", isOverBudget ? "text-red-600" : "text-emerald-600")} />
             </div>
@@ -427,7 +422,7 @@ function ProjectManagerView({
             </div>
             <Progress value={budgetPercent} className="h-1.5 mt-2" />
             <div className="text-xs text-muted-foreground mt-1">
-              ₪{(budgetSpent / 1000).toFixed(0)}k / ₪{(budgetTotal / 1000).toFixed(0)}k · {isHe ? "לחץ" : "click"}
+              ₪{(budgetSpent / 1000).toFixed(0)}k / ₪{(budgetTotal / 1000).toFixed(0)}k · {txt(locale, { he: "לחץ", en: "click" })}
             </div>
           </CardContent>
         </ClickableKpiCard>
@@ -438,13 +433,11 @@ function ProjectManagerView({
         {/* Throughput chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{isHe ? "Throughput - מתוכנן מול ביצוע" : "Throughput - Planned vs Actual"}</CardTitle>
+            <CardTitle className="text-base">{txt(locale, { he: "Throughput - מתוכנן מול ביצוע", en: "Throughput - Planned vs Actual" })}</CardTitle>
             <CardDescription className="flex items-start gap-1.5">
               <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
               <span>
-                {isHe
-                  ? "השוואה שבועית של מספר המשימות שתוכננו לעומת אלו שנסגרו בפועל. פער מתמשך מצביע על קצב עבודה איטי מהצפוי."
-                  : "Weekly comparison of planned vs actually closed tasks. Persistent gap = slower than expected pace."}
+                {txt(locale, { he: "השוואה שבועית של מספר המשימות שתוכננו לעומת אלו שנסגרו בפועל. פער מתמשך מצביע על קצב עבודה איטי מהצפוי.", en: "Weekly comparison of planned vs actually closed tasks. Persistent gap = slower than expected pace." })}
               </span>
             </CardDescription>
           </CardHeader>
@@ -456,8 +449,8 @@ function ProjectManagerView({
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
                 <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="planned" name={isHe ? "מתוכנן" : "Planned"} fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="actual" name={isHe ? "ביצוע" : "Actual"} fill="hsl(142, 71%, 45%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="planned" name={txt(locale, { he: "מתוכנן", en: "Planned" })} fill="hsl(217, 91%, 60%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="actual" name={txt(locale, { he: "ביצוע", en: "Actual" })} fill="hsl(142, 71%, 45%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -466,13 +459,11 @@ function ProjectManagerView({
         {/* Workload chart */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{isHe ? "עומס וניצולת הצוות" : "Team Workload & Utilization"}</CardTitle>
+            <CardTitle className="text-base">{txt(locale, { he: "עומס וניצולת הצוות", en: "Team Workload & Utilization" })}</CardTitle>
             <CardDescription className="flex items-start gap-1.5">
               <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
               <span>
-                {isHe
-                  ? "התפלגות משימות לכל חבר צוות (פתוחות / הושלמו / חסומות). מאפשר זיהוי צווארי בקבוק או עומס יתר נקודתי."
-                  : "Per-member task distribution. Helps spot bottlenecks or pinpoint overload."}
+                {txt(locale, { he: "התפלגות משימות לכל חבר צוות (פתוחות / הושלמו / חסומות). מאפשר זיהוי צווארי בקבוק או עומס יתר נקודתי.", en: "Per-member task distribution. Helps spot bottlenecks or pinpoint overload." })}
               </span>
             </CardDescription>
           </CardHeader>
@@ -484,9 +475,9 @@ function ProjectManagerView({
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
                 <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="open" name={isHe ? "פתוחות" : "Open"} stackId="a" fill="hsl(217, 91%, 60%)" />
-                <Bar dataKey="done" name={isHe ? "הושלמו" : "Done"} stackId="a" fill="hsl(142, 71%, 45%)" />
-                <Bar dataKey="blocked" name={isHe ? "חסומות" : "Blocked"} stackId="a" fill="hsl(0, 84%, 60%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="open" name={txt(locale, { he: "פתוחות", en: "Open" })} stackId="a" fill="hsl(217, 91%, 60%)" />
+                <Bar dataKey="done" name={txt(locale, { he: "הושלמו", en: "Done" })} stackId="a" fill="hsl(142, 71%, 45%)" />
+                <Bar dataKey="blocked" name={txt(locale, { he: "חסומות", en: "Blocked" })} stackId="a" fill="hsl(0, 84%, 60%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -512,7 +503,7 @@ function PmoManagerView({
   programs: MockWbsNode[];
   locale: string;
 }) {
-  const isHe = locale === "he";
+
 
   // Strategic alignment - mock score (% of projects aligned with goals)
   const strategicAlignment = 78;
@@ -563,12 +554,10 @@ function PmoManagerView({
         </div>
         <div>
           <div className="font-semibold text-purple-900 dark:text-purple-300">
-            {isHe ? "תצוגת PMO / מנהל פורטפוליו - ראייה אסטרטגית" : "PMO / Portfolio Manager - Strategic view"}
+            {txt(locale, { he: "תצוגת PMO / מנהל פורטפוליו - ראייה אסטרטגית", en: "PMO / Portfolio Manager - Strategic view", ru: "PMO / Менеджер портфеля — стратегический обзор", fr: "PMO / Responsable portefeuille — vue stratégique", es: "PMO / Gestor de cartera — vista estratégica" })}
           </div>
           <div className="text-xs text-purple-700 dark:text-purple-400 mt-0.5">
-            {isHe
-              ? "מדדים רוחביים: יישור אסטרטגי, ROI, קיבולת ארגונית, בריאות פורטפוליו, ועלויות EVM"
-              : "Cross-portfolio: alignment, ROI, capacity, health (RAG), EVM cost analysis"}
+            {txt(locale, { he: "מדדים רוחביים: יישור אסטרטגי, ROI, קיבולת ארגונית, בריאות פורטפוליו, ועלויות EVM", en: "Cross-portfolio: alignment, ROI, capacity, health (RAG), EVM cost analysis" })}
           </div>
         </div>
       </div>
@@ -578,7 +567,7 @@ function PmoManagerView({
         {/* Strategic Alignment */}
         <ClickableKpiCard
           borderColor="border-purple-300"
-          popupTitle={isHe ? "פרויקטים פעילים" : "Active Projects"}
+          popupTitle={txt(locale, { he: "פרויקטים פעילים", en: "Active Projects" })}
           popupContent={
             <div className="space-y-2">
               {projects.map((p) => {
@@ -586,61 +575,61 @@ function PmoManagerView({
                 const aligned = Math.random() > 0.3;
                 return (
                   <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <span className="font-medium">{isHe ? p.name : p.nameEn || p.name}</span>
+                    <span className="font-medium">{locale === "he" ? p.name : p.nameEn || p.name}</span>
                     <Badge variant={aligned ? "secondary" : "destructive"}>
-                      {aligned ? "✅ " + (isHe ? "מיושר" : "Aligned") : "⚠️ " + (isHe ? "לא מיושר" : "Misaligned")}
+                      {aligned ? "✅ " + txt(locale, { he: "מיושר", en: "Aligned" }) : "⚠️ " + txt(locale, { he: "לא מיושר", en: "Misaligned" })}
                     </Badge>
                   </div>
                 );
               })}
-              <div className="text-muted-foreground pt-1">💡 {isHe ? "ציון כולל:" : "Overall:"} {strategicAlignment}%</div>
+              <div className="text-muted-foreground pt-1">💡 {txt(locale, { he: "ציון כולל:", en: "Overall:" })} {strategicAlignment}%</div>
             </div>
           }
         >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-muted-foreground uppercase">{isHe ? "יישור אסטרטגי" : "Strategic Alignment"}</div>
+              <div className="text-xs text-muted-foreground uppercase">{txt(locale, { he: "יישור אסטרטגי", en: "Strategic Alignment" })}</div>
               <Target className="size-4 text-purple-600" />
             </div>
             <div className="text-3xl font-bold text-purple-600">{strategicAlignment}%</div>
             <Progress value={strategicAlignment} className="h-1.5 mt-2" />
-            <div className="text-xs text-muted-foreground mt-1">{isHe ? "לחץ לפרויקטים" : "click for projects"}</div>
+            <div className="text-xs text-muted-foreground mt-1">{txt(locale, { he: "לחץ לפרויקטים", en: "click for projects" })}</div>
           </CardContent>
         </ClickableKpiCard>
 
         {/* ROI */}
         <ClickableKpiCard
           borderColor="border-emerald-300"
-          popupTitle={isHe ? "ROI לפי פרויקט" : "ROI by Project"}
+          popupTitle={txt(locale, { he: "ROI לפי פרויקט", en: "ROI by Project" })}
           popupContent={
             <div className="space-y-2">
               {projects.map((p) => {
                 const roi = Math.round(100 + Math.random() * 200);
                 return (
                   <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <span className="font-medium">{isHe ? p.name : p.nameEn || p.name}</span>
+                    <span className="font-medium">{locale === "he" ? p.name : p.nameEn || p.name}</span>
                     <Badge variant="secondary">{roi}%</Badge>
                   </div>
                 );
               })}
-              <div className="text-muted-foreground pt-1">📈 {isHe ? "ROI משוקלל כולל:" : "Weighted total:"} {totalROI}</div>
+              <div className="text-muted-foreground pt-1">📈 {txt(locale, { he: "ROI משוקלל כולל:", en: "Weighted total:" })} {totalROI}</div>
             </div>
           }
         >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-muted-foreground uppercase">{isHe ? "החזר השקעה" : "Portfolio ROI"}</div>
+              <div className="text-xs text-muted-foreground uppercase">{txt(locale, { he: "החזר השקעה", en: "Portfolio ROI" })}</div>
               <TrendingUp className="size-4 text-emerald-600" />
             </div>
             <div className="text-3xl font-bold text-emerald-600">{totalROI}</div>
-            <div className="text-xs text-muted-foreground mt-1">{isHe ? "לחץ לפירוט" : "click for breakdown"}</div>
+            <div className="text-xs text-muted-foreground mt-1">{txt(locale, { he: "לחץ לפירוט", en: "click for breakdown" })}</div>
           </CardContent>
         </ClickableKpiCard>
 
         {/* Capacity vs Demand */}
         <ClickableKpiCard
           borderColor={isCapacityWarning ? "border-amber-300" : "border-blue-300"}
-          popupTitle={isHe ? "ניצולת משאבים לפי חבר צוות" : "Resource Utilization by Member"}
+          popupTitle={txt(locale, { he: "ניצולת משאבים לפי חבר צוות", en: "Resource Utilization by Member" })}
           popupContent={
             <div className="space-y-2">
               {users.map((u) => {
@@ -653,7 +642,7 @@ function PmoManagerView({
                       <Badge variant={fte > 85 ? "destructive" : "secondary"}>{fte}%</Badge>
                     </div>
                     <Progress value={Math.min(fte, 100)} className="h-1 mt-1" />
-                    <div className="text-[10px] text-muted-foreground">{openTasks} {isHe ? "משימות פתוחות" : "open tasks"}</div>
+                    <div className="text-[10px] text-muted-foreground">{openTasks} {txt(locale, { he: "משימות פתוחות", en: "open tasks" })}</div>
                   </div>
                 );
               })}
@@ -662,7 +651,7 @@ function PmoManagerView({
         >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-muted-foreground uppercase">{isHe ? "ניצולת משאבים" : "Capacity vs Demand"}</div>
+              <div className="text-xs text-muted-foreground uppercase">{txt(locale, { he: "ניצולת משאבים", en: "Capacity vs Demand" })}</div>
               <Users className={cn("size-4", isCapacityWarning ? "text-amber-600" : "text-blue-600")} />
             </div>
             <div className={cn("text-3xl font-bold", isCapacityWarning ? "text-amber-600" : "text-blue-600")}>{capacityUsed}%</div>
@@ -670,7 +659,7 @@ function PmoManagerView({
             {isCapacityWarning && (
               <div className="text-[10px] text-amber-700 dark:text-amber-400 mt-1 flex items-center gap-1">
                 <AlertTriangle className="size-3" />
-                {isHe ? "שחיקה אפשרית! · לחץ" : "Burnout risk! · click"}
+                {txt(locale, { he: "שחיקה אפשרית! · לחץ", en: "Burnout risk! · click" })}
               </div>
             )}
           </CardContent>
@@ -679,30 +668,30 @@ function PmoManagerView({
         {/* Active Risk Trend */}
         <ClickableKpiCard
           borderColor="border-red-300"
-          popupTitle={isHe ? "סיכונים פעילים" : "Active Risks"}
+          popupTitle={txt(locale, { he: "סיכונים פעילים", en: "Active Risks" })}
           popupContent={
             <div className="space-y-2">
               {tasks.filter((t) => t.status === "blocked" || (t.plannedEnd && new Date(t.plannedEnd).getTime() < Date.now() && t.status !== "done" && t.status !== "cancelled")).slice(0, 8).map((t) => (
                 <div key={t.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                  <span className="font-medium truncate flex-1">{isHe ? t.title : t.titleEn || t.title}</span>
+                  <span className="font-medium truncate flex-1">{locale === "he" ? t.title : t.titleEn || t.title}</span>
                   <Badge variant={t.status === "blocked" ? "destructive" : "outline"}>
-                    {t.status === "blocked" ? "🚫" : "⚠️"} {t.status === "blocked" ? (isHe ? "חסום" : "Blocked") : (isHe ? "באיחור" : "Overdue")}
+                    {t.status === "blocked" ? "🚫" : "⚠️"} {t.status === "blocked" ? txt(locale, { he: "חסום", en: "Blocked" }) : txt(locale, { he: "באיחור", en: "Overdue" })}
                   </Badge>
                 </div>
               ))}
-              <div className="text-muted-foreground pt-1">📊 {isHe ? "עלייה של 75% ב-6 שבועות" : "75% increase in 6 weeks"}</div>
+              <div className="text-muted-foreground pt-1">📊 {txt(locale, { he: "עלייה של 75% ב-6 שבועות", en: "75% increase in 6 weeks" })}</div>
             </div>
           }
         >
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-muted-foreground uppercase">{isHe ? "מגמת סיכונים" : "Risk Trend"}</div>
+              <div className="text-xs text-muted-foreground uppercase">{txt(locale, { he: "מגמת סיכונים", en: "Risk Trend" })}</div>
               <TrendingUp className="size-4 text-red-600" />
             </div>
             <div className="text-3xl font-bold text-red-600">14</div>
             <div className="text-xs text-red-600 mt-1 flex items-center gap-1">
               <TrendingUp className="size-3" />
-              +75% {isHe ? "· לחץ לרשימה" : "· click for list"}
+              +75% {txt(locale, { he: "· לחץ לרשימה", en: "· click for list" })}
             </div>
           </CardContent>
         </ClickableKpiCard>
@@ -713,13 +702,11 @@ function PmoManagerView({
         {/* RAG status */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{isHe ? "בריאות פורטפוליו (RAG)" : "Portfolio Health (RAG)"}</CardTitle>
+            <CardTitle className="text-base">{txt(locale, { he: "בריאות פורטפוליו (RAG)", en: "Portfolio Health (RAG)" })}</CardTitle>
             <CardDescription className="flex items-start gap-1.5">
               <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
               <span>
-                {isHe
-                  ? "מצב כל פרויקט בצבעי רמזור: ירוק / כתום / אדום (בהתאם למגמת ביצוע)."
-                  : "Each project's traffic-light status: Green / Amber / Red."}
+                {txt(locale, { he: "מצב כל פרויקט בצבעי רמזור: ירוק / כתום / אדום (בהתאם למגמת ביצוע).", en: "Each project's traffic-light status: Green / Amber / Red." })}
               </span>
             </CardDescription>
           </CardHeader>
@@ -728,21 +715,21 @@ function PmoManagerView({
               <div className="flex items-center justify-between p-2.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20">
                 <div className="flex items-center gap-2">
                   <div className="size-3 rounded-full bg-emerald-500" />
-                  <span className="text-sm font-semibold">{isHe ? "ירוק" : "Green"}</span>
+                  <span className="text-sm font-semibold">{txt(locale, { he: "ירוק", en: "Green" })}</span>
                 </div>
                 <span className="text-xl font-bold text-emerald-600">{ragGreen}</span>
               </div>
               <div className="flex items-center justify-between p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/20">
                 <div className="flex items-center gap-2">
                   <div className="size-3 rounded-full bg-amber-500" />
-                  <span className="text-sm font-semibold">{isHe ? "כתום" : "Amber"}</span>
+                  <span className="text-sm font-semibold">{txt(locale, { he: "כתום", en: "Amber" })}</span>
                 </div>
                 <span className="text-xl font-bold text-amber-600">{ragAmber}</span>
               </div>
               <div className="flex items-center justify-between p-2.5 rounded-md bg-red-50 dark:bg-red-950/20">
                 <div className="flex items-center gap-2">
                   <div className="size-3 rounded-full bg-red-500" />
-                  <span className="text-sm font-semibold">{isHe ? "אדום" : "Red"}</span>
+                  <span className="text-sm font-semibold">{txt(locale, { he: "אדום", en: "Red" })}</span>
                 </div>
                 <span className="text-xl font-bold text-red-600">{ragRed}</span>
               </div>
@@ -753,13 +740,11 @@ function PmoManagerView({
         {/* Risk trend chart */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">{isHe ? "מגמת סיכונים פעילים" : "Active Risks Trend"}</CardTitle>
+            <CardTitle className="text-base">{txt(locale, { he: "מגמת סיכונים פעילים", en: "Active Risks Trend" })}</CardTitle>
             <CardDescription className="flex items-start gap-1.5">
               <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
               <span>
-                {isHe
-                  ? "כמות הסיכונים הפעילים ברחבי הפורטפוליו לאורך זמן. עלייה מצביעה על לחץ תפעולי שדורש התערבות."
-                  : "Active risks across the portfolio over time. Rise indicates operational pressure needing intervention."}
+                {txt(locale, { he: "כמות הסיכונים הפעילים ברחבי הפורטפוליו לאורך זמן. עלייה מצביעה על לחץ תפעולי שדורש התערבות.", en: "Active risks across the portfolio over time. Rise indicates operational pressure needing intervention." })}
               </span>
             </CardDescription>
           </CardHeader>
@@ -776,7 +761,7 @@ function PmoManagerView({
                   stroke="hsl(0, 84%, 60%)"
                   strokeWidth={3}
                   dot={{ r: 5, fill: "hsl(0, 84%, 60%)" }}
-                  name={isHe ? "סיכונים" : "Risks"}
+                  name={txt(locale, { he: "סיכונים", en: "Risks" })}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -789,13 +774,11 @@ function PmoManagerView({
         {/* EVM */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{isHe ? "מדדי EVM (ניהול ערך מזוכה)" : "EVM Metrics (Earned Value)"}</CardTitle>
+            <CardTitle className="text-base">{txt(locale, { he: "מדדי EVM (ניהול ערך מזוכה)", en: "EVM Metrics (Earned Value)" })}</CardTitle>
             <CardDescription className="flex items-start gap-1.5">
               <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
               <span>
-                {isHe
-                  ? "CPI = ביצוע עלות, SPI = ביצוע לו״ז. מעל 1 = טוב יותר מהמתוכנן. מתחת ל-1 = חריגה."
-                  : "CPI = Cost Performance, SPI = Schedule Performance. >1 = better than planned, <1 = lagging."}
+                {txt(locale, { he: "CPI = ביצוע עלות, SPI = ביצוע לו״ז. מעל 1 = טוב יותר מהמתוכנן. מתחת ל-1 = חריגה.", en: "CPI = Cost Performance, SPI = Schedule Performance. >1 = better than planned, <1 = lagging." })}
               </span>
             </CardDescription>
           </CardHeader>
@@ -805,20 +788,20 @@ function PmoManagerView({
                 <div className="text-[10px] text-muted-foreground uppercase mb-1">CPI</div>
                 <div className="text-4xl font-bold text-amber-600">{cpi.toFixed(2)}</div>
                 <div className="text-[11px] text-muted-foreground mt-2">
-                  {isHe ? "Cost Performance Index" : "Cost Performance Index"}
+                  Cost Performance Index
                 </div>
                 <div className="text-[10px] text-amber-700 dark:text-amber-400 mt-1">
-                  {cpi < 1 ? (isHe ? "חריגה תקציבית" : "Over budget") : (isHe ? "בתקציב" : "On budget")}
+                  {cpi < 1 ? txt(locale, { he: "חריגה תקציבית", en: "Over budget" }) : txt(locale, { he: "בתקציב", en: "On budget" })}
                 </div>
               </div>
               <div className="text-center p-4 rounded-lg border-2 border-orange-300 bg-orange-50/50 dark:bg-orange-950/10">
                 <div className="text-[10px] text-muted-foreground uppercase mb-1">SPI</div>
                 <div className="text-4xl font-bold text-orange-600">{spi.toFixed(2)}</div>
                 <div className="text-[11px] text-muted-foreground mt-2">
-                  {isHe ? "Schedule Performance Index" : "Schedule Performance Index"}
+                  Schedule Performance Index
                 </div>
                 <div className="text-[10px] text-orange-700 dark:text-orange-400 mt-1">
-                  {spi < 1 ? (isHe ? "מאחורי הלו״ז" : "Behind schedule") : (isHe ? "בזמן" : "On schedule")}
+                  {spi < 1 ? txt(locale, { he: "מאחורי הלו״ז", en: "Behind schedule" }) : txt(locale, { he: "בזמן", en: "On schedule" })}
                 </div>
               </div>
             </div>
@@ -828,13 +811,11 @@ function PmoManagerView({
         {/* Cost Analysis - CapEx vs OpEx */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">{isHe ? "ניתוח עלויות פורטפוליו" : "Portfolio Cost Analysis"}</CardTitle>
+            <CardTitle className="text-base">{txt(locale, { he: "ניתוח עלויות פורטפוליו", en: "Portfolio Cost Analysis" })}</CardTitle>
             <CardDescription className="flex items-start gap-1.5">
               <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
               <span>
-                {isHe
-                  ? "פיצול הוצאות הוניות (CapEx) מול תפעוליות (OpEx) ברחבי הפורטפוליו."
-                  : "Capital (CapEx) vs Operational (OpEx) split across the portfolio."}
+                {txt(locale, { he: "פיצול הוצאות הוניות (CapEx) מול תפעוליות (OpEx) ברחבי הפורטפוליו.", en: "Capital (CapEx) vs Operational (OpEx) split across the portfolio." })}
               </span>
             </CardDescription>
           </CardHeader>
@@ -870,7 +851,7 @@ function PmoManagerView({
                   );
                 })}
                 <div className="pt-2 mt-2 border-t">
-                  <div className="text-[10px] text-muted-foreground uppercase">{isHe ? "סך הכל" : "Total"}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase">{txt(locale, { he: "סך הכל", en: "Total" })}</div>
                   <div className="text-lg font-bold text-primary">₪{(totalCost / 1000000).toFixed(1)}M</div>
                 </div>
               </div>

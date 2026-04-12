@@ -11,9 +11,9 @@ import {
 import { Briefcase, FolderTree, Boxes, ArrowRight, ArrowLeft, Save, GitBranch, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 
 export function HierarchyManager({ locale }: { locale: string }) {
-  const isHe = locale === "he";
   const [nodes, setNodes] = useState<MockWbsNode[]>(mockWbsNodes);
   const [mode, setMode] = useState<"projects" | "tasks">("projects");
 
@@ -26,9 +26,10 @@ export function HierarchyManager({ locale }: { locale: string }) {
     const project = nodes.find((n) => n.id === projectId);
     const newParent = nodes.find((n) => n.id === newParentId);
     toast.success(
-      isHe
-        ? `${project?.name} הועבר ל-${newParent?.name}`
-        : `${project?.nameEn || project?.name} moved to ${newParent?.nameEn || newParent?.name}`
+      txt(locale, {
+        he: `${project?.name} הועבר ל-${newParent?.name}`,
+        en: `${project?.nameEn || project?.name} moved to ${newParent?.nameEn || newParent?.name}`,
+      })
     );
   };
 
@@ -37,9 +38,10 @@ export function HierarchyManager({ locale }: { locale: string }) {
     const task = mockTasks.find((t) => t.id === taskId);
     const newNode = nodes.find((n) => n.id === newWbsNodeId);
     toast.success(
-      isHe
-        ? `המשימה "${task?.title}" שויכה ל-${newNode?.name}`
-        : `Task "${task?.titleEn || task?.title}" assigned to ${newNode?.nameEn || newNode?.name}`
+      txt(locale, {
+        he: `המשימה "${task?.title}" שויכה ל-${newNode?.name}`,
+        en: `Task "${task?.titleEn || task?.title}" assigned to ${newNode?.nameEn || newNode?.name}`,
+      })
     );
   };
 
@@ -55,7 +57,7 @@ export function HierarchyManager({ locale }: { locale: string }) {
           )}
         >
           <Briefcase className="size-4" />
-          {isHe ? "שיוך פרויקטים לפרוגרמות" : "Projects → Programs"}
+          {txt(locale, { he: "שיוך פרויקטים לפרוגרמות", en: "Projects → Programs" })}
         </button>
         <button
           onClick={() => setMode("tasks")}
@@ -65,7 +67,7 @@ export function HierarchyManager({ locale }: { locale: string }) {
           )}
         >
           <CheckSquare className="size-4" />
-          {isHe ? "שיוך משימות" : "Tasks → Items"}
+          {txt(locale, { he: "שיוך משימות", en: "Tasks → Items" })}
         </button>
       </div>
 
@@ -99,8 +101,6 @@ function ProjectsHierarchy({
   onMove: (projectId: string, newParentId: string) => void;
   locale: string;
 }) {
-  const isHe = locale === "he";
-
   return (
     <div className="space-y-4">
       <Card className="bg-blue-50/30 dark:bg-blue-950/10 border-blue-200 dark:border-blue-900">
@@ -110,12 +110,13 @@ function ProjectsHierarchy({
           </div>
           <div className="text-sm">
             <div className="font-semibold text-blue-900 dark:text-blue-300">
-              {isHe ? "שיוך פרויקטים לתוכניות (Programs)" : "Assign projects to programs"}
+              {txt(locale, { he: "שיוך פרויקטים לתוכניות (Programs)", en: "Assign projects to programs" })}
             </div>
             <div className="text-xs text-blue-700 dark:text-blue-400 mt-1">
-              {isHe
-                ? "השתמש ברשימה הנפתחת ליד כל פרויקט כדי להעביר אותו לתוכנית אחרת. השינויים נשמרים מיד."
-                : "Use the dropdown next to each project to move it to a different program. Changes save immediately."}
+              {txt(locale, {
+                he: "השתמש ברשימה הנפתחת ליד כל פרויקט כדי להעביר אותו לתוכנית אחרת. השינויים נשמרים מיד.",
+                en: "Use the dropdown next to each project to move it to a different program. Changes save immediately.",
+              })}
             </div>
           </div>
         </CardContent>
@@ -132,19 +133,15 @@ function ProjectsHierarchy({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold line-clamp-1">
-                    {isHe ? project.name : project.nameEn || project.name}
+                    {txt(locale, { he: project.name, en: project.nameEn || project.name })}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                    <span>{isHe ? "כעת ב:" : "Currently in:"}</span>
+                    <span>{txt(locale, { he: "כעת ב:", en: "Currently in:" })}</span>
                     <Badge variant="outline" className="text-[10px]">
                       <FolderTree className="size-2.5 me-0.5" />
                       {currentProgram
-                        ? isHe
-                          ? currentProgram.name
-                          : currentProgram.nameEn || currentProgram.name
-                        : isHe
-                          ? "ללא תוכנית"
-                          : "No program"}
+                        ? txt(locale, { he: currentProgram.name, en: currentProgram.nameEn || currentProgram.name })
+                        : txt(locale, { he: "ללא תוכנית", en: "No program" })}
                     </Badge>
                   </div>
                 </div>
@@ -158,7 +155,7 @@ function ProjectsHierarchy({
                 >
                   {programs.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {isHe ? p.name : p.nameEn || p.name}
+                      {txt(locale, { he: p.name, en: p.nameEn || p.name })}
                     </option>
                   ))}
                 </select>
@@ -180,8 +177,6 @@ function TasksHierarchy({
   onMove: (taskId: string, newWbsNodeId: string) => void;
   locale: string;
 }) {
-  const isHe = locale === "he";
-
   // Show only "leaf" nodes (project, goal, milestone, activity) where tasks can attach
   const attachableNodes = nodes.filter((n) =>
     ["project", "goal", "milestone", "activity"].includes(n.level)
@@ -196,12 +191,13 @@ function TasksHierarchy({
           </div>
           <div className="text-sm">
             <div className="font-semibold text-purple-900 dark:text-purple-300">
-              {isHe ? "שיוך משימות לפריטי WBS" : "Assign tasks to WBS items"}
+              {txt(locale, { he: "שיוך משימות לפריטי WBS", en: "Assign tasks to WBS items" })}
             </div>
             <div className="text-xs text-purple-700 dark:text-purple-400 mt-1">
-              {isHe
-                ? "כל משימה יכולה להשתייך ל-Project, Goal, Milestone או Activity."
-                : "Each task can be assigned to a Project, Goal, Milestone, or Activity."}
+              {txt(locale, {
+                he: "כל משימה יכולה להשתייך ל-Project, Goal, Milestone או Activity.",
+                en: "Each task can be assigned to a Project, Goal, Milestone, or Activity.",
+              })}
             </div>
           </div>
         </CardContent>
@@ -218,15 +214,13 @@ function TasksHierarchy({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-sm line-clamp-1">
-                    {isHe ? task.title : task.titleEn || task.title}
+                    {txt(locale, { he: task.title, en: task.titleEn || task.title })}
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                    <span>{isHe ? "תחת:" : "Under:"}</span>
+                    <span>{txt(locale, { he: "תחת:", en: "Under:" })}</span>
                     <Badge variant="outline" className="text-[10px]">
                       {currentNode
-                        ? isHe
-                          ? currentNode.name
-                          : currentNode.nameEn || currentNode.name
+                        ? txt(locale, { he: currentNode.name, en: currentNode.nameEn || currentNode.name })
                         : "—"}
                     </Badge>
                   </div>
@@ -238,7 +232,7 @@ function TasksHierarchy({
                 >
                   {attachableNodes.map((n) => (
                     <option key={n.id} value={n.id}>
-                      [{n.level}] {isHe ? n.name : n.nameEn || n.name}
+                      [{n.level}] {txt(locale, { he: n.name, en: n.nameEn || n.name })}
                     </option>
                   ))}
                 </select>
@@ -249,9 +243,10 @@ function TasksHierarchy({
       </div>
 
       <div className="text-xs text-muted-foreground text-center">
-        {isHe
-          ? `מציג 12 משימות ראשונות מתוך ${mockTasks.length}`
-          : `Showing first 12 of ${mockTasks.length} tasks`}
+        {txt(locale, {
+          he: `מציג 12 משימות ראשונות מתוך ${mockTasks.length}`,
+          en: `Showing first 12 of ${mockTasks.length} tasks`,
+        })}
       </div>
     </div>
   );

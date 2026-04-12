@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import { toast } from "sonner";
 
 const CLOSE_REASONS = [
@@ -28,7 +29,6 @@ export function CloseTaskDialog({
   children: React.ReactNode;
   onClose?: (reason: string, description: string) => void;
 }) {
-  const isHe = locale === "he";
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [description, setDescription] = useState("");
@@ -37,16 +37,17 @@ export function CloseTaskDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reason) {
-      setErrors({ reason: isHe ? "חובה לבחור סיבת סגירה" : "Must select a reason" });
+      setErrors({ reason: txt(locale, { he: "חובה לבחור סיבת סגירה", en: "Must select a reason" }) });
       return;
     }
 
     toast.success(
-      isHe ? `המשימה נסגרה: "${taskTitle}"` : `Task closed: "${taskTitle}"`,
+      txt(locale, { he: `המשימה נסגרה: "${taskTitle}"`, en: `Task closed: "${taskTitle}"` }),
       {
-        description: isHe
-          ? `סיבה: ${CLOSE_REASONS.find((r) => r.value === reason)?.labelHe}${description ? ` · ${description.slice(0, 50)}...` : ""}`
-          : `Reason: ${CLOSE_REASONS.find((r) => r.value === reason)?.labelEn}`,
+        description: txt(locale, {
+          he: `סיבה: ${CLOSE_REASONS.find((r) => r.value === reason)?.labelHe}${description ? ` · ${description.slice(0, 50)}...` : ""}`,
+          en: `Reason: ${CLOSE_REASONS.find((r) => r.value === reason)?.labelEn}`,
+        }),
       }
     );
     if (onClose) onClose(reason, description);
@@ -62,18 +63,19 @@ export function CloseTaskDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle2 className="size-5 text-emerald-600" />
-            {isHe ? "סגירת משימה" : "Close Task"}
+            {txt(locale, { he: "סגירת משימה", en: "Close Task" })}
           </DialogTitle>
           <DialogDescription>
-            {isHe
-              ? `סגירת "${taskTitle}" — בחר סיבה והוסף תיאור קצר`
-              : `Closing "${taskTitle}" — select reason and add description`}
+            {txt(locale, {
+              he: `סגירת "${taskTitle}" — בחר סיבה והוסף תיאור קצר`,
+              en: `Closing "${taskTitle}" — select reason and add description`,
+            })}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Close reason */}
           <div className="space-y-2">
-            <Label>{isHe ? "סיבת סגירה" : "Close Reason"} <span className="text-red-500">*</span></Label>
+            <Label>{txt(locale, { he: "סיבת סגירה", en: "Close Reason" })} <span className="text-red-500">*</span></Label>
             <div className="grid grid-cols-2 gap-2">
               {CLOSE_REASONS.map((r) => (
                 <button
@@ -88,7 +90,7 @@ export function CloseTaskDialog({
                   )}
                 >
                   <span>{r.icon}</span>
-                  <span>{isHe ? r.labelHe : r.labelEn}</span>
+                  <span>{txt(locale, { he: r.labelHe, en: r.labelEn })}</span>
                 </button>
               ))}
             </div>
@@ -98,13 +100,13 @@ export function CloseTaskDialog({
           {/* Description (max 300 chars) */}
           <div className="space-y-1.5">
             <Label>
-              {isHe ? "תיאור קצר" : "Short Description"}{" "}
-              <span className="text-muted-foreground text-[10px]">({isHe ? "עד 300 תווים" : "max 300 chars"})</span>
+              {txt(locale, { he: "תיאור קצר", en: "Short Description", ru: "Описание", fr: "Description", es: "Descripción" })}{" "}
+              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "עד 300 תווים", en: "max 300 chars" })})</span>
             </Label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value.slice(0, 300))}
-              placeholder={isHe ? "פרט את סיבת הסגירה..." : "Describe the closure reason..."}
+              placeholder={txt(locale, { he: "פרט את סיבת הסגירה...", en: "Describe the closure reason..." })}
               rows={3}
               maxLength={300}
               className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
@@ -115,11 +117,11 @@ export function CloseTaskDialog({
 
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} className="min-h-[44px]">
-              {isHe ? "ביטול" : "Cancel"}
+              {txt(locale, { he: "ביטול", en: "Cancel", ru: "Отмена", fr: "Annuler", es: "Cancelar" })}
             </Button>
             <Button type="submit" className="min-h-[44px] bg-emerald-600 hover:bg-emerald-700">
               <CheckCircle2 className="size-4" />
-              {isHe ? "סגור משימה" : "Close Task"}
+              {txt(locale, { he: "סגור משימה", en: "Close Task" })}
             </Button>
           </DialogFooter>
         </form>

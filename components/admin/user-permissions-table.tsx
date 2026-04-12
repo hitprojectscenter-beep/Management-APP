@@ -5,6 +5,7 @@ import { Check, X, Crown, Shield, User, Eye, UserX, Info } from "lucide-react";
 import { mockUsers } from "@/lib/db/mock-data";
 import { ROLE_LABELS } from "@/lib/rbac/abilities";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import type { UserRole } from "@/lib/db/types";
 
 // ============================================
@@ -74,16 +75,16 @@ const ROLE_BADGE_COLORS: Record<UserRole, string> = {
 // Component
 // ============================================
 export function UserPermissionsTable({ locale }: { locale: string }) {
-  const isHe = locale === "he";
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Info className="size-4" />
-        {isHe
-          ? "טבלה זו מציגה את מטריצת ההרשאות בפועל עבור כל משתמש במערכת."
-          : "This table shows the actual permissions matrix for every user in the system."}
+        {txt(locale, {
+          he: "טבלה זו מציגה את מטריצת ההרשאות בפועל עבור כל משתמש במערכת.",
+          en: "This table shows the actual permissions matrix for every user in the system.",
+        })}
       </div>
 
       {/* Table */}
@@ -92,24 +93,24 @@ export function UserPermissionsTable({ locale }: { locale: string }) {
           <thead>
             <tr className="bg-muted/50">
               <th className="sticky start-0 z-10 bg-muted/50 px-4 py-3 text-start font-semibold min-w-[200px]">
-                {isHe ? "משתמש" : "User"}
+                {txt(locale, { he: "משתמש", en: "User" })}
               </th>
               <th className="px-3 py-3 text-start font-semibold min-w-[110px]">
-                {isHe ? "תפקיד" : "Role"}
+                {txt(locale, { he: "תפקיד", en: "Role" })}
               </th>
               {PERMISSIONS.map((p) => (
                 <th
                   key={p.key}
                   className="px-2 py-3 text-center font-medium min-w-[80px] text-xs"
-                  title={isHe ? p.labelHe : p.labelEn}
+                  title={txt(locale, { he: p.labelHe, en: p.labelEn })}
                 >
                   <span className="block truncate max-w-[80px]">
-                    {isHe ? p.labelHe : p.labelEn}
+                    {txt(locale, { he: p.labelHe, en: p.labelEn })}
                   </span>
                 </th>
               ))}
               <th className="px-3 py-3 text-start font-semibold min-w-[160px]">
-                {isHe ? "הערות" : "Notes"}
+                {txt(locale, { he: "הערות", en: "Notes" })}
               </th>
             </tr>
           </thead>
@@ -167,14 +168,15 @@ export function UserPermissionsTable({ locale }: { locale: string }) {
                   <td className="px-3 py-3 text-xs text-muted-foreground">
                     {isCeo && (
                       <span className="text-violet-600 dark:text-violet-400 font-medium">
-                        {isHe
-                          ? "מנכ\"ל - ללא ניהול משתמשים"
-                          : "CEO - no user management"}
+                        {txt(locale, {
+                          he: "מנכ\"ל - ללא ניהול משתמשים",
+                          en: "CEO - no user management",
+                        })}
                       </span>
                     )}
                     {(user.role as UserRole) === "admin" && !isCeo && (
                       <span className="text-red-600 dark:text-red-400 font-medium">
-                        {isHe ? "הרשאות מלאות" : "Full access"}
+                        {txt(locale, { he: "הרשאות מלאות", en: "Full access" })}
                       </span>
                     )}
                   </td>
@@ -189,15 +191,15 @@ export function UserPermissionsTable({ locale }: { locale: string }) {
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2">
         <span className="flex items-center gap-1">
           <Check className="size-3.5 text-emerald-600" />
-          {isHe ? "= הרשאה פעילה" : "= Permission granted"}
+          {txt(locale, { he: "= הרשאה פעילה", en: "= Permission granted" })}
         </span>
         <span className="flex items-center gap-1">
           <X className="size-3.5 text-red-400" />
-          {isHe ? "= ללא הרשאה" : "= No permission"}
+          {txt(locale, { he: "= ללא הרשאה", en: "= No permission" })}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block size-2.5 rounded-full bg-violet-400" />
-          {isHe ? "= שורת מנכ\"ל מודגשת" : "= CEO row highlighted"}
+          {txt(locale, { he: "= שורת מנכ\"ל מודגשת", en: "= CEO row highlighted" })}
         </span>
       </div>
     </div>

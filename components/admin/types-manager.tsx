@@ -12,6 +12,7 @@ import { mockItemTypes, type MockItemType } from "@/lib/db/mock-data";
 import { Plus, Edit, Trash2, Lock, CheckSquare, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 
 const EMOJI_OPTIONS = ["🐛", "✨", "📈", "🔬", "📝", "📅", "🛒", "💻", "🏗️", "📣", "🔧", "📋", "🚀", "🎨", "⚡", "🎯"];
 const COLOR_OPTIONS = [
@@ -21,7 +22,6 @@ const COLOR_OPTIONS = [
 ];
 
 export function TypesManager({ locale }: { locale: string }) {
-  const isHe = locale === "he";
   const [types, setTypes] = useState<MockItemType[]>(mockItemTypes);
   const [scope, setScope] = useState<"task" | "project">("task");
 
@@ -30,20 +30,20 @@ export function TypesManager({ locale }: { locale: string }) {
   const handleSave = (type: MockItemType, isNew: boolean) => {
     if (isNew) {
       setTypes((prev) => [...prev, type]);
-      toast.success(isHe ? `הסוג ${type.nameHe} נוסף` : `Type ${type.nameEn} added`);
+      toast.success(txt(locale, { he: `הסוג ${type.nameHe} נוסף`, en: `Type ${type.nameEn} added` }));
     } else {
       setTypes((prev) => prev.map((t) => (t.id === type.id ? type : t)));
-      toast.success(isHe ? `הסוג עודכן` : `Type updated`);
+      toast.success(txt(locale, { he: "הסוג עודכן", en: "Type updated" }));
     }
   };
 
   const handleDelete = (type: MockItemType) => {
     if (type.isSystem) {
-      toast.error(isHe ? "לא ניתן למחוק סוג מערכת" : "Cannot delete system type");
+      toast.error(txt(locale, { he: "לא ניתן למחוק סוג מערכת", en: "Cannot delete system type" }));
       return;
     }
     setTypes((prev) => prev.filter((t) => t.id !== type.id));
-    toast.success(isHe ? `${type.nameHe} הוסר` : `${type.nameEn} removed`);
+    toast.success(txt(locale, { he: `${type.nameHe} הוסר`, en: `${type.nameEn} removed` }));
   };
 
   return (
@@ -59,7 +59,7 @@ export function TypesManager({ locale }: { locale: string }) {
             )}
           >
             <CheckSquare className="size-4" />
-            {isHe ? "סוגי משימות" : "Task Types"}
+            {txt(locale, { he: "סוגי משימות", en: "Task Types" })}
             <Badge variant="outline" className="ms-1">
               {types.filter((t) => t.scope === "task").length}
             </Badge>
@@ -72,7 +72,7 @@ export function TypesManager({ locale }: { locale: string }) {
             )}
           >
             <Briefcase className="size-4" />
-            {isHe ? "סוגי פרויקטים" : "Project Types"}
+            {txt(locale, { he: "סוגי פרויקטים", en: "Project Types" })}
             <Badge variant="outline" className="ms-1">
               {types.filter((t) => t.scope === "project").length}
             </Badge>
@@ -81,7 +81,7 @@ export function TypesManager({ locale }: { locale: string }) {
         <TypeDialog scope={scope} onSave={handleSave} locale={locale}>
           <Button>
             <Plus className="size-4" />
-            {isHe ? "הוסף סוג חדש" : "Add New Type"}
+            {txt(locale, { he: "הוסף סוג חדש", en: "Add New Type" })}
           </Button>
         </TypeDialog>
       </div>
@@ -101,17 +101,17 @@ export function TypesManager({ locale }: { locale: string }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <h4 className="font-semibold">{isHe ? type.nameHe : type.nameEn}</h4>
+                    <h4 className="font-semibold">{txt(locale, { he: type.nameHe, en: type.nameEn })}</h4>
                     {type.isSystem && <Lock className="size-3 text-muted-foreground" />}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{type.description}</p>
                   <div className="flex items-center gap-1 mt-2">
                     <Badge variant="outline" className="text-[10px]">
-                      {isHe ? (type.scope === "task" ? "משימה" : "פרויקט") : type.scope}
+                      {type.scope === "task" ? txt(locale, { he: "משימה", en: "task" }) : txt(locale, { he: "פרויקט", en: "project" })}
                     </Badge>
                     {type.isSystem && (
                       <Badge variant="secondary" className="text-[10px]">
-                        {isHe ? "מערכת" : "system"}
+                        {txt(locale, { he: "מערכת", en: "system" })}
                       </Badge>
                     )}
                   </div>
@@ -154,7 +154,6 @@ function TypeDialog({
   onSave: (type: MockItemType, isNew: boolean) => void;
   locale: string;
 }) {
-  const isHe = locale === "he";
   const isNew = !type;
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<MockItemType>(
@@ -173,7 +172,7 @@ function TypeDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nameHe.trim() || !form.nameEn.trim()) {
-      toast.error(isHe ? "שם נדרש בשתי השפות" : "Name required in both languages");
+      toast.error(txt(locale, { he: "שם נדרש בשתי השפות", en: "Name required in both languages" }));
       return;
     }
     onSave(form, isNew);
@@ -187,21 +186,20 @@ function TypeDialog({
         <DialogHeader>
           <DialogTitle>
             {isNew
-              ? isHe
-                ? `הוספת סוג ${scope === "task" ? "משימה" : "פרויקט"} חדש`
-                : `Add New ${scope === "task" ? "Task" : "Project"} Type`
-              : isHe
-                ? "עריכת סוג"
-                : "Edit Type"}
+              ? txt(locale, {
+                  he: `הוספת סוג ${scope === "task" ? "משימה" : "פרויקט"} חדש`,
+                  en: `Add New ${scope === "task" ? "Task" : "Project"} Type`,
+                })
+              : txt(locale, { he: "עריכת סוג", en: "Edit Type" })}
           </DialogTitle>
           <DialogDescription>
-            {isHe ? "סוג מותאם להגדרות הארגון שלך" : "Custom type tailored to your organization"}
+            {txt(locale, { he: "סוג מותאם להגדרות הארגון שלך", en: "Custom type tailored to your organization" })}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="nameHe">{isHe ? "שם בעברית" : "Hebrew Name"} *</Label>
+              <Label htmlFor="nameHe">{txt(locale, { he: "שם בעברית", en: "Hebrew Name" })} *</Label>
               <Input
                 id="nameHe"
                 value={form.nameHe}
@@ -210,7 +208,7 @@ function TypeDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="nameEn">{isHe ? "שם באנגלית" : "English Name"} *</Label>
+              <Label htmlFor="nameEn">{txt(locale, { he: "שם באנגלית", en: "English Name" })} *</Label>
               <Input
                 id="nameEn"
                 value={form.nameEn}
@@ -220,7 +218,7 @@ function TypeDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">{isHe ? "תיאור" : "Description"}</Label>
+            <Label htmlFor="description">{txt(locale, { he: "תיאור", en: "Description" })}</Label>
             <Input
               id="description"
               value={form.description}
@@ -228,7 +226,7 @@ function TypeDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>{isHe ? "אייקון" : "Icon"}</Label>
+            <Label>{txt(locale, { he: "אייקון", en: "Icon" })}</Label>
             <div className="grid grid-cols-8 gap-2">
               {EMOJI_OPTIONS.map((e) => (
                 <button
@@ -246,7 +244,7 @@ function TypeDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>{isHe ? "צבע" : "Color"}</Label>
+            <Label>{txt(locale, { he: "צבע", en: "Color" })}</Label>
             <div className="grid grid-cols-12 gap-2">
               {COLOR_OPTIONS.map((c) => (
                 <button
@@ -264,9 +262,9 @@ function TypeDialog({
           </div>
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              {isHe ? "ביטול" : "Cancel"}
+              {txt(locale, { he: "ביטול", en: "Cancel" })}
             </Button>
-            <Button type="submit">{isNew ? (isHe ? "הוסף סוג" : "Add Type") : isHe ? "שמור" : "Save"}</Button>
+            <Button type="submit">{isNew ? txt(locale, { he: "הוסף סוג", en: "Add Type" }) : txt(locale, { he: "שמור", en: "Save" })}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

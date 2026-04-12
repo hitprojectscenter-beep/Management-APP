@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Users, ShieldCheck, Tag, GitBranch, Table2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import { UsersManager } from "./users-manager";
 import { RolesManager } from "./roles-manager";
 import { TypesManager } from "./types-manager";
@@ -12,7 +13,6 @@ import { UserPermissionsTable } from "./user-permissions-table";
 type Tab = "users" | "roles" | "types" | "hierarchy" | "permissions";
 
 export function AdminTabs({ locale }: { locale: string }) {
-  const isHe = locale === "he";
   const [tab, setTab] = useState<Tab>("users");
 
   const tabs: { key: Tab; labelHe: string; labelEn: string; icon: typeof Users; descHe: string; descEn: string }[] = [
@@ -62,7 +62,7 @@ export function AdminTabs({ locale }: { locale: string }) {
               )}
             >
               <Icon className="size-4" />
-              {isHe ? t.labelHe : t.labelEn}
+              {txt(locale, { he: t.labelHe, en: t.labelEn })}
             </button>
           );
         })}
@@ -71,7 +71,7 @@ export function AdminTabs({ locale }: { locale: string }) {
       {/* Tab description */}
       <div className="px-6 pt-4 pb-2 border-b bg-muted/20">
         <div className="text-xs text-muted-foreground">
-          {isHe ? tabs.find((t) => t.key === tab)?.descHe : tabs.find((t) => t.key === tab)?.descEn}
+          {(() => { const found = tabs.find((t) => t.key === tab); return found ? txt(locale, { he: found.descHe, en: found.descEn }) : ""; })()}
         </div>
       </div>
 

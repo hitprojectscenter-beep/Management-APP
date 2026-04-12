@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { GanttChartSquare, Briefcase, Boxes, FolderTree } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import { ProgramGantt } from "./program-gantt";
 
 export function GanttPageClient({
@@ -18,8 +19,6 @@ export function GanttPageClient({
   users: MockUser[];
   locale: string;
 }) {
-  const isHe = locale === "he";
-
   // Selectable roots: portfolios, programs, projects
   const selectableNodes = allNodes.filter((n) =>
     ["portfolio", "program", "project"].includes(n.level)
@@ -44,12 +43,10 @@ export function GanttPageClient({
             <div className="size-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
               <GanttChartSquare className="size-5 text-white" />
             </div>
-            {isHe ? "לוח גאנט ו-WBS" : "Gantt Chart & WBS"}
+            {txt(locale, { he: "לוח גאנט ו-WBS", en: "Gantt Chart & WBS", ru: "Диаграмма Ганта и WBS", fr: "Diagramme de Gantt et WBS", es: "Diagrama de Gantt y WBS" })}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            {isHe
-              ? "תצוגת תכנון מול ביצוע עם מבנה חבילות עבודה היררכי, נתיב קריטי ואבני דרך"
-              : "Planned vs Actual with hierarchical work packages, critical path and milestones"}
+            {txt(locale, { he: "תצוגת תכנון מול ביצוע עם מבנה חבילות עבודה היררכי, נתיב קריטי ואבני דרך", en: "Planned vs Actual with hierarchical work packages, critical path and milestones" })}
           </p>
         </div>
       </div>
@@ -61,7 +58,7 @@ export function GanttPageClient({
           <>
             <span className="text-[10px] text-muted-foreground uppercase font-semibold self-center me-1">
               <FolderTree className="size-3 inline me-0.5" />
-              {isHe ? "פרוגרמות:" : "Programs:"}
+              {txt(locale, { he: "פרוגרמות:", en: "Programs:" })}
             </span>
             {programs.map((p) => (
               <button
@@ -74,7 +71,7 @@ export function GanttPageClient({
                     : "border-border bg-background hover:bg-accent"
                 )}
               >
-                {isHe ? p.name : p.nameEn || p.name}
+                {locale === "he" ? p.name : p.nameEn || p.name}
               </button>
             ))}
           </>
@@ -84,7 +81,7 @@ export function GanttPageClient({
           <>
             <span className="text-[10px] text-muted-foreground uppercase font-semibold self-center ms-2 me-1">
               <Briefcase className="size-3 inline me-0.5" />
-              {isHe ? "פרויקטים:" : "Projects:"}
+              {txt(locale, { he: "פרויקטים:", en: "Projects:" })}
             </span>
             {projects.map((p) => (
               <button
@@ -97,7 +94,7 @@ export function GanttPageClient({
                     : "border-border bg-background hover:bg-accent"
                 )}
               >
-                {isHe ? p.name : p.nameEn || p.name}
+                {locale === "he" ? p.name : p.nameEn || p.name}
               </button>
             ))}
           </>
@@ -117,7 +114,7 @@ export function GanttPageClient({
       ) : (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            {isHe ? "בחר פרוגרמה או פרויקט להצגת הגאנט" : "Select a program or project to display the Gantt chart"}
+            {txt(locale, { he: "בחר פרוגרמה או פרויקט להצגת הגאנט", en: "Select a program or project to display the Gantt chart" })}
           </CardContent>
         </Card>
       )}

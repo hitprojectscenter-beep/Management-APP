@@ -43,6 +43,7 @@ import { ActiveRecommendations } from "@/components/risks/active-recommendations
 import { MitigationPlanCard } from "@/components/risks/mitigation-plan";
 import { generateMitigationPlan } from "@/lib/ai/mitigation-engine";
 import { cn, formatDate } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 
 export default async function RisksPage({
   params,
@@ -200,22 +201,23 @@ export default async function RisksPage({
             <div className="size-11 rounded-lg bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center shadow-md">
               <ShieldAlert className="size-6 text-white" />
             </div>
-            {isHe ? "ניהול סיכונים" : "Risk Management"}
+            {txt(locale, { he: "ניהול סיכונים", en: "Risk Management" })}
           </h1>
           <p className="text-muted-foreground mt-1.5">
-            {isHe
-              ? "זיהוי, מעקב והפחתה של סיכונים בכל הפרויקטים שלך - כולל ניתוח אוטומטי של מנוע ה-AI"
-              : "Identify, track and mitigate risks across all projects - with automatic AI engine analysis"}
+            {txt(locale, {
+              he: "זיהוי, מעקב והפחתה של סיכונים בכל הפרויקטים שלך - כולל ניתוח אוטומטי של מנוע ה-AI",
+              en: "Identify, track and mitigate risks across all projects - with automatic AI engine analysis",
+            })}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
             <Filter className="size-4" />
-            {isHe ? "סינון" : "Filter"}
+            {txt(locale, { he: "סינון", en: "Filter" })}
           </Button>
           <Button>
             <Sparkles className="size-4" />
-            {isHe ? "סרוק עכשיו" : "Scan Now"}
+            {txt(locale, { he: "סרוק עכשיו", en: "Scan Now" })}
           </Button>
         </div>
       </div>
@@ -225,11 +227,11 @@ export default async function RisksPage({
         <Card className="border-2">
           <CardContent className="p-5">
             <div className="text-xs text-muted-foreground uppercase">
-              {isHe ? "סך סיכונים פעילים" : "Active Risks"}
+              {txt(locale, { he: "סך סיכונים פעילים", en: "Active Risks" })}
             </div>
             <div className="text-4xl font-black mt-2">{counts.total}</div>
             <div className="text-[10px] text-muted-foreground mt-1">
-              {isHe ? "מנותחים על ידי AI" : "Analyzed by AI"}
+              {txt(locale, { he: "מנותחים על ידי AI", en: "Analyzed by AI" })}
             </div>
           </CardContent>
         </Card>
@@ -278,14 +280,15 @@ export default async function RisksPage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="size-5 text-primary" />
-            {isHe ? "מטריצת בריאות פרויקטים" : "Project Health Matrix"}
+            {txt(locale, { he: "מטריצת בריאות פרויקטים", en: "Project Health Matrix" })}
           </CardTitle>
           <CardDescription className="flex items-start gap-1.5">
             <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
             <span>
-              {isHe
-                ? "מבט-על על כל הפרויקטים ומספר הסיכונים בכל אחד. הציון מחושב מאחוז ביצוע, איחורים וחסימות. מתחת ל-40 = קריטי, 40-70 = בסיכון, 70+ = בריא."
-                : "Bird's-eye view of all projects and risk count per project. Score is computed from completion rate, overdue and blockers. <40 = critical, 40-70 = at-risk, 70+ = healthy."}
+              {txt(locale, {
+                he: "מבט-על על כל הפרויקטים ומספר הסיכונים בכל אחד. הציון מחושב מאחוז ביצוע, איחורים וחסימות. מתחת ל-40 = קריטי, 40-70 = בסיכון, 70+ = בריא.",
+                en: "Bird's-eye view of all projects and risk count per project. Score is computed from completion rate, overdue and blockers. <40 = critical, 40-70 = at-risk, 70+ = healthy.",
+              })}
             </span>
           </CardDescription>
         </CardHeader>
@@ -313,26 +316,26 @@ export default async function RisksPage({
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                     <span>
-                      ✅ {health.metrics.completed} {isHe ? "הושלמו" : "done"}
+                      ✅ {health.metrics.completed} {txt(locale, { he: "הושלמו", en: "done" })}
                     </span>
                     <span>
-                      🟡 {health.metrics.onTime} {isHe ? "פתוחות" : "open"}
+                      🟡 {health.metrics.onTime} {txt(locale, { he: "פתוחות", en: "open" })}
                     </span>
                     {health.metrics.overdue > 0 && (
                       <span className="text-red-600">
-                        ⚠️ {health.metrics.overdue} {isHe ? "באיחור" : "overdue"}
+                        ⚠️ {health.metrics.overdue} {txt(locale, { he: "באיחור", en: "overdue" })}
                       </span>
                     )}
                     {health.metrics.blocked > 0 && (
                       <span className="text-red-600">
-                        🚫 {health.metrics.blocked} {isHe ? "חסומות" : "blocked"}
+                        🚫 {health.metrics.blocked} {txt(locale, { he: "חסומות", en: "blocked" })}
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="hidden md:flex flex-col items-end gap-1">
                   <Badge variant={risksCount === 0 ? "success" : risksCount > 3 ? "destructive" : "warning"}>
-                    {risksCount} {isHe ? "סיכונים" : "risks"}
+                    {risksCount} {txt(locale, { he: "סיכונים", en: "risks" })}
                   </Badge>
                   <Progress
                     value={
@@ -354,14 +357,15 @@ export default async function RisksPage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertOctagon className="size-5 text-red-600" />
-            {isHe ? "כל הסיכונים הפעילים" : "All Active Risks"}
+            {txt(locale, { he: "כל הסיכונים הפעילים", en: "All Active Risks" })}
           </CardTitle>
           <CardDescription className="flex items-start gap-1.5">
             <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
             <span>
-              {isHe
-                ? "כל סיכון מציג: דרגה (קריטי/גבוה/בינוני/נמוך), סוג, המשימה הקשורה, האחראי, והמלצה לפעולה. לחץ על משימה לצפייה."
-                : "Each risk shows: severity (critical/high/medium/low), type, related task, assignee, and action recommendation. Click a task to view."}
+              {txt(locale, {
+                he: "כל סיכון מציג: דרגה (קריטי/גבוה/בינוני/נמוך), סוג, המשימה הקשורה, האחראי, והמלצה לפעולה. לחץ על משימה לצפייה.",
+                en: "Each risk shows: severity (critical/high/medium/low), type, related task, assignee, and action recommendation. Click a task to view.",
+              })}
             </span>
           </CardDescription>
         </CardHeader>
@@ -369,9 +373,9 @@ export default async function RisksPage({
           {uniqueRisks.length === 0 && (
             <div className="text-center py-12">
               <CheckCircle2 className="size-12 mx-auto text-emerald-500 mb-3" />
-              <div className="font-semibold">{isHe ? "אין סיכונים פעילים! 🎉" : "No active risks! 🎉"}</div>
+              <div className="font-semibold">{txt(locale, { he: "אין סיכונים פעילים! 🎉", en: "No active risks! 🎉" })}</div>
               <div className="text-sm text-muted-foreground mt-1">
-                {isHe ? "כל הפרויקטים שלך במצב טוב" : "All your projects are in good shape"}
+                {txt(locale, { he: "כל הפרויקטים שלך במצב טוב", en: "All your projects are in good shape" })}
               </div>
             </div>
           )}
@@ -425,7 +429,7 @@ export default async function RisksPage({
                       </Link>
                     )}
                     <div className="mt-2 text-xs bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 px-3 py-1.5 rounded">
-                      💡 <span className="font-semibold">{isHe ? "המלצה:" : "Recommendation:"}</span>{" "}
+                      💡 <span className="font-semibold">{txt(locale, { he: "המלצה:", en: "Recommendation:" })}</span>{" "}
                       {risk.suggestion}
                     </div>
                   </div>
@@ -440,11 +444,11 @@ export default async function RisksPage({
                   <div className="hidden md:flex flex-col gap-1">
                     <Button size="sm" variant="outline">
                       <CheckCircle2 className="size-3" />
-                      {isHe ? "מטופל" : "Acknowledge"}
+                      {txt(locale, { he: "מטופל", en: "Acknowledge" })}
                     </Button>
                     <Button size="sm" variant="ghost">
                       <XCircle className="size-3" />
-                      {isHe ? "דחה" : "Dismiss"}
+                      {txt(locale, { he: "דחה", en: "Dismiss" })}
                     </Button>
                   </div>
                 </div>
@@ -456,25 +460,25 @@ export default async function RisksPage({
       {/* Risk types legend */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{isHe ? "סוגי סיכונים שהמערכת מזהה" : "Risk Types Detected"}</CardTitle>
+          <CardTitle className="text-base">{txt(locale, { he: "סוגי סיכונים שהמערכת מזהה", en: "Risk Types Detected" })}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div className="flex items-start gap-2">
               <Clock className="size-4 mt-0.5 text-red-600 shrink-0" />
               <div>
-                <div className="font-semibold">{isHe ? "באיחור (Overdue)" : "Overdue"}</div>
+                <div className="font-semibold">{txt(locale, { he: "באיחור (Overdue)", en: "Overdue" })}</div>
                 <div className="text-xs text-muted-foreground">
-                  {isHe ? "המשימה עברה את תאריך היעד וטרם הסתיימה" : "Task passed deadline but not done"}
+                  {txt(locale, { he: "המשימה עברה את תאריך היעד וטרם הסתיימה", en: "Task passed deadline but not done" })}
                 </div>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <AlertOctagon className="size-4 mt-0.5 text-red-600 shrink-0" />
               <div>
-                <div className="font-semibold">{isHe ? "חסום (Blocked)" : "Blocked"}</div>
+                <div className="font-semibold">{txt(locale, { he: "חסום (Blocked)", en: "Blocked" })}</div>
                 <div className="text-xs text-muted-foreground">
-                  {isHe ? "המשימה חסומה ולא מתקדמת" : "Task is blocked and not progressing"}
+                  {txt(locale, { he: "המשימה חסומה ולא מתקדמת", en: "Task is blocked and not progressing" })}
                 </div>
               </div>
             </div>
@@ -482,10 +486,10 @@ export default async function RisksPage({
               <TrendingUp className="size-4 mt-0.5 text-orange-600 shrink-0" />
               <div>
                 <div className="font-semibold">
-                  {isHe ? "חריגת מאמץ (Effort Overrun)" : "Effort Overrun"}
+                  {txt(locale, { he: "חריגת מאמץ (Effort Overrun)", en: "Effort Overrun" })}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {isHe ? "שעות בפועל עברו את ההערכה ביותר מ-20%" : "Actual hours exceed estimate by >20%"}
+                  {txt(locale, { he: "שעות בפועל עברו את ההערכה ביותר מ-20%", en: "Actual hours exceed estimate by >20%" })}
                 </div>
               </div>
             </div>
@@ -493,10 +497,10 @@ export default async function RisksPage({
               <AlertCircle className="size-4 mt-0.5 text-amber-600 shrink-0" />
               <div>
                 <div className="font-semibold">
-                  {isHe ? "התקדמות איטית (Schedule Slip)" : "Schedule Slip"}
+                  {txt(locale, { he: "התקדמות איטית (Schedule Slip)", en: "Schedule Slip" })}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {isHe ? "התקדמות נמוכה משמעותית מהזמן שעבר" : "Progress significantly behind elapsed time"}
+                  {txt(locale, { he: "התקדמות נמוכה משמעותית מהזמן שעבר", en: "Progress significantly behind elapsed time" })}
                 </div>
               </div>
             </div>
@@ -504,12 +508,13 @@ export default async function RisksPage({
               <ShieldAlert className="size-4 mt-0.5 text-red-600 shrink-0" />
               <div>
                 <div className="font-semibold">
-                  {isHe ? "קריטי לא התחיל (Critical Not Started)" : "Critical Not Started"}
+                  {txt(locale, { he: "קריטי לא התחיל (Critical Not Started)", en: "Critical Not Started" })}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {isHe
-                    ? "משימה בעדיפות קריטית לא החלה ופחות מ-3 ימים לתאריך התחלה"
-                    : "Critical priority task not started, <3 days to start"}
+                  {txt(locale, {
+                    he: "משימה בעדיפות קריטית לא החלה ופחות מ-3 ימים לתאריך התחלה",
+                    en: "Critical priority task not started, <3 days to start",
+                  })}
                 </div>
               </div>
             </div>

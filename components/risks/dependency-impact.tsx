@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { GitBranch, ArrowRight, ArrowLeft, Info, Zap, AlertOctagon } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import type { DependencyImpact as DI } from "@/lib/ai/risk-engine";
 import type { MockTask } from "@/lib/db/mock-data";
 
@@ -24,18 +25,19 @@ export function DependencyImpactCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <GitBranch className="size-5 text-orange-600" />
-          {isHe ? "ניתוח אפקט שרשרת" : "Dependency Impact Analysis"}
+          {txt(locale, { he: "ניתוח אפקט שרשרת", en: "Dependency Impact Analysis" })}
           <Badge variant="outline" className="ms-auto">
             <Zap className="size-3 me-1" />
-            {isHe ? "ניתוח AI" : "AI Analysis"}
+            {txt(locale, { he: "ניתוח AI", en: "AI Analysis" })}
           </Badge>
         </CardTitle>
         <CardDescription className="flex items-start gap-1.5">
           <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
           <span>
-            {isHe
-              ? "ה-AI מחשב כיצד עיכוב במשימה אחת זולג למשימות תלויות. גם משימות שאינן ישירות בנתיב הקריטי יכולות לגרור אותו לעיכוב."
-              : "AI computes how a delay in one task cascades to dependent tasks. Even non-critical tasks can drag the critical path."}
+            {txt(locale, {
+              he: "ה-AI מחשב כיצד עיכוב במשימה אחת זולג למשימות תלויות. גם משימות שאינן ישירות בנתיב הקריטי יכולות לגרור אותו לעיכוב.",
+              en: "AI computes how a delay in one task cascades to dependent tasks. Even non-critical tasks can drag the critical path.",
+            })}
           </span>
         </CardDescription>
       </CardHeader>
@@ -43,7 +45,7 @@ export function DependencyImpactCard({
         {impacts.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground">
             <GitBranch className="size-10 mx-auto opacity-30 mb-2" />
-            {isHe ? "אין אפקטי שרשרת פעילים 🎉" : "No active cascade effects 🎉"}
+            {txt(locale, { he: "אין אפקטי שרשרת פעילים 🎉", en: "No active cascade effects 🎉" })}
           </div>
         ) : (
           <div className="space-y-3">
@@ -71,7 +73,7 @@ export function DependencyImpactCard({
                     {impact.affectsCriticalPath && (
                       <Badge variant="destructive" className="text-[9px]">
                         <Zap className="size-2.5 me-0.5" />
-                        {isHe ? "משפיע על נתיב קריטי" : "Affects critical path"}
+                        {txt(locale, { he: "משפיע על נתיב קריטי", en: "Affects critical path" })}
                       </Badge>
                     )}
                   </div>
@@ -81,21 +83,21 @@ export function DependencyImpactCard({
                     <div className="text-center min-w-[60px]">
                       <div className="text-2xl font-bold text-orange-600">{impact.affectedCount}</div>
                       <div className="text-[9px] text-muted-foreground uppercase">
-                        {isHe ? "משימות מושפעות" : "tasks affected"}
+                        {txt(locale, { he: "משימות מושפעות", en: "tasks affected" })}
                       </div>
                     </div>
                     <Arrow className="size-4 text-muted-foreground" />
                     <div className="text-center min-w-[60px]">
                       <div className="text-2xl font-bold text-red-600">{impact.affectedCriticalIds.length}</div>
                       <div className="text-[9px] text-muted-foreground uppercase">
-                        {isHe ? "בנתיב קריטי" : "on critical path"}
+                        {txt(locale, { he: "בנתיב קריטי", en: "on critical path" })}
                       </div>
                     </div>
                     <Arrow className="size-4 text-muted-foreground" />
                     <div className="text-center min-w-[60px]">
                       <div className="text-2xl font-bold text-purple-600">+{impact.cascadeDays}</div>
                       <div className="text-[9px] text-muted-foreground uppercase">
-                        {isHe ? "ימי איחור" : "days delay"}
+                        {txt(locale, { he: "ימי איחור", en: "days delay" })}
                       </div>
                     </div>
                   </div>
@@ -107,7 +109,7 @@ export function DependencyImpactCard({
                   <div className="mt-3 text-xs bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 px-3 py-2 rounded flex items-start gap-1.5">
                     <span>💡</span>
                     <div>
-                      <span className="font-semibold">{isHe ? "המלצה: " : "Recommendation: "}</span>
+                      <span className="font-semibold">{txt(locale, { he: "המלצה: ", en: "Recommendation: " })}</span>
                       {impact.recommendation}
                     </div>
                   </div>

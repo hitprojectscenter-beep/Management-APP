@@ -14,9 +14,9 @@ import { UserPlus, Mail, Edit, Trash2, Search, Filter, Crown } from "lucide-reac
 import { toast } from "sonner";
 import type { UserRole } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 
 export function UsersManager({ locale }: { locale: string }) {
-  const isHe = locale === "he";
   const [users, setUsers] = useState<MockUser[]>(mockUsers);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<UserRole | "all">("all");
@@ -31,20 +31,20 @@ export function UsersManager({ locale }: { locale: string }) {
   const handleSave = (user: MockUser, isNew: boolean) => {
     if (isNew) {
       setUsers((prev) => [...prev, user]);
-      toast.success(isHe ? `המשתמש ${user.name} נוסף בהצלחה` : `User ${user.name} added successfully`);
+      toast.success(txt(locale, { he: `המשתמש ${user.name} נוסף בהצלחה`, en: `User ${user.name} added successfully` }));
     } else {
       setUsers((prev) => prev.map((u) => (u.id === user.id ? user : u)));
-      toast.success(isHe ? `המשתמש ${user.name} עודכן` : `User ${user.name} updated`);
+      toast.success(txt(locale, { he: `המשתמש ${user.name} עודכן`, en: `User ${user.name} updated` }));
     }
   };
 
   const handleDelete = (user: MockUser) => {
     if (user.id === "u6") {
-      toast.error(isHe ? "לא ניתן למחוק את המשתמש הנוכחי" : "Cannot delete current user");
+      toast.error(txt(locale, { he: "לא ניתן למחוק את המשתמש הנוכחי", en: "Cannot delete current user" }));
       return;
     }
     setUsers((prev) => prev.filter((u) => u.id !== user.id));
-    toast.success(isHe ? `${user.name} הוסר` : `${user.name} removed`);
+    toast.success(txt(locale, { he: `${user.name} הוסר`, en: `${user.name} removed` }));
   };
 
   return (
@@ -55,7 +55,7 @@ export function UsersManager({ locale }: { locale: string }) {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder={isHe ? "חיפוש לפי שם או אימייל..." : "Search by name or email..."}
+              placeholder={txt(locale, { he: "חיפוש לפי שם או אימייל...", en: "Search by name or email..." })}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="ps-9"
@@ -66,7 +66,7 @@ export function UsersManager({ locale }: { locale: string }) {
             onChange={(e) => setFilterRole(e.target.value as any)}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
           >
-            <option value="all">{isHe ? "כל התפקידים" : "All Roles"}</option>
+            <option value="all">{txt(locale, { he: "כל התפקידים", en: "All Roles" })}</option>
             <option value="admin">{ROLE_LABELS.admin[locale]}</option>
             <option value="manager">{ROLE_LABELS.manager[locale]}</option>
             <option value="member">{ROLE_LABELS.member[locale]}</option>
@@ -77,7 +77,7 @@ export function UsersManager({ locale }: { locale: string }) {
         <UserDialog onSave={handleSave} locale={locale}>
           <Button>
             <UserPlus className="size-4" />
-            {isHe ? "הוסף משתמש" : "Add User"}
+            {txt(locale, { he: "הוסף משתמש", en: "Add User" })}
           </Button>
         </UserDialog>
       </div>
@@ -87,18 +87,18 @@ export function UsersManager({ locale }: { locale: string }) {
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-xs text-muted-foreground">
             <tr>
-              <th className="text-start px-4 py-3 font-medium">{isHe ? "משתמש" : "User"}</th>
-              <th className="text-start px-4 py-3 font-medium hidden md:table-cell">{isHe ? "אימייל" : "Email"}</th>
-              <th className="text-start px-4 py-3 font-medium">{isHe ? "תפקיד" : "Role"}</th>
-              <th className="text-start px-4 py-3 font-medium hidden lg:table-cell">{isHe ? "שפה" : "Locale"}</th>
-              <th className="text-end px-4 py-3 font-medium">{isHe ? "פעולות" : "Actions"}</th>
+              <th className="text-start px-4 py-3 font-medium">{txt(locale, { he: "משתמש", en: "User" })}</th>
+              <th className="text-start px-4 py-3 font-medium hidden md:table-cell">{txt(locale, { he: "אימייל", en: "Email" })}</th>
+              <th className="text-start px-4 py-3 font-medium">{txt(locale, { he: "תפקיד", en: "Role" })}</th>
+              <th className="text-start px-4 py-3 font-medium hidden lg:table-cell">{txt(locale, { he: "שפה", en: "Locale" })}</th>
+              <th className="text-end px-4 py-3 font-medium">{txt(locale, { he: "פעולות", en: "Actions" })}</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.length === 0 && (
               <tr>
                 <td colSpan={5} className="text-center py-12 text-muted-foreground">
-                  {isHe ? "לא נמצאו משתמשים" : "No users found"}
+                  {txt(locale, { he: "לא נמצאו משתמשים", en: "No users found" })}
                 </td>
               </tr>
             )}
@@ -149,7 +149,7 @@ export function UsersManager({ locale }: { locale: string }) {
       </div>
 
       <div className="text-xs text-muted-foreground text-center">
-        {isHe ? `מציג ${filteredUsers.length} מתוך ${users.length} משתמשים` : `Showing ${filteredUsers.length} of ${users.length} users`}
+        {txt(locale, { he: `מציג ${filteredUsers.length} מתוך ${users.length} משתמשים`, en: `Showing ${filteredUsers.length} of ${users.length} users` })}
       </div>
     </div>
   );
@@ -166,7 +166,6 @@ function UserDialog({
   onSave: (user: MockUser, isNew: boolean) => void;
   locale: string;
 }) {
-  const isHe = locale === "he";
   const isNew = !user;
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<MockUser>(
@@ -183,7 +182,7 @@ function UserDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) {
-      toast.error(isHe ? "שם ואימייל נדרשים" : "Name and email required");
+      toast.error(txt(locale, { he: "שם ואימייל נדרשים", en: "Name and email required" }));
       return;
     }
     const finalUser = {
@@ -200,24 +199,24 @@ function UserDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isNew ? (isHe ? "הוספת משתמש חדש" : "Add New User") : isHe ? "עריכת משתמש" : "Edit User"}
+            {isNew ? txt(locale, { he: "הוספת משתמש חדש", en: "Add New User" }) : txt(locale, { he: "עריכת משתמש", en: "Edit User" })}
           </DialogTitle>
           <DialogDescription>
-            {isHe ? "מלא את פרטי המשתמש בטופס למטה" : "Fill in the user details below"}
+            {txt(locale, { he: "מלא את פרטי המשתמש בטופס למטה", en: "Fill in the user details below" })}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">{isHe ? "שם מלא" : "Full Name"} *</Label>
+            <Label htmlFor="name">{txt(locale, { he: "שם מלא", en: "Full Name" })} *</Label>
             <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">{isHe ? "אימייל" : "Email"} *</Label>
+            <Label htmlFor="email">{txt(locale, { he: "אימייל", en: "Email" })} *</Label>
             <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="role">{isHe ? "תפקיד" : "Role"}</Label>
+              <Label htmlFor="role">{txt(locale, { he: "תפקיד", en: "Role" })}</Label>
               <select
                 id="role"
                 value={form.role}
@@ -232,24 +231,24 @@ function UserDialog({
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="locale">{isHe ? "שפה" : "Language"}</Label>
+              <Label htmlFor="locale">{txt(locale, { he: "שפה", en: "Language" })}</Label>
               <select
                 id="locale"
                 value={form.locale}
                 onChange={(e) => setForm({ ...form, locale: e.target.value as "he" | "en" })}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="he">{isHe ? "עברית" : "Hebrew"}</option>
-                <option value="en">{isHe ? "אנגלית" : "English"}</option>
+                <option value="he">{txt(locale, { he: "עברית", en: "Hebrew" })}</option>
+                <option value="en">{txt(locale, { he: "אנגלית", en: "English" })}</option>
               </select>
             </div>
           </div>
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              {isHe ? "ביטול" : "Cancel"}
+              {txt(locale, { he: "ביטול", en: "Cancel" })}
             </Button>
             <Button type="submit">
-              {isNew ? (isHe ? "הוסף משתמש" : "Add User") : isHe ? "שמור" : "Save"}
+              {isNew ? txt(locale, { he: "הוסף משתמש", en: "Add User" }) : txt(locale, { he: "שמור", en: "Save" })}
             </Button>
           </DialogFooter>
         </form>

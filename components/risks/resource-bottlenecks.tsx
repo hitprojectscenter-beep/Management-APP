@@ -5,6 +5,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Users, AlertTriangle, Info, Zap, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import type { ResourceBottleneck } from "@/lib/ai/risk-engine";
 import type { MockUser } from "@/lib/db/mock-data";
 

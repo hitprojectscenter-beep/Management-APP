@@ -14,6 +14,7 @@ import {
   Users, Mail, Bell, GitBranch, Calendar, Sparkles, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import { toast } from "sonner";
 
 // ============================================================
@@ -163,7 +164,6 @@ export function AutomationBuilder({
   locale: string;
   children: React.ReactNode;
 }) {
-  const isHe = locale === "he";
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"templates" | "builder">("templates");
   const [state, setState] = useState<BuilderState>({
@@ -181,7 +181,7 @@ export function AutomationBuilder({
 
   const applyTemplate = (tpl: typeof TEMPLATES[number]) => {
     setState({
-      name: isHe ? tpl.nameHe : tpl.nameEn,
+      name: txt(locale, { he: tpl.nameHe, en: tpl.nameEn }),
       trigger: tpl.trigger,
       triggerParams: {},
       conditions: tpl.conditions.map((c) => ({ id: c, params: {} })),
@@ -208,22 +208,23 @@ export function AutomationBuilder({
 
   const handleSave = () => {
     if (!state.name.trim()) {
-      toast.error(isHe ? "חובה לתת שם לאוטומציה" : "Automation name required");
+      toast.error(txt(locale, { he: "חובה לתת שם לאוטומציה", en: "Automation name required" }));
       return;
     }
     if (!state.trigger) {
-      toast.error(isHe ? "חובה לבחור טריגר" : "Must select a trigger");
+      toast.error(txt(locale, { he: "חובה לבחור טריגר", en: "Must select a trigger" }));
       return;
     }
     if (state.actions.length === 0) {
-      toast.error(isHe ? "חובה להוסיף לפחות פעולה אחת" : "Must add at least one action");
+      toast.error(txt(locale, { he: "חובה להוסיף לפחות פעולה אחת", en: "Must add at least one action" }));
       return;
     }
 
-    toast.success(isHe ? `האוטומציה "${state.name}" נוצרה!` : `Automation "${state.name}" created!`, {
-      description: isHe
-        ? `טריגר + ${state.conditions.length} תנאים + ${state.actions.length} פעולות`
-        : `Trigger + ${state.conditions.length} conditions + ${state.actions.length} actions`,
+    toast.success(txt(locale, { he: `האוטומציה "${state.name}" נוצרה!`, en: `Automation "${state.name}" created!` }), {
+      description: txt(locale, {
+        he: `טריגר + ${state.conditions.length} תנאים + ${state.actions.length} פעולות`,
+        en: `Trigger + ${state.conditions.length} conditions + ${state.actions.length} actions`,
+      }),
     });
     setOpen(false);
     reset();
@@ -238,12 +239,12 @@ export function AutomationBuilder({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="size-5 text-violet-600" />
-            {isHe ? "בניית אוטומציה חדשה" : "Build New Automation"}
+            {txt(locale, { he: "בניית אוטומציה חדשה", en: "Build New Automation" })}
           </DialogTitle>
           <DialogDescription>
             {step === "templates"
-              ? isHe ? "בחר תבנית מוכנה או בנה מאפס — ללא קוד!" : "Pick a template or build from scratch — no code!"
-              : isHe ? "הגדר טריגר → תנאים (אופציונלי) → פעולות" : "Set trigger → conditions (optional) → actions"
+              ? txt(locale, { he: "בחר תבנית מוכנה או בנה מאפס — ללא קוד!", en: "Pick a template or build from scratch — no code!" })
+              : txt(locale, { he: "הגדר טריגר → תנאים (אופציונלי) → פעולות", en: "Set trigger → conditions (optional) → actions" })
             }
           </DialogDescription>
         </DialogHeader>
@@ -258,8 +259,8 @@ export function AutomationBuilder({
                   onClick={() => applyTemplate(tpl)}
                   className="p-3 rounded-lg border bg-card hover:bg-accent/50 text-start transition-all min-h-[44px]"
                 >
-                  <div className="font-semibold text-sm">{isHe ? tpl.nameHe : tpl.nameEn}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{isHe ? tpl.descHe : tpl.descEn}</div>
+                  <div className="font-semibold text-sm">{txt(locale, { he: tpl.nameHe, en: tpl.nameEn })}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{txt(locale, { he: tpl.descHe, en: tpl.descEn })}</div>
                 </button>
               ))}
             </div>
@@ -268,7 +269,7 @@ export function AutomationBuilder({
             <div className="border-t pt-3">
               <Button variant="outline" className="w-full min-h-[44px]" onClick={() => setStep("builder")}>
                 <Plus className="size-4" />
-                {isHe ? "בנה מאפס" : "Build from scratch"}
+                {txt(locale, { he: "בנה מאפס", en: "Build from scratch" })}
               </Button>
             </div>
           </div>
@@ -276,11 +277,11 @@ export function AutomationBuilder({
           <div className="space-y-5">
             {/* Name */}
             <div className="space-y-1.5">
-              <Label>{isHe ? "שם האוטומציה" : "Automation name"} <span className="text-red-500">*</span></Label>
+              <Label>{txt(locale, { he: "שם האוטומציה", en: "Automation name" })} <span className="text-red-500">*</span></Label>
               <Input
                 value={state.name}
                 onChange={(e) => setState({ ...state, name: e.target.value })}
-                placeholder={isHe ? "לדוגמה: התראה על משימות באיחור" : "e.g., Alert on overdue tasks"}
+                placeholder={txt(locale, { he: "לדוגמה: התראה על משימות באיחור", en: "e.g., Alert on overdue tasks" })}
                 className="min-h-[44px]"
               />
             </div>
@@ -289,7 +290,7 @@ export function AutomationBuilder({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="size-8 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-blue-600 text-xs font-bold">1</div>
-                <Label className="text-base font-bold">{isHe ? "כשזה קורה (טריגר)" : "When this happens (trigger)"} <span className="text-red-500">*</span></Label>
+                <Label className="text-base font-bold">{txt(locale, { he: "כשזה קורה (טריגר)", en: "When this happens (trigger)" })} <span className="text-red-500">*</span></Label>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {TRIGGERS.map((t) => {
@@ -306,7 +307,7 @@ export function AutomationBuilder({
                       )}
                     >
                       <Icon className="size-3.5" />
-                      {isHe ? t.labelHe : t.labelEn}
+                      {txt(locale, { he: t.labelHe, en: t.labelEn })}
                     </button>
                   );
                 })}
@@ -316,7 +317,7 @@ export function AutomationBuilder({
                 <div className="ps-10 space-y-2">
                   {selectedTrigger.params.map((p) => (
                     <div key={p.id} className="flex items-center gap-2">
-                      <Label className="text-xs w-20 shrink-0">{isHe ? p.labelHe : p.labelEn}</Label>
+                      <Label className="text-xs w-20 shrink-0">{txt(locale, { he: p.labelHe, en: p.labelEn })}</Label>
                       {p.type === "select" ? (
                         <select
                           value={state.triggerParams[p.id] || (p as any).options?.[0] || ""}
@@ -347,17 +348,17 @@ export function AutomationBuilder({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="size-8 rounded-full bg-amber-100 dark:bg-amber-950 flex items-center justify-center text-amber-600 text-xs font-bold">2</div>
-                <Label className="text-base font-bold">{isHe ? "רק אם (תנאי — אופציונלי)" : "Only if (condition — optional)"}</Label>
+                <Label className="text-base font-bold">{txt(locale, { he: "רק אם (תנאי — אופציונלי)", en: "Only if (condition — optional)" })}</Label>
               </div>
               {state.conditions.map((cond, idx) => {
                 const def = CONDITIONS.find((c) => c.id === cond.id);
                 return (
                   <div key={idx} className="flex items-center gap-2 ps-10">
-                    <Badge variant="outline" className="shrink-0">{isHe ? def?.labelHe : def?.labelEn}</Badge>
+                    <Badge variant="outline" className="shrink-0">{def ? txt(locale, { he: def.labelHe, en: def.labelEn }) : ""}</Badge>
                     {def?.params.map((p) => (
                       <Input
                         key={p.id}
-                        placeholder={isHe ? p.labelHe : p.labelEn}
+                        placeholder={txt(locale, { he: p.labelHe, en: p.labelEn })}
                         value={cond.params[p.id] || ""}
                         onChange={(e) => {
                           const updated = [...state.conditions];
@@ -378,7 +379,7 @@ export function AutomationBuilder({
                   <button key={c.id} onClick={() => addCondition(c.id)}
                     className="text-[10px] px-2 py-1 rounded border border-dashed border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 min-h-[28px]"
                   >
-                    + {isHe ? c.labelHe : c.labelEn}
+                    + {txt(locale, { he: c.labelHe, en: c.labelEn })}
                   </button>
                 ))}
               </div>
@@ -390,7 +391,7 @@ export function AutomationBuilder({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <div className="size-8 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 text-xs font-bold">3</div>
-                <Label className="text-base font-bold">{isHe ? "אז תבצע (פעולות)" : "Then do (actions)"} <span className="text-red-500">*</span></Label>
+                <Label className="text-base font-bold">{txt(locale, { he: "אז תבצע (פעולות)", en: "Then do (actions)" })} <span className="text-red-500">*</span></Label>
               </div>
               {state.actions.map((act, idx) => {
                 const def = ACTIONS.find((a) => a.id === act.id);
@@ -399,7 +400,7 @@ export function AutomationBuilder({
                   <div key={idx} className="flex items-center gap-2 ps-10">
                     <Icon className="size-4 text-emerald-600 shrink-0" />
                     <Badge variant="outline" className="shrink-0 bg-emerald-50 dark:bg-emerald-950/30">
-                      {isHe ? def?.labelHe : def?.labelEn}
+                      {def ? txt(locale, { he: def.labelHe, en: def.labelEn }) : ""}
                     </Badge>
                     {def?.params.map((p) => (
                       p.type === "select" ? (
@@ -416,7 +417,7 @@ export function AutomationBuilder({
                         </select>
                       ) : (
                         <Input key={p.id}
-                          placeholder={isHe ? p.labelHe : p.labelEn}
+                          placeholder={txt(locale, { he: p.labelHe, en: p.labelEn })}
                           value={act.params[p.id] || ""}
                           onChange={(e) => {
                             const updated = [...state.actions];
@@ -441,7 +442,7 @@ export function AutomationBuilder({
                       className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border border-dashed border-emerald-400 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 min-h-[28px]"
                     >
                       <Icon className="size-3" />
-                      + {isHe ? a.labelHe : a.labelEn}
+                      + {txt(locale, { he: a.labelHe, en: a.labelEn })}
                     </button>
                   );
                 })}
@@ -453,21 +454,21 @@ export function AutomationBuilder({
               <Card className="bg-violet-50/50 dark:bg-violet-950/20 border-violet-300">
                 <CardContent className="p-3 text-xs">
                   <div className="font-bold text-violet-700 dark:text-violet-300 mb-1">
-                    {isHe ? "סיכום:" : "Summary:"}
+                    {txt(locale, { he: "סיכום:", en: "Summary:" })}
                   </div>
                   <div>
-                    <span className="text-blue-600">{isHe ? "כש: " : "When: "}</span>
-                    {isHe ? TRIGGERS.find((t) => t.id === state.trigger)?.labelHe : TRIGGERS.find((t) => t.id === state.trigger)?.labelEn}
+                    <span className="text-blue-600">{txt(locale, { he: "כש: ", en: "When: " })}</span>
+                    {(() => { const t = TRIGGERS.find((t) => t.id === state.trigger); return t ? txt(locale, { he: t.labelHe, en: t.labelEn }) : ""; })()}
                   </div>
                   {state.conditions.length > 0 && (
                     <div>
-                      <span className="text-amber-600">{isHe ? "ורק אם: " : "Only if: "}</span>
-                      {state.conditions.map((c) => isHe ? CONDITIONS.find((d) => d.id === c.id)?.labelHe : CONDITIONS.find((d) => d.id === c.id)?.labelEn).join(", ")}
+                      <span className="text-amber-600">{txt(locale, { he: "ורק אם: ", en: "Only if: " })}</span>
+                      {state.conditions.map((c) => { const d = CONDITIONS.find((d) => d.id === c.id); return d ? txt(locale, { he: d.labelHe, en: d.labelEn }) : ""; }).join(", ")}
                     </div>
                   )}
                   <div>
-                    <span className="text-emerald-600">{isHe ? "אז: " : "Then: "}</span>
-                    {state.actions.map((a) => isHe ? ACTIONS.find((d) => d.id === a.id)?.labelHe : ACTIONS.find((d) => d.id === a.id)?.labelEn).join(" → ")}
+                    <span className="text-emerald-600">{txt(locale, { he: "אז: ", en: "Then: " })}</span>
+                    {state.actions.map((a) => { const d = ACTIONS.find((d) => d.id === a.id); return d ? txt(locale, { he: d.labelHe, en: d.labelEn }) : ""; }).join(" → ")}
                   </div>
                 </CardContent>
               </Card>
@@ -478,16 +479,16 @@ export function AutomationBuilder({
         <DialogFooter className="gap-2 pt-2">
           {step === "builder" && (
             <Button variant="outline" onClick={() => setStep("templates")} className="min-h-[44px]">
-              {isHe ? "חזור לתבניות" : "Back to templates"}
+              {txt(locale, { he: "חזור לתבניות", en: "Back to templates" })}
             </Button>
           )}
           <Button variant="outline" onClick={() => { setOpen(false); reset(); }} className="min-h-[44px]">
-            {isHe ? "ביטול" : "Cancel"}
+            {txt(locale, { he: "ביטול", en: "Cancel" })}
           </Button>
           {step === "builder" && (
             <Button onClick={handleSave} className="min-h-[44px] bg-violet-600 hover:bg-violet-700">
               <Zap className="size-4" />
-              {isHe ? "צור אוטומציה" : "Create Automation"}
+              {txt(locale, { he: "צור אוטומציה", en: "Create Automation" })}
             </Button>
           )}
         </DialogFooter>

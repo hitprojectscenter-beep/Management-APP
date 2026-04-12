@@ -20,6 +20,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import { useSpeechRecognition, speak } from "./use-speech-recognition";
 import { toast } from "sonner";
 import { CURRENT_USER_ID, getUserById } from "@/lib/db/mock-data";
@@ -51,7 +52,6 @@ interface ServerResponse {
 
 export function PersonalAssistant() {
   const locale = useLocale();
-  const isHe = locale === "he";
   const currentUser = getUserById(CURRENT_USER_ID);
   const [isOpen, setIsOpen] = useState(false);
   const [stage, setStage] = useState<Stage>("idle");
@@ -75,7 +75,7 @@ export function PersonalAssistant() {
     stop: stopListening,
     reset: resetSpeech,
   } = useSpeechRecognition({
-    lang: isHe ? "he-IL" : "en-US",
+    lang: locale === "he" ? "he-IL" : "en-US",
     continuous: false,
     // When speech recognition returns final text → AUTO-SUBMIT immediately.
     // No need for the user to press Send manually after speaking.
@@ -115,14 +115,18 @@ export function PersonalAssistant() {
       setTurns([
         {
           role: "assistant",
-          text: isHe
-            ? "שלום! אני העוזר האישי שלך ב-Work OS. אפשר לדבר איתי או לכתוב. לדוגמה: \"פתח משימה חדשה לבדיקת שרתים מיום ראשון עד חמישי\" או \"מה הסיכונים בפרויקט CRM?\""
-            : "Hi! I'm your Work OS Personal Assistant. You can speak or type. Try: \"Create a new task to check database servers from Sunday to Thursday\" or \"What are the risks in the CRM project?\"",
+          text: txt(locale, {
+            he: "שלום! אני העוזר האישי שלך ב-Work OS. אפשר לדבר איתי או לכתוב. לדוגמה: \"פתח משימה חדשה לבדיקת שרתים מיום ראשון עד חמישי\" או \"מה הסיכונים בפרויקט CRM?\"",
+            en: "Hi! I'm your Work OS Personal Assistant. You can speak or type. Try: \"Create a new task to check database servers from Sunday to Thursday\" or \"What are the risks in the CRM project?\"",
+            ru: "Привет! Я ваш личный помощник Work OS. Говорите или пишите. Например: \"Создай задачу для проверки серверов\" или \"Какие риски в проекте CRM?\"",
+            fr: "Bonjour ! Je suis votre assistant personnel Work OS. Parlez ou tapez. Essayez : \"Créer une tâche\" ou \"Quels sont les risques du projet CRM ?\"",
+            es: "¡Hola! Soy tu asistente personal de Work OS. Habla o escribe. Prueba: \"Crear una tarea\" o \"¿Cuáles son los riesgos del proyecto CRM?\""
+          }),
           timestamp: Date.now(),
         },
       ]);
     }
-  }, [isOpen, turns.length, isHe]);
+  }, [isOpen, turns.length, locale]);
 
   const submitText = async (text: string) => {
     if (!text.trim() || stage === "processing" || stage === "executing") return;
@@ -181,28 +185,26 @@ export function PersonalAssistant() {
         reply = data.gaps.map((g) => `❓ ${g.prompt[locale]}`).join("\n");
       } else if (data.stage === "confirmation") {
         setStage("confirmation");
-        reply = isHe ? "✅ הבנתי! בוא נוודא שהכל נכון:" : "✅ Got it! Let me confirm:";
+        reply = txt(locale, { he: "✅ הבנתי! בוא נוודא שהכל נכון:", en: "✅ Got it! Let me confirm:" });
       } else if (data.stage === "query_response") {
         setStage("idle");
-        reply = data.intent?.responseText || (isHe ? "אין מספיק נתונים לתשובה. נסה שאלה אחרת." : "Not enough data. Try another question.");
+        reply = data.intent?.responseText || txt(locale, { he: "אין מספיק נתונים לתשובה. נסה שאלה אחרת.", en: "Not enough data. Try another question." });
       } else {
         // Fallback - always go back to idle
         setStage("idle");
-        reply = data.intent?.responseText || (isHe ? "במה עוד אוכל לעזור?" : "What else can I help with?");
+        reply = data.intent?.responseText || txt(locale, { he: "במה עוד אוכל לעזור?", en: "What else can I help with?" });
       }
 
       const assistantTurn: Turn = { role: "assistant", text: reply, timestamp: Date.now() };
       setTurns((prev) => [...prev, assistantTurn]);
-      if (ttsEnabled) speak(reply, isHe ? "he-IL" : "en-US");
+      if (ttsEnabled) speak(reply, locale === "he" ? "he-IL" : "en-US");
     } catch (err) {
       setStage("idle");
       setTurns((prev) => [
         ...prev,
         {
           role: "assistant",
-          text: isHe
-            ? `שגיאה: ${err instanceof Error ? err.message : "לא ידוע"}`
-            : `Error: ${err instanceof Error ? err.message : "unknown"}`,
+          text: `${txt(locale, { he: "שגיאה", en: "Error" })}: ${err instanceof Error ? err.message : txt(locale, { he: "לא ידוע", en: "unknown" })}`,
           timestamp: Date.now(),
         },
       ]);
@@ -221,18 +223,16 @@ export function PersonalAssistant() {
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(
-          isHe ? "הפעולה בוצעה בהצלחה!" : "Action completed successfully!",
+          txt(locale, { he: "הפעולה בוצעה בהצלחה!", en: "Action completed successfully!" }),
           {
-            description: isHe
-              ? "המשימה נוספה למערכת ותועדה ביומן הביקורת."
-              : "Task added and recorded in audit log.",
+            description: txt(locale, { he: "המשימה נוספה למערכת ותועדה ביומן הביקורת.", en: "Task added and recorded in audit log." }),
           }
         );
         setTurns((prev) => [
           ...prev,
           {
             role: "assistant",
-            text: isHe ? "✅ בוצע! המשימה נרשמה במערכת." : "✅ Done! Task recorded.",
+            text: txt(locale, { he: "✅ בוצע! המשימה נרשמה במערכת.", en: "✅ Done! Task recorded." }),
             timestamp: Date.now(),
           },
         ]);
@@ -246,7 +246,7 @@ export function PersonalAssistant() {
       }
     } catch (err) {
       setStage("blocked");
-      toast.error(isHe ? "הפעולה נכשלה" : "Action failed");
+      toast.error(txt(locale, { he: "הפעולה נכשלה", en: "Action failed" }));
     }
   };
 
@@ -259,7 +259,7 @@ export function PersonalAssistant() {
       ...prev,
       {
         role: "assistant",
-        text: isHe ? "ביטלתי. במה עוד אוכל לעזור?" : "Cancelled. What else can I help with?",
+        text: txt(locale, { he: "ביטלתי. במה עוד אוכל לעזור?", en: "Cancelled. What else can I help with?" }),
         timestamp: Date.now(),
       },
     ]);
@@ -289,8 +289,8 @@ export function PersonalAssistant() {
       <button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 start-6 z-[75] size-14 rounded-full bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 text-white shadow-2xl hover:shadow-violet-500/50 hover:scale-110 transition-all flex items-center justify-center group"
-        aria-label={isHe ? "פתח עוזר אישי" : "Open Personal Assistant"}
-        title={isHe ? "עוזר אישי (דיבור או כתיבה)" : "Personal Assistant (voice or text)"}
+        aria-label={txt(locale, { he: "פתח עוזר אישי", en: "Open Personal Assistant" })}
+        title={txt(locale, { he: "עוזר אישי (דיבור או כתיבה)", en: "Personal Assistant (voice or text)" })}
       >
         <Sparkles className="size-6" />
         <span className="absolute -top-1 -end-1 size-3 rounded-full bg-amber-400 animate-pulse" />
@@ -299,7 +299,7 @@ export function PersonalAssistant() {
             "absolute start-full ms-3 px-2.5 py-1 rounded-md bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
           )}
         >
-          {isHe ? "עוזר אישי 🎤" : "Personal Assistant 🎤"}
+          {txt(locale, { he: "עוזר אישי", en: "Personal Assistant", ru: "Личный помощник", fr: "Assistant personnel", es: "Asistente personal" })} 🎤
         </span>
       </button>
     );
@@ -318,7 +318,7 @@ export function PersonalAssistant() {
           </div>
           <div>
             <div className="font-bold text-base">
-              {isHe ? "עוזר אישי" : "Personal Assistant"}
+              {txt(locale, { he: "עוזר אישי", en: "Personal Assistant", ru: "Личный помощник", fr: "Assistant personnel", es: "Asistente personal" })}
             </div>
             <div className="text-[11px] opacity-90 flex items-center gap-1.5">
               <span
@@ -331,12 +331,12 @@ export function PersonalAssistant() {
                       : "bg-emerald-400"
                 )}
               />
-              {stage === "listening" && (isHe ? "מקשיב..." : "Listening...")}
-              {stage === "processing" && (isHe ? "מעבד..." : "Processing...")}
-              {stage === "clarification" && (isHe ? "ממתין למידע נוסף" : "Awaiting info")}
-              {stage === "confirmation" && (isHe ? "ממתין לאישור" : "Awaiting confirmation")}
-              {stage === "blocked" && (isHe ? "חסום" : "Blocked")}
-              {(stage === "idle" || stage === "done") && (isHe ? "מוכן" : "Ready")}
+              {stage === "listening" && txt(locale, { he: "מקשיב...", en: "Listening..." })}
+              {stage === "processing" && txt(locale, { he: "מעבד...", en: "Processing..." })}
+              {stage === "clarification" && txt(locale, { he: "ממתין למידע נוסף", en: "Awaiting info" })}
+              {stage === "confirmation" && txt(locale, { he: "ממתין לאישור", en: "Awaiting confirmation" })}
+              {stage === "blocked" && txt(locale, { he: "חסום", en: "Blocked" })}
+              {(stage === "idle" || stage === "done") && txt(locale, { he: "מוכן", en: "Ready" })}
             </div>
           </div>
         </div>
@@ -347,7 +347,7 @@ export function PersonalAssistant() {
               "size-8 rounded-full flex items-center justify-center text-[10px] font-bold",
               ttsEnabled ? "bg-white/30" : "bg-white/10 hover:bg-white/20"
             )}
-            title={isHe ? "הפעל/כבה דיבור" : "Toggle TTS"}
+            title={txt(locale, { he: "הפעל/כבה דיבור", en: "Toggle TTS" })}
           >
             TTS
           </button>
@@ -366,10 +366,8 @@ export function PersonalAssistant() {
         {turns.map((turn, idx) => {
           const senderName =
             turn.role === "user"
-              ? currentUser?.name?.split(" ")[0] || (isHe ? "אתה" : "You")
-              : isHe
-                ? "עוזר"
-                : "Assistant";
+              ? currentUser?.name?.split(" ")[0] || txt(locale, { he: "אתה", en: "You" })
+              : txt(locale, { he: "עוזר", en: "Assistant" });
 
           return (
             <div
@@ -429,7 +427,7 @@ export function PersonalAssistant() {
               <Loader2 className="size-4 text-white animate-spin" />
             </div>
             <div className="rounded-2xl px-3.5 py-2 bg-background border text-sm italic text-muted-foreground">
-              {isHe ? "מעבד את הבקשה שלך..." : "Processing your request..."}
+              {txt(locale, { he: "מעבד את הבקשה שלך...", en: "Processing your request..." })}
             </div>
           </div>
         )}
@@ -460,7 +458,7 @@ export function PersonalAssistant() {
           <div className="ms-10 border-2 border-violet-400 rounded-xl bg-violet-50/50 dark:bg-violet-950/20 overflow-hidden shadow-md">
             <div className="px-3 py-2 bg-violet-600 text-white text-xs font-bold flex items-center gap-1.5">
               <CheckCircle2 className="size-3.5" />
-              {isHe ? "אישור לפני ביצוע" : "Confirm before executing"}
+              {txt(locale, { he: "אישור לפני ביצוע", en: "Confirm before executing" })}
             </div>
             <div className="p-3 text-sm whitespace-pre-line font-mono">{currentResponse.summary}</div>
             {currentResponse.conflicts.length > 0 && (
@@ -479,11 +477,11 @@ export function PersonalAssistant() {
             <div className="px-3 pb-3 flex gap-2">
               <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={executeAction}>
                 <CheckCircle2 className="size-3.5" />
-                {isHe ? "אשר וצור" : "Confirm & Create"}
+                {txt(locale, { he: "אשר וצור", en: "Confirm & Create" })}
               </Button>
               <Button size="sm" variant="outline" onClick={cancelAction}>
                 <XCircle className="size-3.5" />
-                {isHe ? "בטל" : "Cancel"}
+                {txt(locale, { he: "בטל", en: "Cancel" })}
               </Button>
             </div>
           </div>
@@ -514,13 +512,13 @@ export function PersonalAssistant() {
             )}
             title={
               listening
-                ? isHe ? "הפסק הקלטה" : "Stop recording"
-                : isHe ? "הקלט הודעה קולית" : "Record voice message"
+                ? txt(locale, { he: "הפסק הקלטה", en: "Stop recording" })
+                : txt(locale, { he: "הקלט הודעה קולית", en: "Record voice message" })
             }
             aria-label={
               listening
-                ? isHe ? "הפסק הקלטה" : "Stop recording"
-                : isHe ? "התחל הקלטה" : "Start recording"
+                ? txt(locale, { he: "הפסק הקלטה", en: "Stop recording" })
+                : txt(locale, { he: "התחל הקלטה", en: "Start recording" })
             }
           >
             {listening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
@@ -531,7 +529,7 @@ export function PersonalAssistant() {
             size="icon"
             variant="outline"
             disabled
-            title={isHe ? "הדפדפן שלך לא תומך בזיהוי דיבור" : "Speech not supported in this browser"}
+            title={txt(locale, { he: "הדפדפן שלך לא תומך בזיהוי דיבור", en: "Speech not supported in this browser" })}
             className="min-w-[44px] min-h-[44px] shrink-0"
           >
             <MicOff className="size-4 opacity-50" />
@@ -568,12 +566,8 @@ export function PersonalAssistant() {
           }}
           placeholder={
             listening
-              ? isHe
-                ? "🎤 מקשיב... (אפשר גם לכתוב)"
-                : "🎤 Listening... (you can also type)"
-              : isHe
-                ? "כתוב הודעה או לחץ על 🎤..."
-                : "Type a message or tap 🎤..."
+              ? txt(locale, { he: "🎤 מקשיב... (אפשר גם לכתוב)", en: "🎤 Listening... (you can also type)" })
+              : txt(locale, { he: "כתוב הודעה או לחץ על 🎤...", en: "Type a message or tap 🎤..." })
           }
           disabled={stage === "processing" || stage === "executing"}
           autoComplete="off"
@@ -590,8 +584,8 @@ export function PersonalAssistant() {
           size="icon"
           disabled={!inputText.trim() || stage === "processing" || stage === "executing"}
           className="min-w-[44px] min-h-[44px] shrink-0"
-          aria-label={isHe ? "שלח" : "Send"}
-          title={isHe ? "שלח הודעה (Enter)" : "Send message (Enter)"}
+          aria-label={txt(locale, { he: "שלח", en: "Send" })}
+          title={txt(locale, { he: "שלח הודעה (Enter)", en: "Send message (Enter)" })}
         >
           <Send className="size-4" />
         </Button>
@@ -606,9 +600,7 @@ export function PersonalAssistant() {
 
       {/* Footer hint */}
       <div className="px-3 py-1.5 border-t bg-muted/10 text-[10px] text-muted-foreground text-center">
-        {isHe
-          ? `🔒 RBAC + Audit Log + אישור לפני ביצוע · מצב הקלטה: ${mode === "speech-api" ? "זיהוי דיבור ✅" : mode === "media-recorder" ? "הקלטת אודיו 🎤" : "לא זמין ❌"}`
-          : `🔒 RBAC + Audit + Confirmation · Recording: ${mode === "speech-api" ? "Speech API ✅" : mode === "media-recorder" ? "Audio Recorder 🎤" : "N/A ❌"}`}
+        {`🔒 RBAC + ${txt(locale, { he: "Audit Log + אישור לפני ביצוע · מצב הקלטה", en: "Audit + Confirmation · Recording" })}: ${mode === "speech-api" ? txt(locale, { he: "זיהוי דיבור ✅", en: "Speech API ✅" }) : mode === "media-recorder" ? txt(locale, { he: "הקלטת אודיו 🎤", en: "Audio Recorder 🎤" }) : txt(locale, { he: "לא זמין ❌", en: "N/A ❌" })}`}
       </div>
     </div>
   );

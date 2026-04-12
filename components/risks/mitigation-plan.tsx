@@ -25,6 +25,7 @@ import {
   AlertOctagon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import type { MitigationPlan, MitigationStrategy, MitigationAction } from "@/lib/ai/mitigation-engine";
 import type { MockUser } from "@/lib/db/mock-data";
 
@@ -88,27 +89,28 @@ export function MitigationPlanCard({
             </div>
             <div>
               <CardTitle className="flex items-center gap-2">
-                {isHe ? "תוכנית ניהול סיכונים של ה-AI" : "AI Mitigation Plan"}
+                {txt(locale, { he: "תוכנית ניהול סיכונים של ה-AI", en: "AI Mitigation Plan" })}
                 <Badge variant="outline" className="bg-background">
                   <Sparkles className="size-3 me-1" />
                   Claude AI
                 </Badge>
               </CardTitle>
               <CardDescription className="mt-1">
-                {isHe
-                  ? "תוכנית פעולה אקטיבית: שיבוצים מחדש, אסטרטגיות גידור, התרעות מוקדמות והמלצות אקטיביות"
-                  : "Active playbook: reassignments, mitigation strategies, early warnings, and active recommendations"}
+                {txt(locale, {
+                  he: "תוכנית פעולה אקטיבית: שיבוצים מחדש, אסטרטגיות גידור, התרעות מוקדמות והמלצות אקטיביות",
+                  en: "Active playbook: reassignments, mitigation strategies, early warnings, and active recommendations",
+                })}
               </CardDescription>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 text-center">
             <div className="px-3 py-1.5 rounded-md bg-background border">
               <div className="text-2xl font-black text-purple-600">{plan.summary.totalActions}</div>
-              <div className="text-[9px] text-muted-foreground uppercase">{isHe ? "פעולות סה״כ" : "Total actions"}</div>
+              <div className="text-[9px] text-muted-foreground uppercase">{txt(locale, { he: "פעולות סה״כ", en: "Total actions" })}</div>
             </div>
             <div className="px-3 py-1.5 rounded-md bg-red-50 dark:bg-red-950/30 border border-red-300">
               <div className="text-2xl font-black text-red-600">{plan.summary.immediateActions}</div>
-              <div className="text-[9px] text-muted-foreground uppercase">{isHe ? "מיידיות" : "Immediate"}</div>
+              <div className="text-[9px] text-muted-foreground uppercase">{txt(locale, { he: "מיידיות", en: "Immediate" })}</div>
             </div>
           </div>
         </div>
@@ -122,7 +124,7 @@ export function MitigationPlanCard({
               <Users className="size-4 text-blue-600" />
             </div>
             <h3 className="font-bold text-base">
-              {isHe ? "1. הצעות שיבוץ מחדש חכמות" : "1. Smart Reassignment Suggestions"}
+              {txt(locale, { he: "1. הצעות שיבוץ מחדש חכמות", en: "1. Smart Reassignment Suggestions" })}
             </h3>
             <Badge variant="outline" className="bg-background ms-auto">
               {plan.reassignments.length}
@@ -130,13 +132,14 @@ export function MitigationPlanCard({
           </div>
           <p className="text-xs text-muted-foreground mb-3 flex items-start gap-1.5">
             <Info className="size-3 mt-0.5 shrink-0 text-blue-500" />
-            {isHe
-              ? "ה-AI מתאים בין משימות שעמוסות לחברי צוות אחרים על בסיס: כישורים תואמים, זמינות נוכחית והיסטוריית ביצועים."
-              : "AI matches over-loaded tasks to alternative team members based on: skill match, current availability, and performance history."}
+            {txt(locale, {
+              he: "ה-AI מתאים בין משימות שעמוסות לחברי צוות אחרים על בסיס: כישורים תואמים, זמינות נוכחית והיסטוריית ביצועים.",
+              en: "AI matches over-loaded tasks to alternative team members based on: skill match, current availability, and performance history.",
+            })}
           </p>
           {plan.reassignments.length === 0 ? (
             <div className="text-center py-4 text-xs text-muted-foreground">
-              {isHe ? "אין צורך בשיבוצים מחדש כעת 🎉" : "No reassignments needed 🎉"}
+              {txt(locale, { he: "אין צורך בשיבוצים מחדש כעת 🎉", en: "No reassignments needed 🎉" })}
             </div>
           ) : (
             <div className="space-y-2">
@@ -182,7 +185,7 @@ export function MitigationPlanCard({
                         )}
                         <div className="min-w-0">
                           <div className="text-[10px] text-muted-foreground uppercase">
-                            {isHe ? "מ-" : "From"}
+                            {txt(locale, { he: "מ-", en: "From" })}
                           </div>
                           <div className="text-xs font-semibold truncate line-through">{r.fromUserName}</div>
                         </div>
@@ -199,7 +202,7 @@ export function MitigationPlanCard({
                         )}
                         <div className="min-w-0">
                           <div className="text-[10px] text-emerald-600 uppercase font-bold">
-                            {isHe ? "ל-" : "To"}
+                            {txt(locale, { he: "ל-", en: "To" })}
                           </div>
                           <div className="text-xs font-semibold truncate text-emerald-700">{r.toUserName}</div>
                         </div>
@@ -217,15 +220,15 @@ export function MitigationPlanCard({
                     <div className="mt-2 grid grid-cols-3 gap-1 text-center text-[10px]">
                       <div>
                         <div className="text-purple-600 font-bold">{r.skillMatch}%</div>
-                        <div className="text-muted-foreground">{isHe ? "כישורים" : "skills"}</div>
+                        <div className="text-muted-foreground">{txt(locale, { he: "כישורים", en: "skills" })}</div>
                       </div>
                       <div>
                         <div className="text-blue-600 font-bold">{r.availability}%</div>
-                        <div className="text-muted-foreground">{isHe ? "זמינות" : "available"}</div>
+                        <div className="text-muted-foreground">{txt(locale, { he: "זמינות", en: "available" })}</div>
                       </div>
                       <div>
                         <div className="text-emerald-600 font-bold">{r.performance}/100</div>
-                        <div className="text-muted-foreground">{isHe ? "ביצועים" : "perf"}</div>
+                        <div className="text-muted-foreground">{txt(locale, { he: "ביצועים", en: "perf" })}</div>
                       </div>
                     </div>
                   </div>
@@ -242,7 +245,7 @@ export function MitigationPlanCard({
               <Wrench className="size-4 text-emerald-600" />
             </div>
             <h3 className="font-bold text-base">
-              {isHe ? "2. אסטרטגיות גידור (Mitigation)" : "2. Mitigation Strategies"}
+              {txt(locale, { he: "2. אסטרטגיות גידור (Mitigation)", en: "2. Mitigation Strategies" })}
             </h3>
             <Badge variant="outline" className="bg-background ms-auto">
               {plan.strategies.length}
@@ -250,13 +253,14 @@ export function MitigationPlanCard({
           </div>
           <p className="text-xs text-muted-foreground mb-3 flex items-start gap-1.5">
             <Info className="size-3 mt-0.5 shrink-0 text-blue-500" />
-            {isHe
-              ? "לכל סיכון, ה-AI מציע 2-3 פעולות גידור עם דירוג מאמץ והשפעה. הפעולה המומלצת מסומנת ב-⭐."
-              : "For each risk, AI proposes 2-3 mitigation actions rated by effort and impact. The preferred one is marked ⭐."}
+            {txt(locale, {
+              he: "לכל סיכון, ה-AI מציע 2-3 פעולות גידור עם דירוג מאמץ והשפעה. הפעולה המומלצת מסומנת ב-⭐.",
+              en: "For each risk, AI proposes 2-3 mitigation actions rated by effort and impact. The preferred one is marked ⭐.",
+            })}
           </p>
           {plan.strategies.length === 0 ? (
             <div className="text-center py-4 text-xs text-muted-foreground">
-              {isHe ? "אין סיכונים פעילים שדורשים גידור 🎉" : "No active risks need mitigation 🎉"}
+              {txt(locale, { he: "אין סיכונים פעילים שדורשים גידור 🎉", en: "No active risks need mitigation 🎉" })}
             </div>
           ) : (
             <div className="space-y-2">
@@ -323,7 +327,7 @@ export function MitigationPlanCard({
                                 {isPreferred && (
                                   <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 shrink-0">
                                     <CheckCircle2 className="size-3" />
-                                    {isHe ? "הפעל" : "Apply"}
+                                    {txt(locale, { he: "הפעל", en: "Apply" })}
                                   </Button>
                                 )}
                               </div>
@@ -346,7 +350,7 @@ export function MitigationPlanCard({
               <Eye className="size-4 text-amber-600" />
             </div>
             <h3 className="font-bold text-base">
-              {isHe ? "3. התרעות מוקדמות (Early Warnings)" : "3. Early Warnings"}
+              {txt(locale, { he: "3. התרעות מוקדמות (Early Warnings)", en: "3. Early Warnings" })}
             </h3>
             <Badge variant="outline" className="bg-background ms-auto">
               {plan.earlyWarnings.length}
@@ -354,13 +358,14 @@ export function MitigationPlanCard({
           </div>
           <p className="text-xs text-muted-foreground mb-3 flex items-start gap-1.5">
             <Info className="size-3 mt-0.5 shrink-0 text-blue-500" />
-            {isHe
-              ? "ה-AI מזהה דברים שיהפכו לבעיה לפני שהם משפיעים על אבני הדרך, ומאפשר לך למנוע אותם מראש."
-              : "AI identifies things that will become problems before they affect milestones, enabling proactive prevention."}
+            {txt(locale, {
+              he: "ה-AI מזהה דברים שיהפכו לבעיה לפני שהם משפיעים על אבני הדרך, ומאפשר לך למנוע אותם מראש.",
+              en: "AI identifies things that will become problems before they affect milestones, enabling proactive prevention.",
+            })}
           </p>
           {plan.earlyWarnings.length === 0 ? (
             <div className="text-center py-4 text-xs text-muted-foreground">
-              {isHe ? "אין התרעות מוקדמות 🎉" : "No early warnings 🎉"}
+              {txt(locale, { he: "אין התרעות מוקדמות 🎉", en: "No early warnings 🎉" })}
             </div>
           ) : (
             <div className="space-y-2">
@@ -381,11 +386,11 @@ export function MitigationPlanCard({
         <div className="border-t pt-3 flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Sparkles className="size-3 text-purple-600" />
-            <span>{isHe ? "תוכנית נוצרה ב-" : "Plan generated at"} {new Date(plan.generatedAt).toLocaleString(isHe ? "he-IL" : "en-US")}</span>
+            <span>{txt(locale, { he: "תוכנית נוצרה ב-", en: "Plan generated at" })} {new Date(plan.generatedAt).toLocaleString(locale === "he" ? "he-IL" : "en-US")}</span>
           </div>
           <Button variant="outline" size="sm">
             <Sparkles className="size-3" />
-            {isHe ? "רענן תוכנית" : "Regenerate"}
+            {txt(locale, { he: "רענן תוכנית", en: "Regenerate" })}
           </Button>
         </div>
       </CardContent>

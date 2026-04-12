@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, ArrowLeft, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import { toast } from "sonner";
 import type { MockUser } from "@/lib/db/mock-data";
 
@@ -28,11 +29,10 @@ export function ReassignTaskDialog({
   children: React.ReactNode;
   onReassign?: (newUserId: string, reason: string) => void;
 }) {
-  const isHe = locale === "he";
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string>("");
   const [reason, setReason] = useState("");
-  const Arrow = isHe ? ArrowLeft : ArrowRight;
+  const Arrow = locale === "he" ? ArrowLeft : ArrowRight;
 
   const currentUser = users.find((u) => u.id === currentAssigneeId);
   const candidates = users.filter(
@@ -42,16 +42,17 @@ export function ReassignTaskDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selected) {
-      toast.error(isHe ? "חובה לבחור משתמש חדש" : "Must select a new user");
+      toast.error(txt(locale, { he: "חובה לבחור משתמש חדש", en: "Must select a new user" }));
       return;
     }
     const newUser = users.find((u) => u.id === selected);
     toast.success(
-      isHe ? `המשימה "${taskTitle}" שויכה מחדש` : `Task "${taskTitle}" reassigned`,
+      txt(locale, { he: `המשימה "${taskTitle}" שויכה מחדש`, en: `Task "${taskTitle}" reassigned` }),
       {
-        description: isHe
-          ? `מ-${currentUser?.name || "—"} ל-${newUser?.name || "—"}${reason ? ` · ${reason.slice(0, 60)}` : ""}`
-          : `From ${currentUser?.name || "—"} to ${newUser?.name || "—"}`,
+        description: txt(locale, {
+          he: `מ-${currentUser?.name || "—"} ל-${newUser?.name || "—"}${reason ? ` · ${reason.slice(0, 60)}` : ""}`,
+          en: `From ${currentUser?.name || "—"} to ${newUser?.name || "—"}`,
+        }),
       }
     );
     if (onReassign) onReassign(selected, reason);
@@ -67,12 +68,13 @@ export function ReassignTaskDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="size-5 text-blue-600" />
-            {isHe ? "שיוך מחדש" : "Reassign Task"}
+            {txt(locale, { he: "שיוך מחדש", en: "Reassign Task" })}
           </DialogTitle>
           <DialogDescription>
-            {isHe
-              ? `שיוך מחדש של "${taskTitle}" למשתמש אחר`
-              : `Reassign "${taskTitle}" to another user`}
+            {txt(locale, {
+              he: `שיוך מחדש של "${taskTitle}" למשתמש אחר`,
+              en: `Reassign "${taskTitle}" to another user`,
+            })}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -82,7 +84,7 @@ export function ReassignTaskDialog({
               <div className="text-center">
                 <Avatar src={currentUser.image} fallback={currentUser.name[0]} className="size-10 mx-auto mb-1" />
                 <div className="text-xs font-medium">{currentUser.name}</div>
-                <Badge variant="secondary" className="text-[9px]">{isHe ? "נוכחי" : "Current"}</Badge>
+                <Badge variant="secondary" className="text-[9px]">{txt(locale, { he: "נוכחי", en: "Current" })}</Badge>
               </div>
               <Arrow className="size-5 text-muted-foreground" />
               <div className="text-center">
@@ -94,14 +96,14 @@ export function ReassignTaskDialog({
                       className="size-10 mx-auto mb-1 ring-2 ring-blue-500"
                     />
                     <div className="text-xs font-medium">{users.find((u) => u.id === selected)?.name}</div>
-                    <Badge className="text-[9px]">{isHe ? "חדש" : "New"}</Badge>
+                    <Badge className="text-[9px]">{txt(locale, { he: "חדש", en: "New" })}</Badge>
                   </>
                 ) : (
                   <>
                     <div className="size-10 rounded-full bg-muted flex items-center justify-center mx-auto mb-1 border-2 border-dashed">
                       <span className="text-lg">?</span>
                     </div>
-                    <div className="text-xs text-muted-foreground">{isHe ? "בחר" : "Select"}</div>
+                    <div className="text-xs text-muted-foreground">{txt(locale, { he: "בחר", en: "Select" })}</div>
                   </>
                 )}
               </div>
@@ -110,7 +112,7 @@ export function ReassignTaskDialog({
 
           {/* User selection */}
           <div className="space-y-1.5">
-            <Label>{isHe ? "בחר משתמש חדש" : "Select new user"} <span className="text-red-500">*</span></Label>
+            <Label>{txt(locale, { he: "בחר משתמש חדש", en: "Select new user" })} <span className="text-red-500">*</span></Label>
             <div className="space-y-1 max-h-[200px] overflow-y-auto">
               {candidates.map((user) => (
                 <button
@@ -137,11 +139,11 @@ export function ReassignTaskDialog({
 
           {/* Reason */}
           <div className="space-y-1.5">
-            <Label>{isHe ? "סיבת השיוך מחדש" : "Reason"}</Label>
+            <Label>{txt(locale, { he: "סיבת השיוך מחדש", en: "Reason" })}</Label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value.slice(0, 200))}
-              placeholder={isHe ? "אופציונלי - עד 200 תווים" : "Optional - up to 200 chars"}
+              placeholder={txt(locale, { he: "אופציונלי - עד 200 תווים", en: "Optional - up to 200 chars" })}
               rows={2}
               maxLength={200}
               className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
@@ -151,11 +153,11 @@ export function ReassignTaskDialog({
 
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} className="min-h-[44px]">
-              {isHe ? "ביטול" : "Cancel"}
+              {txt(locale, { he: "ביטול", en: "Cancel", ru: "Отмена", fr: "Annuler", es: "Cancelar" })}
             </Button>
             <Button type="submit" disabled={!selected} className="min-h-[44px]">
               <Users className="size-4" />
-              {isHe ? "שייך מחדש" : "Reassign"}
+              {txt(locale, { he: "שייך מחדש", en: "Reassign" })}
             </Button>
           </DialogFooter>
         </form>

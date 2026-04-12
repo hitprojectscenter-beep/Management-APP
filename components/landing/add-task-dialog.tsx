@@ -18,6 +18,7 @@ import { X } from "lucide-react";
 import type { MockUser, MockWbsNode } from "@/lib/db/mock-data";
 import { mockItemTypes } from "@/lib/db/mock-data";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 
 // ============================================
 // Task source options (per spec)
@@ -56,7 +57,6 @@ export function AddTaskDialog({
   locale: string;
   children: React.ReactNode;
 }) {
-  const isHe = locale === "he";
   const [open, setOpen] = useState(false);
 
   const programs = projects.filter((p) => p.level === "program");
@@ -83,37 +83,37 @@ export function AddTaskDialog({
 
   const validate = (): boolean => {
     const errs: typeof errors = {};
-    if (!form.title.trim()) errs.title = isHe ? "חובה למלא כותרת" : "Title is required";
-    if (!form.parentId) errs.parentId = isHe ? "חובה לבחור שיוך" : "Must select assignment";
-    if (!form.plannedStart) errs.plannedStart = isHe ? "חובה" : "Required";
-    if (!form.plannedEnd) errs.plannedEnd = isHe ? "חובה" : "Required";
+    if (!form.title.trim()) errs.title = txt(locale, { he: "חובה למלא כותרת", en: "Title is required" });
+    if (!form.parentId) errs.parentId = txt(locale, { he: "חובה לבחור שיוך", en: "Must select assignment" });
+    if (!form.plannedStart) errs.plannedStart = txt(locale, { he: "חובה", en: "Required" });
+    if (!form.plannedEnd) errs.plannedEnd = txt(locale, { he: "חובה", en: "Required" });
     if (form.plannedEnd && form.plannedStart && form.plannedEnd < form.plannedStart) {
-      errs.plannedEnd = isHe ? "תאריך סיום לפני ההתחלה" : "End before start";
+      errs.plannedEnd = txt(locale, { he: "תאריך סיום לפני ההתחלה", en: "End before start" });
     }
     if (form.description.length > 300) {
-      errs.description = isHe ? `עד 300 תווים (${form.description.length})` : `Max 300 chars (${form.description.length})`;
+      errs.description = txt(locale, { he: `עד 300 תווים (${form.description.length})`, en: `Max 300 chars (${form.description.length})` });
     }
     if (form.source === "other" && !form.sourceOther.trim()) {
-      errs.sourceOther = isHe ? "חובה למלא מקור" : "Source required";
+      errs.sourceOther = txt(locale, { he: "חובה למלא מקור", en: "Source required" });
     }
     if (form.source === "other" && form.sourceOther.length > 100) {
-      errs.sourceOther = isHe ? `עד 100 תווים (${form.sourceOther.length})` : `Max 100 chars`;
+      errs.sourceOther = txt(locale, { he: `עד 100 תווים (${form.sourceOther.length})`, en: `Max 100 chars` });
     }
     if (form.taskType === "tt-other" && !form.taskTypeOther.trim()) {
-      errs.taskTypeOther = isHe ? "חובה לציין סוג משימה" : "Task type required";
+      errs.taskTypeOther = txt(locale, { he: "חובה לציין סוג משימה", en: "Task type required" });
     }
     if (form.taskType === "tt-other" && form.taskTypeOther.length > 100) {
-      errs.taskTypeOther = isHe ? `עד 100 תווים` : `Max 100 chars`;
+      errs.taskTypeOther = txt(locale, { he: `עד 100 תווים`, en: `Max 100 chars` });
     }
     // Attachments - max 5MB each
     for (const file of form.attachments) {
       if (file.size > 5 * 1024 * 1024) {
-        errs.attachments = isHe ? `הקובץ ${file.name} חורג מ-5MB` : `File ${file.name} exceeds 5MB`;
+        errs.attachments = txt(locale, { he: `הקובץ ${file.name} חורג מ-5MB`, en: `File ${file.name} exceeds 5MB` });
         break;
       }
     }
     if (form.teamMembers.length === 0) {
-      errs.teamMembers = isHe ? "חובה לבחור לפחות חבר צוות אחד" : "Select at least one member";
+      errs.teamMembers = txt(locale, { he: "חובה לבחור לפחות חבר צוות אחד", en: "Select at least one member" });
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -135,11 +135,12 @@ export function AddTaskDialog({
     // In demo mode - show success toast
     const taskType = taskTypes.find((t) => t.id === form.taskType);
     toast.success(
-      isHe ? `המשימה "${form.title}" נוצרה בהצלחה!` : `Task "${form.title}" created!`,
+      txt(locale, { he: `המשימה "${form.title}" נוצרה בהצלחה!`, en: `Task "${form.title}" created!` }),
       {
-        description: isHe
-          ? `סוג: ${taskType?.nameHe || ""} · צוות: ${form.teamMembers.length} חברים · מקור: ${TASK_SOURCES.find((s) => s.value === form.source)?.labelHe || form.sourceOther}`
-          : `Type: ${taskType?.nameEn || ""} · Team: ${form.teamMembers.length} members`,
+        description: txt(locale, {
+          he: `סוג: ${taskType?.nameHe || ""} · צוות: ${form.teamMembers.length} חברים · מקור: ${TASK_SOURCES.find((s) => s.value === form.source)?.labelHe || form.sourceOther}`,
+          en: `Type: ${taskType?.nameEn || ""} · Team: ${form.teamMembers.length} members`,
+        }),
       }
     );
     setOpen(false);
@@ -162,11 +163,11 @@ export function AddTaskDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto w-[95vw] sm:w-full p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle>{isHe ? "הוספת משימה חדשה" : "Add New Task"}</DialogTitle>
+          <DialogTitle>{txt(locale, { he: "הוספת משימה חדשה", en: "Add New Task" })}</DialogTitle>
           <DialogDescription>
-            {isHe ? "מלא את הפרטים הנדרשים ליצירת המשימה." : "Fill in the required details."}
+            {txt(locale, { he: "מלא את הפרטים הנדרשים ליצירת המשימה.", en: "Fill in the required details." })}
             {" "}
-            <span className="text-red-500">*</span> = {isHe ? "חובה" : "required"}
+            <span className="text-red-500">*</span> = {txt(locale, { he: "חובה", en: "required" })}
           </DialogDescription>
         </DialogHeader>
 
@@ -174,13 +175,13 @@ export function AddTaskDialog({
           {/* Title */}
           <div className="space-y-1.5">
             <Label htmlFor="task-title">
-              {isHe ? "כותרת המשימה" : "Task Title"} <span className="text-red-500">*</span>
+              {txt(locale, { he: "כותרת המשימה", en: "Task Title", ru: "Название задачи", fr: "Titre de la tâche", es: "Título de la tarea" })} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="task-title"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder={isHe ? "מה צריך לעשות?" : "What needs to be done?"}
+              placeholder={txt(locale, { he: "מה צריך לעשות?", en: "What needs to be done?" })}
               className={errors.title ? "border-red-500" : ""}
             />
             {errors.title && <p className="text-xs text-red-500">{errors.title}</p>}
@@ -188,7 +189,7 @@ export function AddTaskDialog({
 
           {/* Task Type */}
           <div className="space-y-1.5">
-            <Label htmlFor="task-type">{isHe ? "סוג משימה" : "Task Type"}</Label>
+            <Label htmlFor="task-type">{txt(locale, { he: "סוג משימה", en: "Task Type" })}</Label>
             <div className="flex flex-wrap gap-1.5">
               {taskTypes.map((tt) => (
                 <button
@@ -202,7 +203,7 @@ export function AddTaskDialog({
                       : "border-border bg-background hover:bg-accent"
                   )}
                 >
-                  {tt.icon} {isHe ? tt.nameHe : tt.nameEn}
+                  {tt.icon} {txt(locale, { he: tt.nameHe, en: tt.nameEn })}
                 </button>
               ))}
             </div>
@@ -212,7 +213,7 @@ export function AddTaskDialog({
                 <Input
                   value={form.taskTypeOther}
                   onChange={(e) => setForm({ ...form, taskTypeOther: e.target.value.slice(0, 100) })}
-                  placeholder={isHe ? "הזן סוג משימה..." : "Enter task type..."}
+                  placeholder={txt(locale, { he: "הזן סוג משימה...", en: "Enter task type..." })}
                   maxLength={100}
                   className={cn("min-h-[44px]", errors.taskTypeOther ? "border-red-500" : "")}
                 />
@@ -225,7 +226,7 @@ export function AddTaskDialog({
           {/* Assignment: Project or Program */}
           <div className="space-y-1.5">
             <Label>
-              {isHe ? "שיוך" : "Assignment"} <span className="text-red-500">*</span>
+              {txt(locale, { he: "שיוך", en: "Assignment" })} <span className="text-red-500">*</span>
             </Label>
             <div className="flex gap-2 mb-2">
               <button
@@ -238,7 +239,7 @@ export function AddTaskDialog({
                     : "border-border hover:bg-accent"
                 )}
               >
-                {isHe ? "פרויקט" : "Project"}
+                {txt(locale, { he: "פרויקט", en: "Project" })}
               </button>
               <button
                 type="button"
@@ -250,7 +251,7 @@ export function AddTaskDialog({
                     : "border-border hover:bg-accent"
                 )}
               >
-                {isHe ? "פרוגרמה" : "Program"}
+                {txt(locale, { he: "פרוגרמה", en: "Program" })}
               </button>
             </div>
             <select
@@ -261,10 +262,10 @@ export function AddTaskDialog({
                 errors.parentId ? "border-red-500" : ""
               )}
             >
-              <option value="">{isHe ? "-- בחר --" : "-- Select --"}</option>
+              <option value="">{txt(locale, { he: "-- בחר --", en: "-- Select --" })}</option>
               {parentOptions.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {isHe ? p.name : p.nameEn || p.name}
+                  {txt(locale, { he: p.name, en: p.nameEn || p.name })}
                 </option>
               ))}
             </select>
@@ -274,14 +275,14 @@ export function AddTaskDialog({
           {/* Description (max 300) */}
           <div className="space-y-1.5">
             <Label htmlFor="task-desc">
-              {isHe ? "תיאור" : "Description"}{" "}
-              <span className="text-muted-foreground text-[10px]">({isHe ? "עד 300 תווים" : "max 300 chars"})</span>
+              {txt(locale, { he: "תיאור", en: "Description", ru: "Описание", fr: "Description", es: "Descripción" })}{" "}
+              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "עד 300 תווים", en: "max 300 chars" })})</span>
             </Label>
             <textarea
               id="task-desc"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value.slice(0, 300) })}
-              placeholder={isHe ? "תיאור קצר של המשימה..." : "Brief description..."}
+              placeholder={txt(locale, { he: "תיאור קצר של המשימה...", en: "Brief description..." })}
               rows={3}
               maxLength={300}
               className={cn(
@@ -299,8 +300,8 @@ export function AddTaskDialog({
           {/* Team Members (multi-select) */}
           <div className="space-y-1.5">
             <Label>
-              {isHe ? "צוות" : "Team"} <span className="text-red-500">*</span>{" "}
-              <span className="text-muted-foreground text-[10px]">({isHe ? "בחירה מרובה" : "multi-select"})</span>
+              {txt(locale, { he: "צוות", en: "Team" })} <span className="text-red-500">*</span>{" "}
+              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "בחירה מרובה", en: "multi-select" })})</span>
             </Label>
             <div className="flex flex-wrap gap-1.5">
               {users
@@ -327,7 +328,7 @@ export function AddTaskDialog({
             </div>
             {form.teamMembers.length > 0 && (
               <div className="text-[10px] text-muted-foreground">
-                {form.teamMembers.length} {isHe ? "נבחרו" : "selected"}
+                {form.teamMembers.length} {txt(locale, { he: "נבחרו", en: "selected" })}
               </div>
             )}
             {errors.teamMembers && <p className="text-xs text-red-500">{errors.teamMembers}</p>}
@@ -337,7 +338,7 @@ export function AddTaskDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="task-start">
-                {isHe ? "תאריך התחלה" : "Start Date"} <span className="text-red-500">*</span>
+                {txt(locale, { he: "תאריך התחלה", en: "Start Date" })} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="task-start"
@@ -350,7 +351,7 @@ export function AddTaskDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="task-end">
-                {isHe ? "תאריך סיום משוער" : "Est. End Date"} <span className="text-red-500">*</span>
+                {txt(locale, { he: "תאריך סיום משוער", en: "Est. End Date" })} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="task-end"
@@ -365,7 +366,7 @@ export function AddTaskDialog({
 
           {/* Priority */}
           <div className="space-y-1.5">
-            <Label>{isHe ? "עדיפות" : "Priority"}</Label>
+            <Label>{txt(locale, { he: "עדיפות", en: "Priority", ru: "Приоритет", fr: "Priorité", es: "Prioridad" })}</Label>
             <div className="flex gap-1.5">
               {[
                 { value: "low", he: "נמוכה", en: "Low", color: "bg-slate-100 text-slate-700 border-slate-300" },
@@ -384,7 +385,7 @@ export function AddTaskDialog({
                       : "border-border bg-background hover:bg-accent"
                   )}
                 >
-                  {isHe ? p.he : p.en}
+                  {txt(locale, { he: p.he, en: p.en })}
                 </button>
               ))}
             </div>
@@ -393,7 +394,7 @@ export function AddTaskDialog({
           {/* Task Source */}
           <div className="space-y-1.5">
             <Label>
-              {isHe ? "מקור המשימה" : "Task Source"} <span className="text-red-500">*</span>
+              {txt(locale, { he: "מקור המשימה", en: "Task Source" })} <span className="text-red-500">*</span>
             </Label>
             <div className="flex flex-wrap gap-1.5">
               {TASK_SOURCES.map((src) => (
@@ -408,7 +409,7 @@ export function AddTaskDialog({
                       : "border-border bg-background hover:bg-accent"
                   )}
                 >
-                  {isHe ? src.labelHe : src.labelEn}
+                  {txt(locale, { he: src.labelHe, en: src.labelEn })}
                 </button>
               ))}
             </div>
@@ -418,7 +419,7 @@ export function AddTaskDialog({
                 <Input
                   value={form.sourceOther}
                   onChange={(e) => setForm({ ...form, sourceOther: e.target.value.slice(0, 100) })}
-                  placeholder={isHe ? "הזן מקור משימה..." : "Enter task source..."}
+                  placeholder={txt(locale, { he: "הזן מקור משימה...", en: "Enter task source..." })}
                   maxLength={100}
                   className={cn("min-h-[44px]", errors.sourceOther ? "border-red-500" : "")}
                 />
@@ -433,8 +434,8 @@ export function AddTaskDialog({
           {/* File Attachments (max 5MB each) */}
           <div className="space-y-1.5">
             <Label>
-              {isHe ? "צירוף מסמכים" : "Attachments"}{" "}
-              <span className="text-muted-foreground text-[10px]">({isHe ? "עד 5MB לקובץ" : "max 5MB each"})</span>
+              {txt(locale, { he: "צירוף מסמכים", en: "Attachments" })}{" "}
+              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "עד 5MB לקובץ", en: "max 5MB each" })})</span>
             </Label>
             <div className="border-2 border-dashed rounded-lg p-3 text-center">
               <input
@@ -447,7 +448,7 @@ export function AddTaskDialog({
                   const valid = files.filter((f) => f.size <= 5 * 1024 * 1024);
                   const rejected = files.length - valid.length;
                   if (rejected > 0) {
-                    toast.error(isHe ? `${rejected} קבצים חרגו מ-5MB ולא נוספו` : `${rejected} files exceeded 5MB`);
+                    toast.error(txt(locale, { he: `${rejected} קבצים חרגו מ-5MB ולא נוספו`, en: `${rejected} files exceeded 5MB` }));
                   }
                   setForm({ ...form, attachments: [...form.attachments, ...valid] });
                   e.target.value = ""; // reset input
@@ -457,10 +458,10 @@ export function AddTaskDialog({
                 htmlFor="file-upload"
                 className="cursor-pointer text-sm text-primary hover:underline font-medium"
               >
-                {isHe ? "📎 לחץ לצירוף קבצים" : "📎 Click to attach files"}
+                {txt(locale, { he: "📎 לחץ לצירוף קבצים", en: "📎 Click to attach files" })}
               </label>
               <div className="text-[10px] text-muted-foreground mt-1">
-                {isHe ? "כל פורמט · עד 5MB לקובץ" : "Any format · Max 5MB per file"}
+                {txt(locale, { he: "כל פורמט · עד 5MB לקובץ", en: "Any format · Max 5MB per file" })}
               </div>
             </div>
             {form.attachments.length > 0 && (
@@ -483,10 +484,10 @@ export function AddTaskDialog({
           {/* Footer */}
           <DialogFooter className="gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} className="min-h-[44px]">
-              {isHe ? "ביטול" : "Cancel"}
+              {txt(locale, { he: "ביטול", en: "Cancel", ru: "Отмена", fr: "Annuler", es: "Cancelar" })}
             </Button>
             <Button type="submit" className="min-h-[44px]">
-              {isHe ? "צור משימה" : "Create Task"}
+              {txt(locale, { he: "צור משימה", en: "Create Task" })}
             </Button>
           </DialogFooter>
         </form>
