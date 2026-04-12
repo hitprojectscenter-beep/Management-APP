@@ -12,6 +12,7 @@ import { AlertTriangle, Clock, Plus, Layers, Briefcase, Calendar as CalIcon } fr
 import { Link } from "@/lib/i18n/routing";
 import { AddTaskDialog } from "@/components/landing/add-task-dialog";
 import { txt, STATUS_LABELS_ML, PRIORITY_LABELS_ML, TAB_LABELS_ML } from "@/lib/utils/locale-text";
+import { useRole } from "@/lib/auth/role-context";
 
 type TabKey = "all" | "in_progress" | "not_started" | "blocked" | "review" | "overdue" | "by_project";
 
@@ -30,6 +31,7 @@ export function MyTasksTabs({
 }) {
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const isHe = locale === "he";
+  const { can } = useRole();
 
   const tabs: { key: TabKey; count?: number }[] = useMemo(() => {
     const counts = {
@@ -133,12 +135,14 @@ export function MyTasksTabs({
             );
           })}
         </div>
-        <AddTaskDialog projects={wbsNodes} users={users} locale={locale}>
-          <Button className="shrink-0 shadow-md" data-tour="add-task">
-            <Plus className="size-4" />
-            {txt(locale, { he: "הוסף משימה", en: "Add Task", ru: "Добавить", fr: "Ajouter", es: "Añadir" })}
-          </Button>
-        </AddTaskDialog>
+        {can("create_task") && (
+          <AddTaskDialog projects={wbsNodes} users={users} locale={locale}>
+            <Button className="shrink-0 shadow-md" data-tour="add-task">
+              <Plus className="size-4" />
+              {txt(locale, { he: "הוסף משימה", en: "Add Task", ru: "Добавить", fr: "Ajouter", es: "Añadir" })}
+            </Button>
+          </AddTaskDialog>
+        )}
       </div>
 
       {/* Tasks list */}

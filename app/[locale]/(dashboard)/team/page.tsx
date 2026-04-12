@@ -8,6 +8,7 @@ import { mockUsers, mockTasks } from "@/lib/db/mock-data";
 import { ROLE_LABELS } from "@/lib/rbac/abilities";
 import { InviteMemberDialog } from "@/components/team/invite-member-dialog";
 import { txt, COMMON_LABELS } from "@/lib/utils/locale-text";
+import { RoleGate } from "@/components/auth/role-gate";
 
 export default async function TeamPage({
   params,
@@ -28,12 +29,14 @@ export default async function TeamPage({
             {mockUsers.length} {txt(locale, COMMON_LABELS.teamMembers)}
           </p>
         </div>
-        <InviteMemberDialog locale={locale}>
-          <Button className="min-h-[44px]">
-            <UserPlus className="size-4" />
-            {txt(locale, COMMON_LABELS.invite)}
-          </Button>
-        </InviteMemberDialog>
+        <RoleGate permission="manage_team">
+          <InviteMemberDialog locale={locale}>
+            <Button className="min-h-[44px]">
+              <UserPlus className="size-4" />
+              {txt(locale, COMMON_LABELS.invite)}
+            </Button>
+          </InviteMemberDialog>
+        </RoleGate>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "./nav-items";
 import { txt, ORG_NAME } from "@/lib/utils/locale-text";
+import { useRole } from "@/lib/auth/role-context";
 
 /**
  * Shared sidebar content used by both desktop aside and mobile drawer.
@@ -15,6 +16,25 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const locale = useLocale();
   const pathname = usePathname();
   const isHe = locale === "he";
+  const { role, can } = useRole();
+
+  // Filter nav items based on role permissions
+  const visibleNavItems = NAV_ITEMS.filter((item) => {
+    // Admin page: only admin
+    if (item.key === "admin") return role === "admin";
+    // Automations: need manage_automations
+    if (item.key === "automations") return can("manage_automations");
+    // AI Center: need ai_access
+    if (item.key === "ai") return can("ai_access");
+    // Settings: need manage_settings or admin
+    if (item.key === "settings") return role === "admin" || can("manage_settings");
+    // Reports: need view_reports
+    if (item.key === "reports") return can("view_reports");
+    // Risks: need view_all (managers+)
+    if (item.key === "risks") return can("view_all");
+    // Everything else is visible to all
+    return true;
+  });
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -42,7 +62,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActive =
             item.href === "/"
