@@ -1,14 +1,15 @@
 "use client";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Users, ShieldCheck, Tag, GitBranch } from "lucide-react";
+import { Users, ShieldCheck, Tag, GitBranch, Table2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UsersManager } from "./users-manager";
 import { RolesManager } from "./roles-manager";
 import { TypesManager } from "./types-manager";
 import { HierarchyManager } from "./hierarchy-manager";
+import { UserPermissionsTable } from "./user-permissions-table";
 
-type Tab = "users" | "roles" | "types" | "hierarchy";
+type Tab = "users" | "roles" | "types" | "hierarchy" | "permissions";
 
 export function AdminTabs({ locale }: { locale: string }) {
   const isHe = locale === "he";
@@ -34,6 +35,11 @@ export function AdminTabs({ locale }: { locale: string }) {
       key: "hierarchy", labelHe: "שיוך היררכי", labelEn: "Hierarchy Assignment", icon: GitBranch,
       descHe: "שיוך פרויקטים ומשימות לפרוגרמה",
       descEn: "Assign projects and tasks to programs",
+    },
+    {
+      key: "permissions", labelHe: "טבלת הרשאות", labelEn: "Permissions Table", icon: Table2,
+      descHe: "מטריצת הרשאות בפועל לכל משתמש במערכת",
+      descEn: "Actual permissions matrix for every user",
     },
   ];
 
@@ -75,6 +81,7 @@ export function AdminTabs({ locale }: { locale: string }) {
         {tab === "roles" && <RolesManager locale={locale} />}
         {tab === "types" && <TypesManager locale={locale} />}
         {tab === "hierarchy" && <HierarchyManager locale={locale} />}
+        {tab === "permissions" && <UserPermissionsTable locale={locale} />}
       </div>
     </Card>
   );

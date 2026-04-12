@@ -160,7 +160,7 @@ export const mockUsers: MockUser[] = [
     email: "hagai.ronen@mapi.gov.il",
     image: "https://api.dicebear.com/7.x/initials/svg?seed=CEO",
     locale: "he",
-    role: "admin",
+    role: "manager",
     skills: ["leadership", "strategy", "stakeholder-management", "executive"],
     performanceScore: 95,
     hourlyCapacity: 40,

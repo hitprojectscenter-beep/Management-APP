@@ -424,6 +424,131 @@ export const HELP_ENTRIES: HelpEntry[] = [
       en: "Say or type 'daily summary' to the assistant. Shows: completed, in-progress (with names), blocked, overdue, and focus recommendation.",
     },
   },
+  // ============================================================
+  // KPI & DASHBOARDS — EXPANDED
+  // ============================================================
+  {
+    id: "how-to-kpi",
+    category: "navigation",
+    keywords: { he: ["kpi", "מדד", "מחוון", "להגדיר", "חדש", "מדדים", "הוספת kpi", "איך מגדירים"], en: ["kpi", "metric", "indicator", "define", "new", "configure", "set up", "how to kpi"] },
+    question: { he: "איך מגדירים KPI חדש?", en: "How to set up a new KPI?" },
+    answer: {
+      he: "המערכת מציעה KPIs מובנים לפי תפקיד:\n\n📊 **דשבורדים ו-KPI** (בתפריט) → בחר תפקיד:\n\n**מנהל פרויקט (PM):**\n⏰ חריגת לו\"ז (Schedule Variance) — מחושב אוטומטית מ-Baseline מול תאריכים בפועל\n🚩 אבני דרך באיחור — ספירת milestones שחרגו\n⚡ Throughput שבועי — משימות שהושלמו בפועל מול תוכנית\n💰 ניצול תקציב — שעות בפועל מול הקצאה\n\n**מנהל PMO:**\n🎯 יישור אסטרטגי — ציון 0-100\n📈 ROI פורטפוליו — החזר על השקעה\n👥 ניצולת משאבים — קיבולת מול ביקוש (אזהרה מעל 85%!)\n📉 מגמת סיכונים — גרף היסטורי\n\n💡 **KPIs מחושבים אוטומטית** מהנתונים — לא צריך להגדיר ידנית! כל מה שצריך זה לעדכן את המשימות (סטטוס, תאריכים, שעות).",
+      en: "KPIs are auto-calculated from your data! Go to Dashboards & KPI → choose role (PM or PMO).\n\nPM: Schedule Variance, Milestones Slippage, Throughput, Budget Adherence.\nPMO: Strategic Alignment, ROI, Resource Utilization (85% warning), Risk Trend.\n\nJust keep tasks updated — KPIs refresh automatically.",
+    },
+  },
+  {
+    id: "kpi-pm-details",
+    category: "navigation",
+    keywords: { he: ["schedule variance", "חריגת לוז", "throughput", "תפוקה", "ניצול תקציב", "velocity"], en: ["schedule variance", "throughput", "budget adherence", "velocity", "pm kpi"] },
+    question: { he: "מה המדדים של מנהל פרויקט?", en: "What PM KPIs are available?" },
+    answer: {
+      he: "4 מדדים + 2 גרפים:\n\n⏰ **חריגת לו\"ז** — ימי הפרש בין Baseline לביצוע (אדום = חריגה)\n🚩 **אבני דרך באיחור** — כמה milestones חרגו (עם אחוז)\n⚡ **Throughput** — משימות בשבוע: מתוכנן מול בפועל\n💰 **ניצול תקציב** — שעות בפועל / שעות מתוכננות\n\n📊 **גרף Throughput** — עמודות שבועיות\n📊 **גרף עומס צוות** — הקצאה לכל חבר\n\nהכל מחושב אוטומטית!",
+      en: "4 KPIs + 2 charts: Schedule Variance, Milestone Slippage, Weekly Throughput (planned vs actual), Budget Adherence. Plus Throughput chart and Team Workload chart.",
+    },
+  },
+  {
+    id: "kpi-pmo-details",
+    category: "navigation",
+    keywords: { he: ["pmo", "roi", "evm", "cpi", "spi", "rag", "capex", "opex", "אסטרטגי"], en: ["pmo", "roi", "evm", "cpi", "spi", "rag", "capex", "opex", "strategic"] },
+    question: { he: "מה המדדים של מנהל PMO?", en: "What PMO KPIs are available?" },
+    answer: {
+      he: "4 מדדים + 4 רכיבים:\n\n🎯 **יישור אסטרטגי** — ציון 0-100 (כמה הפרויקטים תואמים את האסטרטגיה)\n📈 **ROI פורטפוליו** — החזר על השקעה כולל\n👥 **ניצולת משאבים** — Capacity vs Demand (אזהרת burnout מעל 85%!)\n📉 **מגמת סיכונים** — מגמה של 6 חודשים\n\n🚦 **RAG** — ירוק/כתום/אדום לכל פרויקט\n📊 **EVM** — CPI ו-SPI (Earned Value Management)\n💰 **CapEx vs OpEx** — פילוח עלויות\n📈 **מגמת סיכונים** — גרף קו",
+      en: "4 KPIs: Alignment, ROI, Utilization (85% burnout warning), Risk Trend. Plus: RAG status, EVM (CPI/SPI), CapEx/OpEx, Risk Trend line chart.",
+    },
+  },
+  {
+    id: "role-switcher",
+    category: "navigation",
+    keywords: { he: ["בורר תפקיד", "תפקיד", "pm", "pmo", "להחליף", "מעבר"], en: ["role switcher", "switch role", "toggle", "pm pmo"] },
+    question: { he: "איך עוברים בין תצוגות PM ו-PMO?", en: "How to switch between PM and PMO views?" },
+    answer: {
+      he: "בדף 'דשבורדים ו-KPI' יש בורר בחלק העליון:\n🔵 **מנהל פרויקט** — מדדים תפעוליים (כחול)\n🟣 **מנהל PMO** — מדדים אסטרטגיים (סגול)\n\nלחיצה על הכפתור מחליפה מיד את כל הכרטיסים והגרפים.",
+      en: "In Dashboards & KPI page, top section has a switcher: PM (blue, operational) vs PMO (purple, strategic). Click to switch instantly.",
+    },
+  },
+  // ============================================================
+  // ADMIN — EXPANDED
+  // ============================================================
+  {
+    id: "user-permissions",
+    category: "admin",
+    keywords: { he: ["טבלת הרשאות", "הרשאות משתמשים", "מי יכול", "מה מותר", "מטריצה"], en: ["permissions table", "user permissions", "who can", "access matrix", "authorization"] },
+    question: { he: "איך רואים את ההרשאות של כל המשתמשים?", en: "How to see all user permissions?" },
+    answer: {
+      he: "ב'ניהול מערכת' → לשונית 'טבלת הרשאות'. תראה טבלה עם כל 6 המשתמשים, התפקיד שלהם, ו-12 הרשאות עם ✅/❌:\n\n👑 מנהל מערכת — 12/12 הרשאות\n📊 מנהל — 8/12 (לא יכול לנהל משתמשים, תפקידים, או הגדרות מערכת)\n🧑‍💻 חבר צוות — 5/12\n👁️ צופה — 2/12\n🚪 אורח — 0/12\n\n**המנכ\"ל** — תפקיד מנהל עם צפייה מלאה אך ללא ניהול משתמשים.",
+      en: "Admin → Permissions Table tab. Shows all 6 users, roles, and 12 permission columns with ✅/❌. Admin: 12/12, Manager: 8/12, Member: 5/12, Viewer: 2/12, Guest: 0/12.",
+    },
+  },
+  {
+    id: "add-user",
+    category: "admin",
+    keywords: { he: ["הוספת משתמש", "משתמש חדש", "ליצור משתמש", "מחיקה", "מנהל"], en: ["add user", "new user", "create user", "delete user", "manage users"] },
+    question: { he: "איך מוסיפים או מוחקים משתמש?", en: "How to add or delete a user?" },
+    answer: {
+      he: "רק **מנהל מערכת (Admin)** יכול:\n• בניהול מערכת → טאב 'משתמשים'\n• 'הוסף משתמש' — מלא שם, מייל, תפקיד, שפה\n• עריכה — לחץ על עיפרון ליד המשתמש\n• מחיקה — לחץ על פח (לא ניתן למחוק את עצמך)\n\n⚠️ המנכ\"ל לא יכול להוסיף/למחוק משתמשים — רק Admin.",
+      en: "Admin only: Admin → Users tab. 'Add User' (name, email, role, language). Edit via pencil icon. Delete via trash (can't delete yourself). CEO cannot add/delete users.",
+    },
+  },
+  {
+    id: "item-types",
+    category: "admin",
+    keywords: { he: ["סוגי פריטים", "סוג חדש", "אייקון", "צבע", "להגדיר סוג", "הוספת סוג"], en: ["item types", "new type", "icon", "color", "custom type"] },
+    question: { he: "איך מגדירים סוגי משימות מותאמים?", en: "How to define custom task types?" },
+    answer: {
+      he: "ניהול מערכת → טאב 'סוגי משימות ופרויקטים':\n• 13+ סוגים מובנים (לא ניתנים למחיקה)\n• לחץ 'הוסף סוג חדש' — בחר שם, אייקון (emoji), צבע\n• עריכה — העבר עכבר על שורה ולחץ עיפרון\n• מחיקה — רק סוגים מותאמים (לא מערכתיים)\n\nהסוגים זמינים בטופס הוספת משימה.",
+      en: "Admin → Task & Project Types tab. 13+ built-in (locked). Add new: name, emoji icon, color. Hover to edit. Only custom types deletable.",
+    },
+  },
+  // ============================================================
+  // CALENDAR — EXPANDED
+  // ============================================================
+  {
+    id: "calendar-interactive",
+    category: "navigation",
+    keywords: { he: ["יומן", "לחיצה", "משימה ביומן", "אינטראקטיבי", "פרטי משימה", "לחץ"], en: ["calendar click", "interactive", "task detail", "click task"] },
+    question: { he: "מה אפשר לעשות ביומן?", en: "What can I do in the calendar?" },
+    answer: {
+      he: "📅 היומן מציג משימות לפי תאריך סיום:\n• **ניווט** — חצים לחודש קודם/הבא + כפתור 'היום'\n• **לחיצה על משימה** — פופאפ עם: שם, סטטוס, אחוז, אחראי, תאריכים, וקישור 'פתח משימה'\n• **צבעים** — לפי סטטוס (כחול=בביצוע, אדום=חסום, ירוק=הושלם)\n• **מוכן לסנכרון** — עם Google Calendar (דורש OAuth)\n\nנגיש דרך 'יומן' בתפריט.",
+      en: "Calendar shows tasks by due date. Click task → popup with status, assignee, dates, link. Navigate months. Color-coded by status. Ready for Google Calendar sync.",
+    },
+  },
+  // ============================================================
+  // VOICE & ACCESSIBILITY
+  // ============================================================
+  {
+    id: "voice-recording",
+    category: "assistant",
+    keywords: { he: ["הקלטה", "קול", "מיקרופון", "דיבור", "לא עובד", "speech", "ios", "android"], en: ["voice", "recording", "microphone", "speech", "not working", "ios", "android"] },
+    question: { he: "איך עובדת ההקלטה הקולית?", en: "How does voice recording work?" },
+    answer: {
+      he: "לחץ על כפתור המיקרופון 🎤 בעוזר האישי:\n• **Chrome/Android** — Web Speech API (זיהוי מיידי)\n• **iOS/Safari** — הקלטת אודיו עם פענוח (MediaRecorder fallback)\n\n⚠️ טיפים:\n• צריך הרשאת מיקרופון (HTTPS חובה)\n• דבר בעברית ברורה\n• טקסט מופיע חי בזמן הדיבור\n• ההודעה נשלחת אוטומטית כשמסיימים\n• אם לא עובד — בדוק הרשאות דפדפן + HTTPS",
+      en: "Click mic 🎤 in assistant. Chrome/Android: Web Speech API (instant). iOS/Safari: audio recording fallback. Needs HTTPS + mic permission. Text appears live while speaking.",
+    },
+  },
+  // ============================================================
+  // SETTINGS & INTEGRATION
+  // ============================================================
+  {
+    id: "google-calendar-setup",
+    category: "navigation",
+    keywords: { he: ["google calendar", "גוגל", "חיבור", "סנכרון", "oauth", "לחבר", "אינטגרציה"], en: ["google calendar", "connect", "sync", "oauth", "integration", "setup"] },
+    question: { he: "איך מחברים Google Calendar?", en: "How to connect Google Calendar?" },
+    answer: {
+      he: "חיבור Google Calendar דורש הגדרה ב-OAuth:\n1. הגדרת Google Cloud Console עם OAuth credentials\n2. הוספת GOOGLE_CLIENT_ID ו-GOOGLE_CLIENT_SECRET ל-.env\n3. אישור גישה דרך כפתור 'סנכרן עכשיו' ביומן\n\n📌 במצב הדגמה — הסנכרון מדומה. בייצור — סנכרון 2-כיווני אמיתי.",
+      en: "Google Calendar requires OAuth setup: 1) Google Cloud Console credentials, 2) Add GOOGLE_CLIENT_ID/SECRET to .env, 3) Authorize via 'Sync Now'. Demo mode = simulated.",
+    },
+  },
+  {
+    id: "excel-export",
+    category: "gantt",
+    keywords: { he: ["אקסל", "excel", "ייצוא", "csv", "לייצא", "הורדה"], en: ["excel", "export", "csv", "download", "spreadsheet"] },
+    question: { he: "איך מייצאים נתונים לאקסל?", en: "How to export to Excel?" },
+    answer: {
+      he: "בלוח הגאנט → כפתור 'ייצוא Excel' בסרגל הכלים. הקובץ כולל: מספור WBS, שם משימה, תאריכי תכנון/ביצוע, אחוז התקדמות, נתיב קריטי. הקובץ נפתח ישירות באקסל עם תמיכה מלאה בעברית (BOM UTF-8).",
+      en: "In Gantt toolbar → 'Export Excel'. CSV includes: WBS numbering, task name, planned/actual dates, progress, critical path. Opens directly in Excel with full Hebrew support.",
+    },
+  },
 ];
 
 /**

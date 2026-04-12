@@ -16,6 +16,7 @@ import {
   getOpenTasksForUser,
 } from "../db/mock-data";
 import { scanTasksForRisks, calculateProjectHealth } from "./risk-engine";
+import { findHelpByKeywords } from "../help/help-content";
 
 // ============================================================
 // Claude system prompts (used when ANTHROPIC_API_KEY is set)
@@ -187,7 +188,7 @@ export function heuristicParse(
     action = "query_tasks"; // treat as status check
     const myTasks = currentUser ? getOpenTasksForUser(currentUser.id) : [];
     responseText = isHe
-      ? `שלום ${currentUser?.name?.split(" ")[0] || ""}! 👋\nיש לך ${myTasks.length} משימות פתוחות.\n\nאיך אוכל לעזור? אפשר:\n• "פתח משימה חדשה..."\n• "מה הסיכונים?"\n• "מה המצב בפרויקט CRM?"\n• "מי הכי עמוס?"`
+      ? `שלום ${currentUser?.name?.split(" ")[0] || ""}! 👋\nיש לך ${myTasks.length} משימות פתוחות.\n\nאיך אוכל לעזור? דוגמאות:\n• "פתח משימה חדשה..."\n• "מה הסיכונים?"\n• "מה המצב?"\n• "איך מגדירים KPI?"\n• "איך עובדות ההרשאות?"\n• "מי הכי עמוס?"`
       : `Hello ${currentUser?.name?.split(" ")[0] || ""}! You have ${myTasks.length} open tasks. How can I help?`;
   }
   // CRITICAL PATH EXPLANATION
@@ -253,15 +254,34 @@ export function heuristicParse(
   else if (/עזרה|help|מה אתה יכול|מה אפשר/.test(lower)) {
     action = "query_tasks";
     responseText = isHe
-      ? "🤖 אני יכול לעזור עם:\n\n📋 **משימות**: \"פתח משימה חדשה...\"\n🔄 **שיוך מחדש**: \"שייך מחדש את המשימה X ל-Y\"\n📊 **סטטוס**: \"מה המצב?\" / \"סיכום יומי\"\n⚠️ **סיכונים**: \"מה הסיכונים?\" / \"הסבר נתיב קריטי\"\n🛡️ **תכנית גידור**: \"מה תכנית ניהול הסיכונים?\"\n👥 **עומסים**: \"מי הכי עמוס?\"\n📝 **פגישות**: \"סכם את הפגישה\"\n📅 **סיכום יומי**: \"תן לי סיכום יומי\"\n\n🎤 אפשר לכתוב או להקליט!"
-      : "I can help with: tasks, reassignment, status, risks, critical path, mitigation plan, workload, meetings, daily summary. Voice or text! 🎤";
+      ? "🤖 אני יכול לעזור עם:\n\n📋 **משימות**: \"פתח משימה חדשה...\", \"איך סוגרים משימה?\"\n🔄 **שיוך מחדש**: \"שייך מחדש את המשימה X ל-Y\"\n📊 **סטטוס ו-KPI**: \"מה המצב?\", \"איך מגדירים KPI?\"\n⚠️ **סיכונים**: \"מה הסיכונים?\", \"הסבר נתיב קריטי\"\n🛡️ **תכנית גידור**: \"מה תכנית ניהול הסיכונים?\"\n👥 **עומסים**: \"מי הכי עמוס?\"\n📝 **פגישות**: \"סכם את הפגישה\"\n📅 **סיכום יומי**: \"תן לי סיכום יומי\"\n🔐 **הרשאות**: \"איך עובדות ההרשאות?\"\n❓ **כל שאלה על המערכת**: \"איך מייצאים לאקסל?\", \"מה זה WBS?\"\n\n🎤 אפשר לכתוב או להקליט!"
+      : "I can help with: tasks, reassignment, KPIs, status, risks, critical path, mitigation, workload, meetings, daily summary, permissions, and ANY system question! Voice or text! 🎤";
+  }
+  // SYSTEM KNOWLEDGE — "How to" questions about the system
+  else if (/איך|כיצד|מה זה|how|what is|אפשר ל|explain|הסבר|מהו|מהם|מהי|מה ה/.test(lower)) {
+    // Try to find answer in the knowledge base
+    const helpEntries = findHelpByKeywords(text, isHe ? "he" : "en");
+    if (helpEntries.length > 0) {
+      action = "query_tasks"; // informational
+      const bestMatch = helpEntries[0];
+      const answer = isHe ? bestMatch.answer.he : (bestMatch.answer.en || bestMatch.answer.he);
+      responseText = isHe
+        ? `📖 ${answer}\n\n${helpEntries.length > 1 ? `💡 נושאים קשורים: ${helpEntries.slice(1).map(e => `"${e.question.he}"`).join(", ")}` : ""}`
+        : `📖 ${answer}${helpEntries.length > 1 ? `\n\n💡 Related: ${helpEntries.slice(1).map(e => `"${e.question.en}"`).join(", ")}` : ""}`;
+    } else {
+      // Generic "how to" without a match — give friendly response with categories
+      action = "unknown";
+      responseText = isHe
+        ? `🤔 לא מצאתי תשובה ספציפית ל: "${text.slice(0, 60)}${text.length > 60 ? "..." : ""}"\n\nאני יכול לענות על שאלות בנושאים:\n📋 **משימות** — "איך מוסיפים משימה?", "איך סוגרים?"\n📊 **KPI** — "איך מגדירים KPI?", "מה המדדים של PM?"\n🔐 **הרשאות** — "מה ההרשאות שלי?", "מי Admin?"\n📅 **יומן** — "מה אפשר לעשות ביומן?"\n🛡️ **סיכונים** — "מה הסיכונים?", "מה נתיב קריטי?"\n🤖 **אוטומציות** — "איך יוצרים אוטומציה?"\n\n💡 נסה לשאול בצורה ספציפית יותר!`
+        : `I couldn't find a specific answer for that. Try asking about: Tasks, KPIs, Permissions, Calendar, Risks, Automations.`;
+    }
   }
   // UNKNOWN - give helpful response instead of "Understood"
   else {
     action = "unknown";
     responseText = isHe
-      ? `🤔 לא הצלחתי להבין בדיוק מה לעשות עם: "${text.slice(0, 50)}${text.length > 50 ? "..." : ""}"\n\nנסה לנסח אחרת, למשל:\n• "פתח משימה חדשה ל..."\n• "מה הסיכונים בפרויקט...?"\n• "מה המצב?"\n• "מי הכי עמוס?"`
-      : `I didn't quite understand: "${text.slice(0, 50)}". Try: "Create a task for...", "What are the risks?", or "What's the status?"`;
+      ? `🤔 לא הצלחתי להבין בדיוק מה לעשות עם: "${text.slice(0, 50)}${text.length > 50 ? "..." : ""}"\n\nנסה לנסח אחרת, למשל:\n• "פתח משימה חדשה ל..."\n• "מה הסיכונים בפרויקט...?"\n• "מה המצב?"\n• "מי הכי עמוס?"\n• "איך מגדירים KPI?"\n• "איך עובדות ההרשאות?"`
+      : `I didn't quite understand: "${text.slice(0, 50)}". Try: "Create task...", "What are risks?", "How to set up KPI?", "How do permissions work?"`;
   }
 
   // ---- Extract dates ----
