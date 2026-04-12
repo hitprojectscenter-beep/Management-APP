@@ -614,7 +614,7 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
                         <div
                           className="absolute top-1/2 -translate-y-1/2 h-1.5 bg-slate-700 dark:bg-slate-300 rounded-sm"
                           style={{ left: x, width: w }}
-                          title={`${node.name}: ${formatDate(rollup.plannedStart, locale as "he" | "en")} → ${formatDate(rollup.plannedEnd, locale as "he" | "en")}`}
+                          title={`${node.name}: ${formatDate(rollup.plannedStart, locale)} → ${formatDate(rollup.plannedEnd, locale)}`}
                         />
                         {/* End caps */}
                         <div className="absolute top-1/2 -translate-y-1/2 size-2 bg-slate-700 dark:bg-slate-300" style={{ left: x }} />
@@ -673,7 +673,7 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
                           isHighlightCritical ? "border-red-400" : "border-slate-400 dark:border-slate-600"
                         )}
                         style={{ left: plannedX, width: plannedW }}
-                        title={`${isHe ? "מתוכנן" : "Planned"}: ${formatDate(task.plannedStart, locale as "he" | "en")} → ${formatDate(task.plannedEnd, locale as "he" | "en")}`}
+                        title={`${isHe ? "מתוכנן" : "Planned"}: ${formatDate(task.plannedStart, locale)} → ${formatDate(task.plannedEnd, locale)}`}
                       />
                     )}
 

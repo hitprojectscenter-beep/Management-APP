@@ -8,9 +8,9 @@
 
 export interface HelpEntry {
   id: string;
-  keywords: { he: string[]; en: string[] };
-  question: { he: string; en: string };
-  answer: { he: string; en: string };
+  keywords: Record<string, string[]>;
+  question: Record<string, string>;
+  answer: Record<string, string>;
   category: string;
 }
 
@@ -429,7 +429,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
 /**
  * Find matching help entries by keywords.
  */
-export function findHelpByKeywords(query: string, locale: "he" | "en"): HelpEntry[] {
+export function findHelpByKeywords(query: string, locale: string): HelpEntry[] {
   const q = query.toLowerCase().trim();
   if (!q) return [];
 
@@ -457,7 +457,7 @@ export function findHelpByKeywords(query: string, locale: "he" | "en"): HelpEntr
 /**
  * Format knowledge base as system prompt context.
  */
-export function formatKnowledgeBaseForAI(locale: "he" | "en"): string {
+export function formatKnowledgeBaseForAI(locale: string): string {
   return HELP_ENTRIES.map(
     (e) => `Q: ${e.question[locale]}\nA: ${e.answer[locale]}\n[${e.category}]`
   ).join("\n\n---\n\n");

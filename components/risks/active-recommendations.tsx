@@ -36,12 +36,12 @@ const PRIORITY_STYLES = {
   },
 };
 
-const CATEGORY_LABELS: Record<string, { he: string; en: string }> = {
-  blocker: { he: "חסימה", en: "Blocker" },
-  resource: { he: "משאבים", en: "Resource" },
-  schedule: { he: "לו״ז", en: "Schedule" },
-  scope: { he: "תכולה", en: "Scope" },
-  quality: { he: "איכות", en: "Quality" },
+const CATEGORY_LABELS: Record<string, Record<string, string>> = {
+  blocker: { he: "חסימה", en: "Blocker", ru: "Блокировка", fr: "Bloqueur", es: "Bloqueador" },
+  resource: { he: "משאבים", en: "Resource", ru: "Ресурсы", fr: "Ressource", es: "Recurso" },
+  schedule: { he: "לו״ז", en: "Schedule", ru: "Расписание", fr: "Calendrier", es: "Cronograma" },
+  scope: { he: "תכולה", en: "Scope", ru: "Объём", fr: "Périmètre", es: "Alcance" },
+  quality: { he: "איכות", en: "Quality", ru: "Качество", fr: "Qualité", es: "Calidad" },
 };
 
 export function ActiveRecommendations({
@@ -101,7 +101,7 @@ export function ActiveRecommendations({
                         {isHe ? styles.label : styles.labelEn}
                       </Badge>
                       <Badge variant="outline" className="text-[9px]">
-                        {CATEGORY_LABELS[rec.category][locale as "he" | "en"]}
+                        {CATEGORY_LABELS[rec.category][locale]}
                       </Badge>
                     </div>
                     <h4 className="font-semibold text-sm">{rec.title}</h4>

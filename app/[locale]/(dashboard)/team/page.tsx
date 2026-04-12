@@ -3,10 +3,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, UserPlus, Crown } from "lucide-react";
+import { UserPlus, Crown } from "lucide-react";
 import { mockUsers, mockTasks } from "@/lib/db/mock-data";
 import { ROLE_LABELS } from "@/lib/rbac/abilities";
 import { InviteMemberDialog } from "@/components/team/invite-member-dialog";
+import { txt, COMMON_LABELS } from "@/lib/utils/locale-text";
 
 export default async function TeamPage({
   params,
@@ -21,16 +22,16 @@ export default async function TeamPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {locale === "he" ? "צוות" : "Team"}
+            {txt(locale, COMMON_LABELS.team)}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {mockUsers.length} {locale === "he" ? "חברי צוות" : "team members"}
+            {mockUsers.length} {txt(locale, COMMON_LABELS.teamMembers)}
           </p>
         </div>
         <InviteMemberDialog locale={locale}>
           <Button className="min-h-[44px]">
             <UserPlus className="size-4" />
-            {locale === "he" ? "הזמן חבר" : "Invite member"}
+            {txt(locale, COMMON_LABELS.invite)}
           </Button>
         </InviteMemberDialog>
       </div>
@@ -50,12 +51,9 @@ export default async function TeamPage({
                       <h3 className="font-semibold truncate">{user.name}</h3>
                       {user.role === "admin" && <Crown className="size-3.5 text-amber-500" />}
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                      <Mail className="size-3" />
-                      <span className="truncate">{user.email}</span>
-                    </div>
+                    {/* Email hidden for privacy */}
                     <Badge variant="outline" className="mt-2">
-                      {ROLE_LABELS[user.role][locale as "he" | "en"]}
+                      {ROLE_LABELS[user.role][locale]}
                     </Badge>
                   </div>
                 </div>
@@ -63,13 +61,13 @@ export default async function TeamPage({
                   <div>
                     <div className="text-xl font-bold text-blue-600">{open}</div>
                     <div className="text-[10px] text-muted-foreground uppercase">
-                      {locale === "he" ? "פתוחות" : "Open"}
+                      {txt(locale, COMMON_LABELS.open)}
                     </div>
                   </div>
                   <div>
                     <div className="text-xl font-bold text-emerald-600">{done}</div>
                     <div className="text-[10px] text-muted-foreground uppercase">
-                      {locale === "he" ? "הושלמו" : "Done"}
+                      {txt(locale, COMMON_LABELS.done)}
                     </div>
                   </div>
                 </div>

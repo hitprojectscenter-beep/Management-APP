@@ -14,20 +14,20 @@ export function RecentTasks({
   users: MockUser[];
   locale: string;
 }) {
-  const statusLabels: Record<string, { he: string; en: string }> = {
-    not_started: { he: "לא התחיל", en: "Not started" },
-    in_progress: { he: "בביצוע", en: "In progress" },
-    review: { he: "בבדיקה", en: "Review" },
-    done: { he: "הושלם", en: "Done" },
-    blocked: { he: "חסום", en: "Blocked" },
-    cancelled: { he: "בוטל", en: "Cancelled" },
+  const statusLabels: Record<string, Record<string, string>> = {
+    not_started: { he: "לא התחיל", en: "Not started", ru: "Не начата", fr: "Non démarré", es: "No iniciada" },
+    in_progress: { he: "בביצוע", en: "In progress", ru: "В работе", fr: "En cours", es: "En progreso" },
+    review: { he: "בבדיקה", en: "Review", ru: "Проверка", fr: "En revue", es: "En revisión" },
+    done: { he: "הושלם", en: "Done", ru: "Завершена", fr: "Terminé", es: "Completada" },
+    blocked: { he: "חסום", en: "Blocked", ru: "Заблокирована", fr: "Bloqué", es: "Bloqueada" },
+    cancelled: { he: "בוטל", en: "Cancelled", ru: "Отменена", fr: "Annulé", es: "Cancelada" },
   };
 
-  const priorityLabels: Record<string, { he: string; en: string }> = {
-    low: { he: "נמוכה", en: "Low" },
-    medium: { he: "בינונית", en: "Medium" },
-    high: { he: "גבוהה", en: "High" },
-    critical: { he: "קריטית", en: "Critical" },
+  const priorityLabels: Record<string, Record<string, string>> = {
+    low: { he: "נמוכה", en: "Low", ru: "Низкий", fr: "Basse", es: "Baja" },
+    medium: { he: "בינונית", en: "Medium", ru: "Средний", fr: "Moyenne", es: "Media" },
+    high: { he: "גבוהה", en: "High", ru: "Высокий", fr: "Haute", es: "Alta" },
+    critical: { he: "קריטית", en: "Critical", ru: "Критический", fr: "Critique", es: "Crítica" },
   };
 
   return (
@@ -73,12 +73,12 @@ export function RecentTasks({
                 </td>
                 <td className="py-3 hidden sm:table-cell">
                   <span className={cn("status-badge", `status-${task.status}`)}>
-                    {statusLabels[task.status][locale as "he" | "en"]}
+                    {statusLabels[task.status][locale]}
                   </span>
                 </td>
                 <td className="py-3 hidden md:table-cell">
                   <span className={cn("status-badge", `priority-${task.priority}`)}>
-                    {priorityLabels[task.priority][locale as "he" | "en"]}
+                    {priorityLabels[task.priority][locale]}
                   </span>
                 </td>
                 <td className="py-3 hidden lg:table-cell">
@@ -98,7 +98,7 @@ export function RecentTasks({
                   </div>
                 </td>
                 <td className="pe-6 py-3 text-end hidden md:table-cell text-xs text-muted-foreground">
-                  {formatDate(task.plannedEnd, locale as "he" | "en")}
+                  {formatDate(task.plannedEnd, locale)}
                 </td>
               </tr>
             );

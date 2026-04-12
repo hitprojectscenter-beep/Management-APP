@@ -47,13 +47,13 @@ export default async function TaskDetailPage({
   const variance = calculateVariance(task.plannedEnd, task.actualEnd);
   const members = getAllMembersOfNodeRecursive(task.wbsNodeId);
 
-  const STATUS_LABELS: Record<string, { he: string; en: string }> = {
-    not_started: { he: "לא התחיל", en: "Not started" },
-    in_progress: { he: "בביצוע", en: "In progress" },
-    review: { he: "בבדיקה", en: "Review" },
-    done: { he: "הושלם", en: "Done" },
-    blocked: { he: "חסום", en: "Blocked" },
-    cancelled: { he: "בוטל", en: "Cancelled" },
+  const STATUS_LABELS: Record<string, Record<string, string>> = {
+    not_started: { he: "לא התחיל", en: "Not started", ru: "Не начата", fr: "Non démarré", es: "No iniciada" },
+    in_progress: { he: "בביצוע", en: "In progress", ru: "В работе", fr: "En cours", es: "En progreso" },
+    review: { he: "בבדיקה", en: "Review", ru: "Проверка", fr: "En revue", es: "En revisión" },
+    done: { he: "הושלם", en: "Done", ru: "Завершена", fr: "Terminé", es: "Completada" },
+    blocked: { he: "חסום", en: "Blocked", ru: "Заблокирована", fr: "Bloqué", es: "Bloqueada" },
+    cancelled: { he: "בוטל", en: "Cancelled", ru: "Отменена", fr: "Annulé", es: "Cancelada" },
   };
 
   return (
@@ -74,7 +74,7 @@ export default async function TaskDetailPage({
           </h1>
           <div className="flex gap-2">
             <span className={cn("status-badge", `status-${task.status}`)}>
-              {STATUS_LABELS[task.status][locale as "he" | "en"]}
+              {STATUS_LABELS[task.status][locale]}
             </span>
             <span className={cn("status-badge", `priority-${task.priority}`)}>
               {task.priority}
@@ -149,7 +149,7 @@ export default async function TaskDetailPage({
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm font-semibold">{author?.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          {formatDateTime(c.createdAt, locale as "he" | "en")}
+                          {formatDateTime(c.createdAt, locale)}
                         </span>
                       </div>
                       <p className="text-sm mt-1 leading-relaxed">{c.body}</p>
@@ -192,7 +192,7 @@ export default async function TaskDetailPage({
                     <Calendar className="size-4" />
                     {locale === "he" ? "תאריך התחלה" : "Start"}
                   </span>
-                  <span className="font-medium">{formatDate(task.plannedStart, locale as "he" | "en")}</span>
+                  <span className="font-medium">{formatDate(task.plannedStart, locale)}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
@@ -200,7 +200,7 @@ export default async function TaskDetailPage({
                     <Calendar className="size-4" />
                     {locale === "he" ? "תאריך יעד" : "Due"}
                   </span>
-                  <span className="font-medium">{formatDate(task.plannedEnd, locale as "he" | "en")}</span>
+                  <span className="font-medium">{formatDate(task.plannedEnd, locale)}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-sm">

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 export function HelpTrigger() {
   const [open, setOpen] = useState(false);
   const { startTour, openBot } = useHelp();
-  const locale = useLocale() as "he" | "en";
+  const locale = useLocale();
   const isHe = locale === "he";
 
   return (

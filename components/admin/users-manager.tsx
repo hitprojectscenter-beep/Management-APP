@@ -67,11 +67,11 @@ export function UsersManager({ locale }: { locale: string }) {
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="all">{isHe ? "כל התפקידים" : "All Roles"}</option>
-            <option value="admin">{ROLE_LABELS.admin[locale as "he" | "en"]}</option>
-            <option value="manager">{ROLE_LABELS.manager[locale as "he" | "en"]}</option>
-            <option value="member">{ROLE_LABELS.member[locale as "he" | "en"]}</option>
-            <option value="viewer">{ROLE_LABELS.viewer[locale as "he" | "en"]}</option>
-            <option value="guest">{ROLE_LABELS.guest[locale as "he" | "en"]}</option>
+            <option value="admin">{ROLE_LABELS.admin[locale]}</option>
+            <option value="manager">{ROLE_LABELS.manager[locale]}</option>
+            <option value="member">{ROLE_LABELS.member[locale]}</option>
+            <option value="viewer">{ROLE_LABELS.viewer[locale]}</option>
+            <option value="guest">{ROLE_LABELS.guest[locale]}</option>
           </select>
         </div>
         <UserDialog onSave={handleSave} locale={locale}>
@@ -116,12 +116,12 @@ export function UsersManager({ locale }: { locale: string }) {
                 <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <Mail className="size-3" />
-                    {user.email}
+                    ●●●●@mapi.gov.il
                   </div>
                 </td>
                 <td className="px-4 py-3">
                   <Badge variant={user.role === "admin" ? "destructive" : user.role === "manager" ? "default" : "secondary"}>
-                    {ROLE_LABELS[user.role][locale as "he" | "en"]}
+                    {ROLE_LABELS[user.role][locale]}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 hidden lg:table-cell text-xs uppercase font-mono">{user.locale}</td>
@@ -224,11 +224,11 @@ function UserDialog({
                 onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="admin">{ROLE_LABELS.admin[locale as "he" | "en"]}</option>
-                <option value="manager">{ROLE_LABELS.manager[locale as "he" | "en"]}</option>
-                <option value="member">{ROLE_LABELS.member[locale as "he" | "en"]}</option>
-                <option value="viewer">{ROLE_LABELS.viewer[locale as "he" | "en"]}</option>
-                <option value="guest">{ROLE_LABELS.guest[locale as "he" | "en"]}</option>
+                <option value="admin">{ROLE_LABELS.admin[locale]}</option>
+                <option value="manager">{ROLE_LABELS.manager[locale]}</option>
+                <option value="member">{ROLE_LABELS.member[locale]}</option>
+                <option value="viewer">{ROLE_LABELS.viewer[locale]}</option>
+                <option value="guest">{ROLE_LABELS.guest[locale]}</option>
               </select>
             </div>
             <div className="space-y-2">

@@ -26,6 +26,7 @@ import {
 } from "@/lib/db/mock-data";
 import { MyTasksTabs } from "@/components/landing/my-tasks-tabs";
 import { ProjectMembers } from "@/components/members/project-members";
+import { txt } from "@/lib/utils/locale-text";
 
 export default async function LandingPage({
   params,
@@ -72,12 +73,16 @@ export default async function LandingPage({
           )}
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              {isHe ? `שלום, ${currentUser?.name?.split(" ")[0]} 👋` : `Hello, ${currentUser?.name?.split(" ")[0]} 👋`}
+              {txt(locale, { he: "שלום", en: "Hello", ru: "Здравствуйте", fr: "Bonjour", es: "Hola" })}, {currentUser?.name?.split(" ")[0]} 👋
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              {isHe
-                ? "כל המשימות שעדיין לא נסגרו - מסודרות לפי דחיפות"
-                : "All tasks that are still open - sorted by urgency"}
+              {txt(locale, {
+                he: "כל המשימות שעדיין לא נסגרו - מסודרות לפי דחיפות",
+                en: "All tasks that are still open - sorted by urgency",
+                ru: "Все незакрытые задачи — по срочности",
+                fr: "Toutes les tâches ouvertes — par urgence",
+                es: "Todas las tareas abiertas — por urgencia",
+              })}
             </p>
           </div>
         </div>
@@ -88,7 +93,7 @@ export default async function LandingPage({
                 <TrendingUp className="size-4 text-purple-600" />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">{isHe ? "סך הקצאה שלי" : "My total allocation"}</div>
+                <div className="text-xs text-muted-foreground">{txt(locale, { he: "סך הקצאה שלי", en: "My total allocation", ru: "Моя загрузка", fr: "Mon allocation", es: "Mi asignación" })}</div>
                 <div className="text-lg font-bold">{totalFte}%</div>
               </div>
             </CardContent>
@@ -100,39 +105,39 @@ export default async function LandingPage({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats">
         <StatCard
           icon={CheckSquare}
-          label={isHe ? "סך משימות פתוחות" : "Total Open Tasks"}
+          label={txt(locale, { he: "סך משימות פתוחות", en: "Total Open Tasks", ru: "Открытые задачи", fr: "Tâches ouvertes", es: "Tareas abiertas" })}
           value={myOpenTasks.length}
           color="from-blue-500 to-indigo-600"
           bg="bg-blue-500/10"
           iconColor="text-blue-600"
-          tooltip={isHe ? "כל המשימות שעוד לא הושלמו או בוטלו" : "All tasks not yet completed or cancelled"}
+          tooltip={txt(locale, { he: "כל המשימות שעוד לא הושלמו או בוטלו", en: "All tasks not yet completed or cancelled", ru: "Все незавершённые задачи", fr: "Toutes les tâches non terminées", es: "Todas las tareas no completadas" })}
         />
         <StatCard
           icon={Clock}
-          label={isHe ? "בביצוע" : "In Progress"}
+          label={txt(locale, { he: "בביצוע", en: "In Progress", ru: "В работе", fr: "En cours", es: "En progreso" })}
           value={inProgress}
           color="from-emerald-500 to-teal-600"
           bg="bg-emerald-500/10"
           iconColor="text-emerald-600"
-          tooltip={isHe ? "משימות שכבר התחלת לעבוד עליהן" : "Tasks you've started working on"}
+          tooltip={txt(locale, { he: "משימות שכבר התחלת לעבוד עליהן", en: "Tasks you've started working on", ru: "Задачи, над которыми вы работаете", fr: "Tâches en cours de réalisation", es: "Tareas en las que estás trabajando" })}
         />
         <StatCard
           icon={AlertTriangle}
-          label={isHe ? "באיחור" : "Overdue"}
+          label={txt(locale, { he: "באיחור", en: "Overdue", ru: "Просрочено", fr: "En retard", es: "Retrasadas" })}
           value={overdue}
           color="from-red-500 to-rose-600"
           bg="bg-red-500/10"
           iconColor="text-red-600"
-          tooltip={isHe ? "משימות שעברו את תאריך היעד" : "Tasks past their due date"}
+          tooltip={txt(locale, { he: "משימות שעברו את תאריך היעד", en: "Tasks past their due date", ru: "Задачи с истёкшим сроком", fr: "Tâches en retard", es: "Tareas vencidas" })}
         />
         <StatCard
           icon={CalendarIcon}
-          label={isHe ? "השבוע" : "Due This Week"}
+          label={txt(locale, { he: "השבוע", en: "Due This Week", ru: "На этой неделе", fr: "Cette semaine", es: "Esta semana" })}
           value={dueThisWeek}
           color="from-amber-500 to-orange-600"
           bg="bg-amber-500/10"
           iconColor="text-amber-600"
-          tooltip={isHe ? "תאריך היעד שלהן בתוך 7 הימים הקרובים" : "Due within the next 7 days"}
+          tooltip={txt(locale, { he: "תאריך היעד שלהן בתוך 7 הימים הקרובים", en: "Due within the next 7 days", ru: "Срок — в ближайшие 7 дней", fr: "Échéance dans les 7 prochains jours", es: "Vencen en los próximos 7 días" })}
         />
       </div>
 
@@ -155,7 +160,7 @@ export default async function LandingPage({
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Briefcase className="size-4 text-blue-600" />
-                <h3 className="font-semibold text-sm">{isHe ? "הפרויקטים שלי" : "My Projects"}</h3>
+                <h3 className="font-semibold text-sm">{txt(locale, { he: "הפרויקטים שלי", en: "My Projects", ru: "Мои проекты", fr: "Mes projets", es: "Mis proyectos" })}</h3>
                 <Badge variant="outline" className="ms-auto">{myProjects.length}</Badge>
               </div>
               <div className="space-y-2">
@@ -192,12 +197,16 @@ export default async function LandingPage({
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="size-4 text-purple-600" />
-                <h3 className="font-semibold text-sm">{isHe ? "ההשתתפות שלי" : "My Participation"}</h3>
+                <h3 className="font-semibold text-sm">{txt(locale, { he: "ההשתתפות שלי", en: "My Participation", ru: "Моё участие", fr: "Ma participation", es: "Mi participación" })}</h3>
               </div>
               <div className="text-xs text-muted-foreground mb-3">
-                {isHe
-                  ? "סך אחוזי המשרה שלך בכל הפרויקטים"
-                  : "Total FTE % across all your projects"}
+                {txt(locale, {
+                  he: "סך אחוזי המשרה שלך בכל הפרויקטים",
+                  en: "Total FTE % across all your projects",
+                  ru: "Общая загрузка по всем проектам",
+                  fr: "% total d'allocation sur tous vos projets",
+                  es: "Asignación total en todos sus proyectos",
+                })}
               </div>
               <div className="space-y-2">
                 {myMemberships.map((m) => {
@@ -218,7 +227,7 @@ export default async function LandingPage({
               </div>
               <div className="mt-4 pt-3 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold">{isHe ? "סה״כ" : "Total"}</span>
+                  <span className="text-xs font-semibold">{txt(locale, { he: "סה״כ", en: "Total", ru: "Итого", fr: "Total", es: "Total" })}</span>
                   <span
                     className={
                       totalFte > 100
@@ -231,7 +240,7 @@ export default async function LandingPage({
                 </div>
                 {totalFte > 100 && (
                   <div className="text-[10px] text-red-600 mt-1">
-                    {isHe ? "⚠️ הקצאת יתר!" : "⚠️ Over-allocated!"}
+                    {txt(locale, { he: "⚠️ הקצאת יתר!", en: "⚠️ Over-allocated!", ru: "⚠️ Перегрузка!", fr: "⚠️ Sur-alloué !", es: "⚠️ Sobre-asignado!" })}
                   </div>
                 )}
               </div>

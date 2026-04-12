@@ -138,7 +138,7 @@ export function Topbar() {
             <div className="hidden md:block">
               <div className="text-xs font-medium">{currentUser.name}</div>
               <div className="text-[10px] text-muted-foreground">
-                {ROLE_LABELS[currentUser.role][locale as "he" | "en"]}
+                {ROLE_LABELS[currentUser.role][locale]}
               </div>
             </div>
           </div>

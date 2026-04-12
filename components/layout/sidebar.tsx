@@ -5,6 +5,7 @@ import { Link, usePathname } from "@/lib/i18n/routing";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "./nav-items";
+import { txt, ORG_NAME } from "@/lib/utils/locale-text";
 
 /**
  * Shared sidebar content used by both desktop aside and mobile drawer.
@@ -31,7 +32,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
           <div className="min-w-0">
             <div className="text-sm font-bold text-white leading-tight">
-              {isHe ? "המרכז למיפוי ישראל" : "Israel Mapping Center"}
+              {txt(locale, ORG_NAME)}
             </div>
             <div className="text-[11px] text-sidebar-foreground/70 truncate">
               {tApp("name")} · {tApp("tagline")}
@@ -63,7 +64,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               )}
             >
               <Icon className="size-4 shrink-0" />
-              <span>{isHe ? item.labelHe : item.labelEn}</span>
+              <span>{item.labels[locale] || item.labels.en}</span>
             </Link>
           );
         })}

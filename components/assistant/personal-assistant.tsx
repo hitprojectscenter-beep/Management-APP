@@ -37,20 +37,20 @@ interface ServerResponse {
   intent: any;
   gaps: Array<{
     field: string;
-    prompt: { he: string; en: string };
+    prompt: Record<string, string>;
     suggestions?: { value: string; label: string }[];
   }>;
   conflicts: Array<{
     type: string;
     blocking: boolean;
-    message: { he: string; en: string };
-    suggestion?: { he: string; en: string };
+    message: Record<string, string>;
+    suggestion?: Record<string, string>;
   }>;
   summary: string;
 }
 
 export function PersonalAssistant() {
-  const locale = useLocale() as "he" | "en";
+  const locale = useLocale();
   const isHe = locale === "he";
   const currentUser = getUserById(CURRENT_USER_ID);
   const [isOpen, setIsOpen] = useState(false);

@@ -1430,7 +1430,7 @@ export function getTimeRemaining(plannedEnd: string): {
   days: number;
   hours: number;
   isOverdue: boolean;
-  label: { he: string; en: string };
+  label: Record<string, string>;
 } {
   const now = Date.now();
   const end = new Date(plannedEnd).getTime();
@@ -1441,13 +1441,25 @@ export function getTimeRemaining(plannedEnd: string): {
 
   if (isOverdue) {
     if (days >= 1) {
-      return { days, hours, isOverdue, label: { he: `איחור של ${days} ימים`, en: `${days}d overdue` } };
+      return { days, hours, isOverdue, label: {
+        he: `איחור של ${days} ימים`, en: `${days}d overdue`,
+        ru: `${days}д просрочка`, fr: `${days}j retard`, es: `${days}d retraso`,
+      }};
     }
-    return { days, hours, isOverdue, label: { he: `איחור של ${hours} שעות`, en: `${hours}h overdue` } };
+    return { days, hours, isOverdue, label: {
+      he: `איחור של ${hours} שעות`, en: `${hours}h overdue`,
+      ru: `${hours}ч просрочка`, fr: `${hours}h retard`, es: `${hours}h retraso`,
+    }};
   }
 
   if (days >= 1) {
-    return { days, hours, isOverdue, label: { he: `${days} ימים נותרו`, en: `${days}d left` } };
+    return { days, hours, isOverdue, label: {
+      he: `${days} ימים נותרו`, en: `${days}d left`,
+      ru: `ещё ${days}д`, fr: `${days}j restants`, es: `${days}d restantes`,
+    }};
   }
-  return { days, hours, isOverdue, label: { he: `${hours} שעות נותרו`, en: `${hours}h left` } };
+  return { days, hours, isOverdue, label: {
+    he: `${hours} שעות נותרו`, en: `${hours}h left`,
+    ru: `ещё ${hours}ч`, fr: `${hours}h restantes`, es: `${hours}h restantes`,
+  }};
 }

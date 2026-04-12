@@ -10,13 +10,13 @@ export function StatusDistribution({
   tasks: MockTask[];
   locale: string;
 }) {
-  const statusLabels: Record<string, { he: string; en: string }> = {
-    not_started: { he: "לא התחיל", en: "Not started" },
-    in_progress: { he: "בביצוע", en: "In progress" },
-    review: { he: "בבדיקה", en: "Review" },
-    done: { he: "הושלם", en: "Done" },
-    blocked: { he: "חסום", en: "Blocked" },
-    cancelled: { he: "בוטל", en: "Cancelled" },
+  const statusLabels: Record<string, Record<string, string>> = {
+    not_started: { he: "לא התחיל", en: "Not started", ru: "Не начата", fr: "Non démarré", es: "No iniciada" },
+    in_progress: { he: "בביצוע", en: "In progress", ru: "В работе", fr: "En cours", es: "En progreso" },
+    review: { he: "בבדיקה", en: "Review", ru: "Проверка", fr: "En revue", es: "En revisión" },
+    done: { he: "הושלם", en: "Done", ru: "Завершена", fr: "Terminé", es: "Completada" },
+    blocked: { he: "חסום", en: "Blocked", ru: "Заблокирована", fr: "Bloqué", es: "Bloqueada" },
+    cancelled: { he: "בוטל", en: "Cancelled", ru: "Отменена", fr: "Annulé", es: "Cancelada" },
   };
 
   const counts = tasks.reduce((acc, task) => {
@@ -25,7 +25,7 @@ export function StatusDistribution({
   }, {} as Record<string, number>);
 
   const data = Object.entries(counts).map(([status, value]) => ({
-    name: statusLabels[status][locale as "he" | "en"],
+    name: statusLabels[status][locale],
     value,
     color: STATUS_COLORS[status as keyof typeof STATUS_COLORS],
   }));

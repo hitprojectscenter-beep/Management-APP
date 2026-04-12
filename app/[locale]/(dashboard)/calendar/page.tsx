@@ -21,7 +21,11 @@ export default async function CalendarPage({
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground mt-1">
-            {locale === "he" ? "כל המשימות שלך במבט יומני" : "All your tasks in calendar view"}
+            {locale === "he" ? "כל המשימות שלך במבט יומני"
+              : locale === "ru" ? "Все ваши задачи в календаре"
+              : locale === "fr" ? "Toutes vos tâches en vue calendrier"
+              : locale === "es" ? "Todas tus tareas en vista de calendario"
+              : "All your tasks in calendar view"}
           </p>
         </div>
         <Card className="flex items-center gap-3 px-4 py-2">
@@ -30,7 +34,13 @@ export default async function CalendarPage({
           </div>
           <div className="text-xs">
             <div className="font-semibold">{t("syncStatus")}</div>
-            <div className="text-muted-foreground">Google Calendar · {locale === "he" ? "מסונכרן" : "Synced"}</div>
+            <div className="text-muted-foreground">Google Calendar · {
+              locale === "he" ? "מסונכרן"
+              : locale === "ru" ? "Синхронизировано"
+              : locale === "fr" ? "Synchronisé"
+              : locale === "es" ? "Sincronizado"
+              : "Synced"
+            }</div>
           </div>
           <Button size="sm" variant="outline">
             <RefreshCw className="size-3" />

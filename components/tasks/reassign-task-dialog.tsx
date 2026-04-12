@@ -127,7 +127,7 @@ export function ReassignTaskDialog({
                   <Avatar src={user.image} fallback={user.name[0]} className="size-8" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium">{user.name}</div>
-                    <div className="text-[10px] text-muted-foreground">{user.email}</div>
+                    <div className="text-[10px] text-muted-foreground">{user.role}</div>
                   </div>
                   {selected === user.id && <span className="text-blue-600 font-bold">✓</span>}
                 </button>

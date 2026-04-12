@@ -21,11 +21,11 @@ export function ProjectViews({
 }) {
   const [view, setView] = useState<View>("kanban");
 
-  const tabs: { key: View; icon: typeof List; label: { he: string; en: string } }[] = [
-    { key: "list", icon: List, label: { he: "רשימה", en: "List" } },
-    { key: "kanban", icon: Kanban, label: { he: "קנבן", en: "Kanban" } },
-    { key: "gantt", icon: GanttChartSquare, label: { he: "גאנט", en: "Gantt" } },
-    { key: "calendar", icon: CalendarIcon, label: { he: "יומן", en: "Calendar" } },
+  const tabs: { key: View; icon: typeof List; label: Record<string, string> }[] = [
+    { key: "list", icon: List, label: { he: "רשימה", en: "List", ru: "Список", fr: "Liste", es: "Lista" } },
+    { key: "kanban", icon: Kanban, label: { he: "קנבן", en: "Kanban", ru: "Канбан", fr: "Kanban", es: "Kanban" } },
+    { key: "gantt", icon: GanttChartSquare, label: { he: "גאנט", en: "Gantt", ru: "Гант", fr: "Gantt", es: "Gantt" } },
+    { key: "calendar", icon: CalendarIcon, label: { he: "יומן", en: "Calendar", ru: "Календарь", fr: "Calendrier", es: "Calendario" } },
   ];
 
   return (
@@ -46,7 +46,7 @@ export function ProjectViews({
               )}
             >
               <Icon className="size-4" />
-              {tab.label[locale as "he" | "en"]}
+              {tab.label[locale]}
             </button>
           );
         })}

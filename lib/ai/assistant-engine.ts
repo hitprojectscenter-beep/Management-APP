@@ -66,15 +66,15 @@ export type DialogStage =
 
 export interface Gap {
   field: keyof TaskEntities;
-  prompt: { he: string; en: string };
+  prompt: Record<string, string>;
   required: boolean;
   suggestions?: { value: string; label: string }[];
 }
 
 export interface Conflict {
   type: "overload" | "dependency" | "sod_violation" | "permission_denied" | "date_logic";
-  message: { he: string; en: string };
-  suggestion?: { he: string; en: string };
+  message: Record<string, string>;
+  suggestion?: Record<string, string>;
   blocking: boolean;
 }
 

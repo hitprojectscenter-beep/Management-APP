@@ -64,10 +64,10 @@ export function defineAbilitiesFor(role: UserRole): AppAbility {
   return build();
 }
 
-export const ROLE_LABELS: Record<UserRole, { he: string; en: string }> = {
-  admin: { he: "מנהל מערכת", en: "Administrator" },
-  manager: { he: "מנהל", en: "Manager" },
-  member: { he: "חבר צוות", en: "Team Member" },
-  viewer: { he: "צופה", en: "Viewer" },
-  guest: { he: "אורח", en: "Guest" },
+export const ROLE_LABELS: Record<UserRole, Record<string, string>> = {
+  admin:   { he: "מנהל מערכת", en: "Administrator", ru: "Администратор", fr: "Administrateur", es: "Administrador" },
+  manager: { he: "מנהל",       en: "Manager",       ru: "Менеджер",       fr: "Responsable",    es: "Gerente"       },
+  member:  { he: "חבר צוות",   en: "Team Member",   ru: "Участник",       fr: "Membre",         es: "Miembro"       },
+  viewer:  { he: "צופה",       en: "Viewer",        ru: "Наблюдатель",    fr: "Observateur",    es: "Observador"    },
+  guest:   { he: "אורח",       en: "Guest",         ru: "Гость",          fr: "Invité",         es: "Invitado"      },
 };

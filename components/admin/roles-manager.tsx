@@ -67,7 +67,7 @@ export function RolesManager({ locale }: { locale: string }) {
                 <div className={cn("size-12 rounded-full bg-gradient-to-br mx-auto mb-2 flex items-center justify-center", ROLE_COLORS[role])}>
                   <Icon className="size-6 text-white" />
                 </div>
-                <div className="font-semibold text-sm">{ROLE_LABELS[role][locale as "he" | "en"]}</div>
+                <div className="font-semibold text-sm">{ROLE_LABELS[role][locale]}</div>
                 <div className="text-[10px] text-muted-foreground mt-1">
                   {permCount} {isHe ? "הרשאות" : "permissions"}
                 </div>
@@ -104,7 +104,7 @@ export function RolesManager({ locale }: { locale: string }) {
                       <div className="flex flex-col items-center gap-1">
                         <Icon className="size-4" />
                         <span className="text-[10px] whitespace-nowrap">
-                          {ROLE_LABELS[role][locale as "he" | "en"]}
+                          {ROLE_LABELS[role][locale]}
                         </span>
                       </div>
                     </th>

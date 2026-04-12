@@ -6,8 +6,8 @@
 export interface TourStep {
   id: string;
   selector: string; // data-tour="..." selector or CSS selector
-  title: { he: string; en: string };
-  content: { he: string; en: string };
+  title: Record<string, string>;
+  content: Record<string, string>;
   placement?: "top" | "bottom" | "start" | "end" | "center";
   scrollIntoView?: boolean;
 }

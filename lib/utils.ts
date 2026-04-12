@@ -5,18 +5,22 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: string | Date, locale: "he" | "en" = "he"): string {
+const INTL_LOCALES: Record<string, string> = {
+  he: "he-IL", en: "en-US", ru: "ru-RU", fr: "fr-FR", es: "es-ES",
+};
+
+export function formatDate(date: string | Date, locale: string = "he"): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
+  return new Intl.DateTimeFormat(INTL_LOCALES[locale] || "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   }).format(d);
 }
 
-export function formatDateTime(date: string | Date, locale: "he" | "en" = "he"): string {
+export function formatDateTime(date: string | Date, locale: string = "he"): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
+  return new Intl.DateTimeFormat(INTL_LOCALES[locale] || "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",

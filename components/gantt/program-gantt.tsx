@@ -406,7 +406,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
                 {a && (
                   <div className="flex items-center gap-2 pt-1 border-t">
                     <Avatar src={a.image} fallback={a.name[0]} className="size-6" />
-                    <div className="text-xs"><div className="font-medium">{a.name}</div><div className="text-muted-foreground">{a.email}</div></div>
+                    <div className="text-xs"><div className="font-medium">{a.name}</div></div>
                   </div>
                 )}
                 <Link href={`/tasks/${t.id}`} className="text-xs text-blue-600 hover:underline block pt-1">

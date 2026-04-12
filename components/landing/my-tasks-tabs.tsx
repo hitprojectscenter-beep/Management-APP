@@ -11,20 +11,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { AlertTriangle, Clock, Plus, Layers, Briefcase, Calendar as CalIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
 import { AddTaskDialog } from "@/components/landing/add-task-dialog";
-
-const STATUS_LABELS: Record<string, { he: string; en: string }> = {
-  not_started: { he: "לא התחיל", en: "Not started" },
-  in_progress: { he: "בביצוע", en: "In progress" },
-  review: { he: "בבדיקה", en: "Review" },
-  blocked: { he: "חסום", en: "Blocked" },
-};
-
-const PRIORITY_LABELS: Record<string, { he: string; en: string }> = {
-  low: { he: "נמוכה", en: "Low" },
-  medium: { he: "בינונית", en: "Medium" },
-  high: { he: "גבוהה", en: "High" },
-  critical: { he: "קריטית", en: "Critical" },
-};
+import { txt, STATUS_LABELS_ML, PRIORITY_LABELS_ML, TAB_LABELS_ML } from "@/lib/utils/locale-text";
 
 type TabKey = "all" | "in_progress" | "not_started" | "blocked" | "review" | "overdue" | "by_project";
 
@@ -44,7 +31,7 @@ export function MyTasksTabs({
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const isHe = locale === "he";
 
-  const tabs: { key: TabKey; label: { he: string; en: string }; count?: number }[] = useMemo(() => {
+  const tabs: { key: TabKey; count?: number }[] = useMemo(() => {
     const counts = {
       all: tasks.length,
       in_progress: tasks.filter((t) => t.status === "in_progress").length,
@@ -57,13 +44,13 @@ export function MyTasksTabs({
       }).length,
     };
     return [
-      { key: "all", label: { he: "הכל", en: "All" }, count: counts.all },
-      { key: "in_progress", label: { he: "בביצוע", en: "In Progress" }, count: counts.in_progress },
-      { key: "not_started", label: { he: "לא התחילו", en: "Not Started" }, count: counts.not_started },
-      { key: "review", label: { he: "בבדיקה", en: "Review" }, count: counts.review },
-      { key: "blocked", label: { he: "חסומות", en: "Blocked" }, count: counts.blocked },
-      { key: "overdue", label: { he: "באיחור", en: "Overdue" }, count: counts.overdue },
-      { key: "by_project", label: { he: "לפי פרויקט", en: "By Project" } },
+      { key: "all" as TabKey, count: counts.all },
+      { key: "in_progress" as TabKey, count: counts.in_progress },
+      { key: "not_started" as TabKey, count: counts.not_started },
+      { key: "review" as TabKey, count: counts.review },
+      { key: "blocked" as TabKey, count: counts.blocked },
+      { key: "overdue" as TabKey, count: counts.overdue },
+      { key: "by_project" as TabKey },
     ];
   }, [tasks]);
 
@@ -131,7 +118,7 @@ export function MyTasksTabs({
                     : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
-                <span>{tab.label[locale as "he" | "en"]}</span>
+                <span>{txt(locale, TAB_LABELS_ML[tab.key])}</span>
                 {tab.count !== undefined && (
                   <span
                     className={cn(
@@ -149,7 +136,7 @@ export function MyTasksTabs({
         <AddTaskDialog projects={wbsNodes} users={users} locale={locale}>
           <Button className="shrink-0 shadow-md" data-tour="add-task">
             <Plus className="size-4" />
-            {isHe ? "הוסף משימה" : "Add Task"}
+            {txt(locale, { he: "הוסף משימה", en: "Add Task", ru: "Добавить", fr: "Ajouter", es: "Añadir" })}
           </Button>
         </AddTaskDialog>
       </div>
@@ -178,7 +165,7 @@ export function MyTasksTabs({
         <Card>
           <CardContent className="py-16 text-center text-muted-foreground">
             <Layers className="size-10 mx-auto mb-3 opacity-30" />
-            <div className="text-sm">{isHe ? "אין משימות פתוחות בקטגוריה זו" : "No open tasks in this category"}</div>
+            <div className="text-sm">{txt(locale, { he: "אין משימות פתוחות בקטגוריה זו", en: "No open tasks in this category", ru: "Нет открытых задач", fr: "Aucune tâche ouverte", es: "Sin tareas abiertas" })}</div>
           </CardContent>
         </Card>
       ) : (
@@ -228,16 +215,16 @@ function TaskCard({
                   {isHe ? task.title : task.titleEn || task.title}
                 </h4>
                 <span className={cn("status-badge text-[9px]", `priority-${task.priority}`)}>
-                  {PRIORITY_LABELS[task.priority][locale as "he" | "en"]}
+                  {txt(locale, PRIORITY_LABELS_ML[task.priority])}
                 </span>
               </div>
               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                 <span className={cn("status-badge", `status-${task.status}`)}>
-                  {STATUS_LABELS[task.status]?.[locale as "he" | "en"] || task.status}
+                  {STATUS_LABELS_ML[task.status] ? txt(locale, STATUS_LABELS_ML[task.status]) : task.status}
                 </span>
                 <div className="flex items-center gap-1">
                   <CalIcon className="size-3" />
-                  {formatDate(task.plannedEnd, locale as "he" | "en")}
+                  {formatDate(task.plannedEnd, locale)}
                 </div>
                 {task.tags.slice(0, 2).map((tag) => (
                   <span key={tag} className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
@@ -268,7 +255,7 @@ function TaskCard({
                 )}
               >
                 {remaining.isOverdue ? <AlertTriangle className="size-3" /> : <Clock className="size-3" />}
-                {remaining.label[locale as "he" | "en"]}
+                {remaining.label[locale] || remaining.label.en}
               </div>
             )}
 

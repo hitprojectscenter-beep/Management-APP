@@ -58,13 +58,13 @@ export function InviteMemberDialog({
 
     const inviteLink = `${window.location.origin}/invite/${btoa(form.email).slice(0, 12)}`;
 
-    toast.success(
-      isHe ? `הזמנה נשלחה ל-${form.fullName}!` : `Invitation sent to ${form.fullName}!`,
+    toast.info(
+      isHe ? `⚠️ מצב הדגמה — ${form.fullName} נרשם בהצלחה` : `⚠️ Demo mode — ${form.fullName} registered`,
       {
         description: isHe
-          ? `קישור ההזמנה נשלח ל-${form.email}. המוזמן ישלים את פרטיו בלחיצה על הקישור.`
-          : `Invite link sent to ${form.email}. They'll complete their profile via the link.`,
-        duration: 6000,
+          ? `במצב הדגמה לא נשלחים מיילים/SMS. בייצור: הזמנה תישלח ל-${form.email} ול-${form.phone}.`
+          : `Demo mode: no emails/SMS sent. In production: invite would be sent to ${form.email} and ${form.phone}.`,
+        duration: 8000,
       }
     );
 

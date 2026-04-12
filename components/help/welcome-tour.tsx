@@ -19,7 +19,7 @@ const PADDING = 8;
 
 export function WelcomeTour() {
   const { isTourActive, tourStepIndex, nextStep, prevStep, stopTour } = useHelp();
-  const locale = useLocale() as "he" | "en";
+  const locale = useLocale();
   const isHe = locale === "he";
   const [rect, setRect] = useState<SpotlightRect | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);

@@ -32,7 +32,7 @@ const QUICK_QUESTIONS_EN = [
 
 export function HelpBot() {
   const { isBotOpen, closeBot } = useHelp();
-  const locale = useLocale() as "he" | "en";
+  const locale = useLocale();
   const isHe = locale === "he";
   const [messages, setMessages] = useState<BotMessage[]>([]);
   const [input, setInput] = useState("");

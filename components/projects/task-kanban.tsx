@@ -183,7 +183,7 @@ function KanbanCard({
         <div className={cn("flex items-center gap-1.5 text-[10px]", overdue && "text-red-600 font-semibold")}>
           {overdue && <AlertTriangle className="size-3" />}
           <Calendar className="size-3" />
-          {formatDate(task.plannedEnd, locale as "he" | "en")}
+          {formatDate(task.plannedEnd, locale)}
         </div>
         {user && <Avatar src={user.image} fallback={user.name[0]} className="size-6" />}
       </div>

@@ -6,20 +6,20 @@ import { formatDate, isOverdue, cn } from "@/lib/utils";
 import { Link } from "@/lib/i18n/routing";
 import { AlertTriangle } from "lucide-react";
 
-const STATUS_LABELS: Record<string, { he: string; en: string }> = {
-  not_started: { he: "לא התחיל", en: "Not started" },
-  in_progress: { he: "בביצוע", en: "In progress" },
-  review: { he: "בבדיקה", en: "Review" },
-  done: { he: "הושלם", en: "Done" },
-  blocked: { he: "חסום", en: "Blocked" },
-  cancelled: { he: "בוטל", en: "Cancelled" },
+const STATUS_LABELS: Record<string, Record<string, string>> = {
+  not_started: { he: "לא התחיל", en: "Not started", ru: "Не начата", fr: "Non démarré", es: "No iniciada" },
+  in_progress: { he: "בביצוע", en: "In progress", ru: "В работе", fr: "En cours", es: "En progreso" },
+  review: { he: "בבדיקה", en: "Review", ru: "Проверка", fr: "En revue", es: "En revisión" },
+  done: { he: "הושלם", en: "Done", ru: "Завершена", fr: "Terminé", es: "Completada" },
+  blocked: { he: "חסום", en: "Blocked", ru: "Заблокирована", fr: "Bloqué", es: "Bloqueada" },
+  cancelled: { he: "בוטל", en: "Cancelled", ru: "Отменена", fr: "Annulé", es: "Cancelada" },
 };
 
-const PRIORITY_LABELS: Record<string, { he: string; en: string }> = {
-  low: { he: "נמוכה", en: "Low" },
-  medium: { he: "בינונית", en: "Medium" },
-  high: { he: "גבוהה", en: "High" },
-  critical: { he: "קריטית", en: "Critical" },
+const PRIORITY_LABELS: Record<string, Record<string, string>> = {
+  low: { he: "נמוכה", en: "Low", ru: "Низкий", fr: "Basse", es: "Baja" },
+  medium: { he: "בינונית", en: "Medium", ru: "Средний", fr: "Moyenne", es: "Media" },
+  high: { he: "גבוהה", en: "High", ru: "Высокий", fr: "Haute", es: "Alta" },
+  critical: { he: "קריטית", en: "Critical", ru: "Критический", fr: "Critique", es: "Crítica" },
 };
 
 export function TaskList({
@@ -66,12 +66,12 @@ export function TaskList({
                 </td>
                 <td className="py-3 px-2">
                   <span className={cn("status-badge", `status-${task.status}`)}>
-                    {STATUS_LABELS[task.status][locale as "he" | "en"]}
+                    {STATUS_LABELS[task.status][locale]}
                   </span>
                 </td>
                 <td className="py-3 px-2">
                   <span className={cn("status-badge", `priority-${task.priority}`)}>
-                    {PRIORITY_LABELS[task.priority][locale as "he" | "en"]}
+                    {PRIORITY_LABELS[task.priority][locale]}
                   </span>
                 </td>
                 <td className="py-3 px-2">
@@ -85,7 +85,7 @@ export function TaskList({
                 <td className="py-3 px-2 text-xs">
                   <div className={cn("flex items-center gap-1", overdue && "text-red-600 font-medium")}>
                     {overdue && <AlertTriangle className="size-3" />}
-                    {formatDate(task.plannedEnd, locale as "he" | "en")}
+                    {formatDate(task.plannedEnd, locale)}
                   </div>
                 </td>
                 <td className="py-3 px-2 w-32">
