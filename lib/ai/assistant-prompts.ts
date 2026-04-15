@@ -86,10 +86,10 @@ export function heuristicParse(
   responseText: string;
 } {
   const lower = text.toLowerCase().trim();
-  // The app's data and main audience is Hebrew — respond in Hebrew
-  // for Hebrew locale, and in Hebrew for other locales too (since the
-  // data, project names, and task names are all in Hebrew)
-  const isHe = locale !== "en"; // Hebrew for all locales except English
+  // Respond in the user's ACTIVE UI language.
+  // The assistant detects which language the user is working in
+  // and responds in the same language.
+  const isHe = locale === "he";
   const entities: any = {};
   const now = new Date();
   const currentUser = getUserById(CURRENT_USER_ID);

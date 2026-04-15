@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Users, ShieldCheck, Tag, GitBranch, Table2 } from "lucide-react";
+import { Users, ShieldCheck, Tag, GitBranch, Table2, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 import { UsersManager } from "./users-manager";
@@ -9,8 +9,9 @@ import { RolesManager } from "./roles-manager";
 import { TypesManager } from "./types-manager";
 import { HierarchyManager } from "./hierarchy-manager";
 import { UserPermissionsTable } from "./user-permissions-table";
+import { ActivityLog } from "./activity-log";
 
-type Tab = "users" | "roles" | "types" | "hierarchy" | "permissions";
+type Tab = "users" | "roles" | "types" | "hierarchy" | "permissions" | "activity";
 
 export function AdminTabs({ locale }: { locale: string }) {
   const [tab, setTab] = useState<Tab>("users");
@@ -40,6 +41,11 @@ export function AdminTabs({ locale }: { locale: string }) {
       key: "permissions", labelHe: "טבלת הרשאות", labelEn: "Permissions Table", icon: Table2,
       descHe: "מטריצת הרשאות בפועל לכל משתמש במערכת",
       descEn: "Actual permissions matrix for every user",
+    },
+    {
+      key: "activity", labelHe: "יומן פעילות", labelEn: "Activity Log", icon: Activity,
+      descHe: "מעקב אחר כניסות, פעולות ועדכונים של כל המשתמשים",
+      descEn: "Track logins, actions and updates for all users",
     },
   ];
 
@@ -82,6 +88,7 @@ export function AdminTabs({ locale }: { locale: string }) {
         {tab === "types" && <TypesManager locale={locale} />}
         {tab === "hierarchy" && <HierarchyManager locale={locale} />}
         {tab === "permissions" && <UserPermissionsTable locale={locale} />}
+        {tab === "activity" && <ActivityLog locale={locale} />}
       </div>
     </Card>
   );
