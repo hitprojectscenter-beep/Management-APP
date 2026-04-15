@@ -261,8 +261,9 @@ export function heuristicParse(
       ? "🤖 אני יכול לעזור עם:\n\n📋 **משימות**: \"פתח משימה חדשה...\", \"איך סוגרים משימה?\"\n🔄 **שיוך מחדש**: \"שייך מחדש את המשימה X ל-Y\"\n📊 **סטטוס ו-KPI**: \"מה המצב?\", \"איך מגדירים KPI?\"\n⚠️ **סיכונים**: \"מה הסיכונים?\", \"הסבר נתיב קריטי\"\n🛡️ **תכנית גידור**: \"מה תכנית ניהול הסיכונים?\"\n👥 **עומסים**: \"מי הכי עמוס?\"\n📝 **פגישות**: \"סכם את הפגישה\"\n📅 **סיכום יומי**: \"תן לי סיכום יומי\"\n🔐 **הרשאות**: \"איך עובדות ההרשאות?\"\n❓ **כל שאלה על המערכת**: \"איך מייצאים לאקסל?\", \"מה זה WBS?\"\n\n🎤 אפשר לכתוב או להקליט!"
       : "I can help with: tasks, reassignment, KPIs, status, risks, critical path, mitigation, workload, meetings, daily summary, permissions, and ANY system question! Voice or text! 🎤";
   }
-  // SYSTEM KNOWLEDGE — "How to" questions, explanations, knowledge queries
-  else if (/איך|כיצד|מה זה|how|what is|אפשר ל|explain|הסבר|מהו|מהם|מהי|מה ה|ספר לי|תאר|describe|tell me|למד אותי|teach/.test(lower)) {
+  // SYSTEM KNOWLEDGE — questions, explanations, knowledge queries about the system
+  // This is a broad catch-all for informational questions
+  else if (/איך|כיצד|מה זה|how|what is|אפשר ל|explain|הסבר|מהו|מהם|מהי|מה ה|ספר לי|תאר|describe|tell me|למד אותי|teach|על ה|about the|גאנט|gantt|wbs|kpi|דשבורד|dashboard|אוטומ|autom|יומן|calendar|סיכון|risk|פרויקט|project|משימ|task/.test(lower)) {
     // Try to find answer in the knowledge base
     const helpEntries = findHelpByKeywords(text, isHe ? "he" : "en");
     if (helpEntries.length > 0) {
@@ -273,11 +274,11 @@ export function heuristicParse(
         ? `📖 ${answer}\n\n${helpEntries.length > 1 ? `💡 נושאים קשורים: ${helpEntries.slice(1).map(e => `"${e.question.he}"`).join(", ")}` : ""}`
         : `📖 ${answer}${helpEntries.length > 1 ? `\n\n💡 Related: ${helpEntries.slice(1).map(e => `"${e.question.en}"`).join(", ")}` : ""}`;
     } else {
-      // Generic "how to" without a match — give friendly response with categories
-      action = "unknown";
+      // No match — list available topics
+      action = "query_tasks";
       responseText = isHe
-        ? `🤔 לא מצאתי תשובה ספציפית ל: "${text.slice(0, 60)}${text.length > 60 ? "..." : ""}"\n\nאני יכול לענות על שאלות בנושאים:\n📋 **משימות** — "איך מוסיפים משימה?", "איך סוגרים?"\n📊 **KPI** — "איך מגדירים KPI?", "מה המדדים של PM?"\n🔐 **הרשאות** — "מה ההרשאות שלי?", "מי Admin?"\n📅 **יומן** — "מה אפשר לעשות ביומן?"\n🛡️ **סיכונים** — "מה הסיכונים?", "מה נתיב קריטי?"\n🤖 **אוטומציות** — "איך יוצרים אוטומציה?"\n\n💡 נסה לשאול בצורה ספציפית יותר!`
-        : `I couldn't find a specific answer for that. Try asking about: Tasks, KPIs, Permissions, Calendar, Risks, Automations.`;
+        ? `🤔 לא מצאתי תשובה ספציפית, אבל הנה הנושאים שאני מכיר:\n\n📋 **משימות** — "איך מוסיפים משימה?", "מה סוגי המשימות?"\n📊 **גאנט** — "איך עובד לוח הגאנט?", "מה זה נתיב קריטי?"\n🔀 **WBS** — "מה זה WBS?", "איך עובד Roll-up?"\n📈 **KPI** — "איך מגדירים KPI?", "מה המדדים של PM?"\n🛡️ **סיכונים** — "איך עובד זיהוי סיכונים?", "מה תכנית גידור?"\n🔐 **הרשאות** — "איך עובדות ההרשאות?", "מה ההבדל בין התפקידים?"\n📅 **יומן** — "מה אפשר לעשות ביומן?"\n🤖 **אוטומציות** — "איך יוצרים אוטומציה?"\n🗣️ **עוזר אישי** — "מה העוזר יכול לעשות?"\n\n💡 נסה לשאול על אחד הנושאים האלה!`
+        : `I don't have a specific answer, but I know about these topics:\n\n📋 Tasks, 📊 Gantt, 🔀 WBS, 📈 KPIs, 🛡️ Risks, 🔐 Permissions, 📅 Calendar, 🤖 Automations, 🗣️ Assistant\n\nTry asking about one of these!`;
     }
   }
   // UNKNOWN — last resort: try knowledge base, then give helpful fallback

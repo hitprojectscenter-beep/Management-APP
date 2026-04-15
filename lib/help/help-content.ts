@@ -559,23 +559,70 @@ export function findHelpByKeywords(query: string, locale: string): HelpEntry[] {
   if (!q) return [];
   // Help entries only have "he" and "en" keys — map other locales
   const kbLocale = locale === "he" ? "he" : "en";
+  // Split query into individual words for word-level matching
+  const queryWords = q.split(/\s+/).filter((w) => w.length >= 2);
 
   const scored = HELP_ENTRIES.map((entry) => {
     let score = 0;
-    // Also search Hebrew keywords regardless of locale (since user may type Hebrew)
+
+    // Collect ALL keywords: from the active locale + always Hebrew
     const keywords = [
-      ...(entry.keywords[kbLocale] || []),
-      ...(kbLocale !== "he" ? (entry.keywords.he || []) : []),
+      ...(entry.keywords.he || []),
+      ...(entry.keywords.en || []),
     ];
+
+    // Method 1: Check if query contains any keyword (original)
     for (const kw of keywords) {
-      if (q.includes(kw.toLowerCase())) {
-        score += kw.length;
+      const kwLower = kw.toLowerCase();
+      if (q.includes(kwLower)) {
+        score += kwLower.length * 2; // boost exact substring match
       }
     }
-    const question = (entry.question[kbLocale] || entry.question.he || "").toLowerCase();
-    if (question.includes(q) || q.includes(question.slice(0, 10))) {
-      score += 5;
+
+    // Method 2: Check if any query WORD matches any keyword WORD
+    for (const qWord of queryWords) {
+      for (const kw of keywords) {
+        const kwLower = kw.toLowerCase();
+        if (kwLower.includes(qWord) || qWord.includes(kwLower)) {
+          score += Math.min(qWord.length, kwLower.length);
+        }
+      }
     }
+
+    // Method 3: Check question text similarity
+    const questionHe = (entry.question.he || "").toLowerCase();
+    const questionEn = (entry.question.en || "").toLowerCase();
+    for (const qWord of queryWords) {
+      if (questionHe.includes(qWord)) score += 3;
+      if (questionEn.includes(qWord)) score += 3;
+    }
+
+    // Method 4: Check answer text for keyword presence (lower weight)
+    const answerHe = (entry.answer.he || "").toLowerCase();
+    for (const qWord of queryWords) {
+      if (qWord.length >= 3 && answerHe.includes(qWord)) score += 1;
+    }
+
+    // Method 5: Category matching
+    const categoryMap: Record<string, string[]> = {
+      general: ["מערכת", "system", "work os", "אפליקציה", "שפה", "language"],
+      tasks: ["משימה", "משימות", "task", "tasks", "סגירה", "פתיחה", "close", "create"],
+      projects: ["פרויקט", "project", "fte", "פורטפוליו", "portfolio"],
+      gantt: ["גאנט", "gantt", "לוח", "chart", "ציר", "timeline", "תלויות", "dependencies"],
+      wbs: ["wbs", "היררכ", "מבנה", "structure", "חבילות"],
+      risks: ["סיכון", "risk", "סיכונים", "risks", "גידור", "mitigation"],
+      assistant: ["עוזר", "assistant", "קולי", "voice", "הקלטה", "recording"],
+      admin: ["ניהול", "admin", "הרשאות", "permissions", "משתמשים", "users"],
+      navigation: ["דשבורד", "dashboard", "kpi", "יומן", "calendar", "דוחות", "reports"],
+      automations: ["אוטומציה", "automation", "טריגר", "trigger"],
+    };
+    const catKeywords = categoryMap[entry.category] || [];
+    for (const qWord of queryWords) {
+      if (catKeywords.some((ck) => ck.includes(qWord) || qWord.includes(ck))) {
+        score += 2;
+      }
+    }
+
     return { entry, score };
   })
     .filter((s) => s.score > 0)
