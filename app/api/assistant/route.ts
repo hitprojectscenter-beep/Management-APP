@@ -37,7 +37,11 @@ interface RequestBody {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as RequestBody;
-    const { text, locale = "he", carryover, carryoverAction } = body;
+    const { text, locale: rawLocale, carryover, carryoverAction } = body;
+    // Ensure locale is always a valid value — default to "he"
+    const locale = rawLocale && ["he", "en", "ru", "fr", "es"].includes(rawLocale) ? rawLocale : "he";
+
+    console.log(`[assistant] locale=${locale} (raw=${rawLocale}) text="${text.slice(0, 50)}"`);
 
     if (!text || !text.trim()) {
       return NextResponse.json({ error: "Empty input" }, { status: 400 });
@@ -160,6 +164,7 @@ export async function POST(req: Request) {
       gaps,
       conflicts,
       summary,
+      _locale: locale, // debug: sent back so client can verify
     });
   } catch (err) {
     console.error("[assistant] Fatal error:", err);

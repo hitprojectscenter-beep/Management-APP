@@ -261,8 +261,8 @@ export function heuristicParse(
       ? "🤖 אני יכול לעזור עם:\n\n📋 **משימות**: \"פתח משימה חדשה...\", \"איך סוגרים משימה?\"\n🔄 **שיוך מחדש**: \"שייך מחדש את המשימה X ל-Y\"\n📊 **סטטוס ו-KPI**: \"מה המצב?\", \"איך מגדירים KPI?\"\n⚠️ **סיכונים**: \"מה הסיכונים?\", \"הסבר נתיב קריטי\"\n🛡️ **תכנית גידור**: \"מה תכנית ניהול הסיכונים?\"\n👥 **עומסים**: \"מי הכי עמוס?\"\n📝 **פגישות**: \"סכם את הפגישה\"\n📅 **סיכום יומי**: \"תן לי סיכום יומי\"\n🔐 **הרשאות**: \"איך עובדות ההרשאות?\"\n❓ **כל שאלה על המערכת**: \"איך מייצאים לאקסל?\", \"מה זה WBS?\"\n\n🎤 אפשר לכתוב או להקליט!"
       : "I can help with: tasks, reassignment, KPIs, status, risks, critical path, mitigation, workload, meetings, daily summary, permissions, and ANY system question! Voice or text! 🎤";
   }
-  // SYSTEM KNOWLEDGE — "How to" questions about the system
-  else if (/איך|כיצד|מה זה|how|what is|אפשר ל|explain|הסבר|מהו|מהם|מהי|מה ה/.test(lower)) {
+  // SYSTEM KNOWLEDGE — "How to" questions, explanations, knowledge queries
+  else if (/איך|כיצד|מה זה|how|what is|אפשר ל|explain|הסבר|מהו|מהם|מהי|מה ה|ספר לי|תאר|describe|tell me|למד אותי|teach/.test(lower)) {
     // Try to find answer in the knowledge base
     const helpEntries = findHelpByKeywords(text, isHe ? "he" : "en");
     if (helpEntries.length > 0) {
@@ -280,12 +280,23 @@ export function heuristicParse(
         : `I couldn't find a specific answer for that. Try asking about: Tasks, KPIs, Permissions, Calendar, Risks, Automations.`;
     }
   }
-  // UNKNOWN - give helpful response instead of "Understood"
+  // UNKNOWN — last resort: try knowledge base, then give helpful fallback
   else {
-    action = "unknown";
-    responseText = isHe
-      ? `🤔 לא הצלחתי להבין בדיוק מה לעשות עם: "${text.slice(0, 50)}${text.length > 50 ? "..." : ""}"\n\nנסה לנסח אחרת, למשל:\n• "פתח משימה חדשה ל..."\n• "מה הסיכונים בפרויקט...?"\n• "מה המצב?"\n• "מי הכי עמוס?"\n• "איך מגדירים KPI?"\n• "איך עובדות ההרשאות?"`
-      : `I didn't quite understand: "${text.slice(0, 50)}". Try: "Create task...", "What are risks?", "How to set up KPI?", "How do permissions work?"`;
+    // Even if no keyword matched above, try the knowledge base as a final attempt
+    const lastChanceEntries = findHelpByKeywords(text, isHe ? "he" : "en");
+    if (lastChanceEntries.length > 0) {
+      action = "query_tasks";
+      const bestMatch = lastChanceEntries[0];
+      const answer = isHe ? bestMatch.answer.he : (bestMatch.answer.en || bestMatch.answer.he);
+      responseText = isHe
+        ? `📖 ${answer}\n\n${lastChanceEntries.length > 1 ? `💡 נושאים קשורים: ${lastChanceEntries.slice(1).map(e => `"${e.question.he}"`).join(", ")}` : ""}`
+        : `📖 ${answer}${lastChanceEntries.length > 1 ? `\n\n💡 Related: ${lastChanceEntries.slice(1).map(e => `"${e.question.en}"`).join(", ")}` : ""}`;
+    } else {
+      action = "unknown";
+      responseText = isHe
+        ? `🤔 לא הצלחתי להבין בדיוק מה לעשות עם: "${text.slice(0, 50)}${text.length > 50 ? "..." : ""}"\n\nנסה לנסח אחרת, למשל:\n• "פתח משימה חדשה ל..."\n• "מה הסיכונים בפרויקט...?"\n• "מה המצב?"\n• "מי הכי עמוס?"\n• "איך מגדירים KPI?"\n• "הסבר על לוח גאנט"\n• "מה זה WBS?"`
+        : `I didn't quite understand: "${text.slice(0, 50)}". Try: "Create task...", "What are risks?", "Explain the Gantt chart", "What is WBS?"`;
+    }
   }
 
   // ---- Extract dates ----

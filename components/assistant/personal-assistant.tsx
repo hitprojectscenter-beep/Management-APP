@@ -189,6 +189,8 @@ export function PersonalAssistant() {
       } else if (data.stage === "query_response") {
         setStage("idle");
         reply = data.intent?.responseText || txt(locale, { he: "אין מספיק נתונים לתשובה. נסה שאלה אחרת.", en: "Not enough data. Try another question." });
+        // Log for debugging
+        console.log(`[assistant-client] locale=${locale}, responseText lang check:`, reply?.slice(0, 50));
       } else {
         // Fallback - always go back to idle
         setStage("idle");

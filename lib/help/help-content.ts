@@ -557,16 +557,22 @@ export const HELP_ENTRIES: HelpEntry[] = [
 export function findHelpByKeywords(query: string, locale: string): HelpEntry[] {
   const q = query.toLowerCase().trim();
   if (!q) return [];
+  // Help entries only have "he" and "en" keys — map other locales
+  const kbLocale = locale === "he" ? "he" : "en";
 
   const scored = HELP_ENTRIES.map((entry) => {
     let score = 0;
-    const keywords = entry.keywords[locale];
+    // Also search Hebrew keywords regardless of locale (since user may type Hebrew)
+    const keywords = [
+      ...(entry.keywords[kbLocale] || []),
+      ...(kbLocale !== "he" ? (entry.keywords.he || []) : []),
+    ];
     for (const kw of keywords) {
       if (q.includes(kw.toLowerCase())) {
         score += kw.length;
       }
     }
-    const question = entry.question[locale].toLowerCase();
+    const question = (entry.question[kbLocale] || entry.question.he || "").toLowerCase();
     if (question.includes(q) || q.includes(question.slice(0, 10))) {
       score += 5;
     }
@@ -583,7 +589,8 @@ export function findHelpByKeywords(query: string, locale: string): HelpEntry[] {
  * Format knowledge base as system prompt context.
  */
 export function formatKnowledgeBaseForAI(locale: string): string {
+  const kbLocale = locale === "he" ? "he" : "en";
   return HELP_ENTRIES.map(
-    (e) => `Q: ${e.question[locale]}\nA: ${e.answer[locale]}\n[${e.category}]`
+    (e) => `Q: ${e.question[kbLocale] || e.question.he}\nA: ${e.answer[kbLocale] || e.answer.he}\n[${e.category}]`
   ).join("\n\n---\n\n");
 }

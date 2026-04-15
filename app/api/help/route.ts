@@ -6,7 +6,9 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const { query, locale } = (await req.json()) as { query: string; locale: "he" | "en" };
+    const { query, locale: rawLocale } = (await req.json()) as { query: string; locale: string };
+    // Normalize locale — help content only has "he" and "en" keys
+    const locale = rawLocale === "he" ? "he" : "en";
 
     // 1. Try keyword match first - fast and free
     const matched = findHelpByKeywords(query, locale);
