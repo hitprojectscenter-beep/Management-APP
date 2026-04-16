@@ -86,10 +86,13 @@ export function heuristicParse(
   responseText: string;
 } {
   const lower = text.toLowerCase().trim();
-  // Respond in the user's ACTIVE UI language.
-  // The assistant detects which language the user is working in
-  // and responds in the same language.
-  const isHe = locale === "he";
+  // DETECT LANGUAGE FROM USER TEXT, not just locale!
+  // If the user types Hebrew characters, respond in Hebrew regardless of UI locale.
+  // This ensures the assistant always matches the language the user is actually using.
+  const hasHebrewChars = /[\u0590-\u05FF]/.test(text);
+  const hasLatinChars = /[a-zA-Z]{3,}/.test(text);
+  // Priority: 1) Hebrew chars in text → Hebrew  2) Only Latin chars → English  3) Fall back to locale
+  const isHe = hasHebrewChars || (!hasLatinChars && locale === "he");
   const entities: any = {};
   const now = new Date();
   const currentUser = getUserById(CURRENT_USER_ID);

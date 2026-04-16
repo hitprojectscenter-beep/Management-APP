@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { chat } from "@/lib/ai/claude";
 import { buildSystemPrompt, heuristicParse } from "@/lib/ai/assistant-prompts";
+import { askGemini, isGeminiAvailable } from "@/lib/ai/gemini";
+import { formatKnowledgeBaseForAI } from "@/lib/help/help-content";
 import {
   analyzeGaps,
   detectConflicts,
@@ -96,6 +98,32 @@ export async function POST(req: Request) {
         confidence: heur.confidence,
         responseText: heur.responseText,
       };
+    }
+
+    // ============================================
+    // 1b. GEMINI AI FALLBACK for informational questions
+    // If the heuristic returned "unknown" OR the text clearly asks a
+    // question, use Gemini with the knowledge base as context.
+    // Detect Hebrew from actual text chars, not just locale.
+    // ============================================
+    const hasHebrewInText = /[\u0590-\u05FF]/.test(text);
+    const isQuestionLike = /[?？]|איך|מה|כיצד|למה|הסבר|ספר לי|תאר|how|what|why|explain|tell me|describe/i.test(text);
+    const shouldTryGemini =
+      isGeminiAvailable() &&
+      (parsed.action === "unknown" || (isQuestionLike && parsed.action !== "create_task" && parsed.action !== "create_project"));
+
+    if (shouldTryGemini) {
+      try {
+        const context = formatKnowledgeBaseForAI(hasHebrewInText ? "he" : "en");
+        const answer = await askGemini(text, context, hasHebrewInText);
+        parsed.action = "query_tasks";
+        parsed.responseText = answer;
+        parsed.confidence = 0.9;
+        console.log(`[assistant] Gemini answered (${hasHebrewInText ? "he" : "en"})`);
+      } catch (err) {
+        console.warn("[assistant] Gemini failed, using heuristic response:", err);
+        // Keep the heuristic response as fallback
+      }
     }
 
     // ============================================
