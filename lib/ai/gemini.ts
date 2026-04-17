@@ -81,45 +81,53 @@ export async function chatWithGemini(
 
 /**
  * Ask Gemini a question with knowledge base context.
- * Strongly enforces the output language.
+ * Supports 5 languages: he, en, ru, fr, es.
  */
-export async function askGemini(question: string, context: string, isHebrew: boolean): Promise<string> {
-  // STRONG language instruction — at both system level AND user message level
-  const langDirective = isHebrew
-    ? `חובה לענות בעברית בלבד. אסור להשתמש באנגלית בכלל.`
-    : `Respond in English only.`;
 
-  const systemInstruction = isHebrew
-    ? `אתה העוזר האישי של פלטפורמת Work OS - מערכת ניהול פרויקטים של המרכז למיפוי ישראל.
+const GEMINI_LANG_CONFIG: Record<string, { directive: string; instruction: string; prefix: string }> = {
+  he: {
+    directive: "חובה לענות בעברית בלבד. אסור להשתמש באנגלית.",
+    instruction: `אתה העוזר האישי של פלטפורמת Work OS - מערכת ניהול פרויקטים של המרכז למיפוי ישראל.
+כללי תשובה: ענה בעברית בלבד, בצורה ידידותית ומדויקת (3-6 משפטים). השתמש ב-emoji.`,
+    prefix: "[הוראה: ענה בעברית בלבד]\n\nשאלה:",
+  },
+  en: {
+    directive: "Respond in English only.",
+    instruction: `You are the Personal Assistant for Work OS - the Israel Mapping Center's project management platform.
+Rules: Respond in English only, friendly and concise (3-6 sentences). Use emojis.`,
+    prefix: "[Instruction: Respond in English only]\n\nQuestion:",
+  },
+  ru: {
+    directive: "Отвечай только на русском языке. Не используй другие языки.",
+    instruction: `Ты персональный помощник платформы Work OS - системы управления проектами Центра картографии Израиля.
+Правила: Отвечай только на русском языке, дружелюбно и кратко (3-6 предложений). Используй эмодзи.`,
+    prefix: "[Инструкция: Отвечай только на русском]\n\nВопрос:",
+  },
+  fr: {
+    directive: "Répondez uniquement en français. N'utilisez pas d'autres langues.",
+    instruction: `Vous êtes l'assistant personnel de Work OS - la plateforme de gestion de projets du Centre de Cartographie d'Israël.
+Règles : Répondez uniquement en français, de manière amicale et concise (3-6 phrases). Utilisez des emojis.`,
+    prefix: "[Instruction : Répondez en français uniquement]\n\nQuestion :",
+  },
+  es: {
+    directive: "Responde únicamente en español. No uses otros idiomas.",
+    instruction: `Eres el asistente personal de Work OS - la plataforma de gestión de proyectos del Centro de Cartografía de Israel.
+Reglas: Responde solo en español, de forma amable y concisa (3-6 oraciones). Usa emojis.`,
+    prefix: "[Instrucción: Responde solo en español]\n\nPregunta:",
+  },
+};
 
-${langDirective}
+export async function askGemini(question: string, context: string, lang: string): Promise<string> {
+  const cfg = GEMINI_LANG_CONFIG[lang] || GEMINI_LANG_CONFIG.he;
 
-כללי תשובה:
-- ענה בעברית בלבד, תמיד. לא משנה באיזו שפה נשאלת השאלה.
-- ענה בצורה ידידותית, מדויקת, וקצרה (3-6 משפטים).
-- השתמש במידע מהמערכת למטה כדי לתת תשובות מדויקות.
-- אם השאלה לא קשורה למערכת — ענה בכל זאת בעברית והסבר בקצרה מה אתה יכול לעזור.
-- השתמש ב-emoji רלוונטיים להדגשה.
+  const systemInstruction = `${cfg.instruction}
 
-מידע על המערכת Work OS:
-${context}`
-    : `You are the Personal Assistant for Work OS - the Israel Mapping Center's project management platform.
-
-${langDirective}
-
-Response rules:
-- Always respond in English only.
-- Be friendly, accurate, and concise (3-6 sentences).
-- Use the system info below to give accurate answers.
-- Use relevant emojis for emphasis.
+${cfg.directive}
 
 Work OS system info:
 ${context}`;
 
-  // Double-reinforce the language directive in the user message
-  const userMessage = isHebrew
-    ? `[הוראה: ענה בעברית בלבד]\n\nשאלה: ${question}`
-    : `[Instruction: Respond in English only]\n\nQuestion: ${question}`;
+  const userMessage = `${cfg.prefix} ${question}`;
 
   return chatWithGemini(
     [{ role: "user", parts: [{ text: userMessage }] }],

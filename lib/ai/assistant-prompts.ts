@@ -86,13 +86,17 @@ export function heuristicParse(
   responseText: string;
 } {
   const lower = text.toLowerCase().trim();
-  // DETECT LANGUAGE FROM USER TEXT, not just locale!
-  // If the user types Hebrew characters, respond in Hebrew regardless of UI locale.
-  // This ensures the assistant always matches the language the user is actually using.
+  // DETECT LANGUAGE FROM USER TEXT + locale
   const hasHebrewChars = /[\u0590-\u05FF]/.test(text);
-  const hasLatinChars = /[a-zA-Z]{3,}/.test(text);
-  // Priority: 1) Hebrew chars in text → Hebrew  2) Only Latin chars → English  3) Fall back to locale
-  const isHe = hasHebrewChars || (!hasLatinChars && locale === "he");
+  const hasCyrillicChars = /[\u0400-\u04FF]/.test(text);
+  // Determine response language
+  // Hebrew chars → Hebrew. Cyrillic → Russian. Latin + locale → that locale. Default → Hebrew.
+  const isHe = hasHebrewChars || (!hasCyrillicChars && locale === "he");
+  const isRu = hasCyrillicChars || locale === "ru";
+  const isFr = !hasHebrewChars && !hasCyrillicChars && locale === "fr";
+  const isEs = !hasHebrewChars && !hasCyrillicChars && locale === "es";
+  // effectiveLang is used by the API route to determine Gemini language
+  // The heuristic returns Hebrew or English, and Gemini handles ru/fr/es
   const entities: any = {};
   const now = new Date();
   const currentUser = getUserById(CURRENT_USER_ID);

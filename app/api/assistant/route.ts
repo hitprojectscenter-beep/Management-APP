@@ -102,24 +102,25 @@ export async function POST(req: Request) {
 
     // ============================================
     // 1b. GEMINI AI FALLBACK for informational questions
-    // If the heuristic returned "unknown" OR the text clearly asks a
-    // question, use Gemini with the knowledge base as context.
-    // Detect Hebrew from actual text chars, not just locale.
+    // Detect language from text characters + locale for proper response
     // ============================================
     const hasHebrewInText = /[\u0590-\u05FF]/.test(text);
-    const isQuestionLike = /[?？]|איך|מה|כיצד|למה|הסבר|ספר לי|תאר|how|what|why|explain|tell me|describe/i.test(text);
+    const hasCyrillicInText = /[\u0400-\u04FF]/.test(text);
+    // Determine response language: script detection → locale → Hebrew default
+    const responseLang = hasHebrewInText ? "he" : hasCyrillicInText ? "ru" : (["en", "fr", "es"].includes(locale) ? locale : "he");
+    const isQuestionLike = /[?？]|איך|מה|כיצד|למה|הסבר|ספר|how|what|why|explain|tell|describe|как|что|почему|объясни|расскажи|comment|qu[eé]|expliqu|cómo|qué|por qué|explica/i.test(text);
     const shouldTryGemini =
       isGeminiAvailable() &&
       (parsed.action === "unknown" || (isQuestionLike && parsed.action !== "create_task" && parsed.action !== "create_project"));
 
     if (shouldTryGemini) {
       try {
-        const context = formatKnowledgeBaseForAI(hasHebrewInText ? "he" : "en");
-        const answer = await askGemini(text, context, hasHebrewInText);
+        const context = formatKnowledgeBaseForAI(responseLang === "he" ? "he" : "en");
+        const answer = await askGemini(text, context, responseLang);
         parsed.action = "query_tasks";
         parsed.responseText = answer;
         parsed.confidence = 0.9;
-        console.log(`[assistant] Gemini answered (${hasHebrewInText ? "he" : "en"})`);
+        console.log(`[assistant] Gemini answered in ${responseLang}`);
       } catch (err) {
         console.warn("[assistant] Gemini failed, using heuristic response:", err);
         // Keep the heuristic response as fallback

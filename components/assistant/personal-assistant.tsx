@@ -50,17 +50,41 @@ interface ServerResponse {
   summary: string;
 }
 
-// Detect if a string contains Hebrew characters
+// Detect if a string contains specific script characters
 const hasHebrewChars = (text: string) => /[\u0590-\u05FF]/.test(text || "");
+const hasCyrillicChars = (text: string) => /[\u0400-\u04FF]/.test(text || "");
 
-// Determine effective language for a given text + locale:
-// - If text has Hebrew → Hebrew
-// - If locale is "he" → Hebrew
-// - Otherwise → English
-const detectLang = (text: string, locale: string): "he" | "en" => {
+// Determine effective language from text + locale
+// Priority: 1) Text script detection  2) UI locale  3) Hebrew default
+const detectLang = (text: string, locale: string): string => {
   if (hasHebrewChars(text)) return "he";
-  if (locale === "he") return "he";
-  return "en";
+  if (hasCyrillicChars(text)) return "ru";
+  // Latin-based text: use locale to distinguish en/fr/es
+  if (locale === "fr" || locale === "es" || locale === "en" || locale === "ru") return locale;
+  return "he"; // Default
+};
+
+// TTS language codes
+const TTS_LANG: Record<string, string> = {
+  he: "he-IL", en: "en-US", ru: "ru-RU", fr: "fr-FR", es: "es-ES",
+};
+
+// Welcome messages per language
+const WELCOME_MESSAGES: Record<string, string> = {
+  he: "שלום! 👋 אני העוזר האישי שלך ב-Work OS.\n\nאפשר לדבר איתי או לכתוב. דוגמאות:\n• \"הסבר לי על לוח גאנט\"\n• \"פתח משימה חדשה\"\n• \"מה הסיכונים?\"\n• \"מי הכי עמוס?\"\n• \"איך מגדירים KPI?\"\n\n🎤 אפשר גם להקליט!",
+  en: "Hi! 👋 I'm your Work OS Personal Assistant.\n\nYou can speak or type. Examples:\n• \"Explain the Gantt chart\"\n• \"Create a new task\"\n• \"What are the risks?\"\n• \"Who is most loaded?\"\n\n🎤 Voice recording available!",
+  ru: "Привет! 👋 Я ваш личный помощник Work OS.\n\nМожно говорить или писать. Примеры:\n• \"Объясни диаграмму Ганта\"\n• \"Создай новую задачу\"\n• \"Какие риски?\"\n• \"Кто больше всех загружен?\"\n\n🎤 Запись голоса доступна!",
+  fr: "Bonjour ! 👋 Je suis votre assistant personnel Work OS.\n\nParlez ou tapez. Exemples :\n• \"Explique le diagramme de Gantt\"\n• \"Crée une nouvelle tâche\"\n• \"Quels sont les risques ?\"\n• \"Qui est le plus chargé ?\"\n\n🎤 Enregistrement vocal disponible !",
+  es: "¡Hola! 👋 Soy tu asistente personal de Work OS.\n\nHabla o escribe. Ejemplos:\n• \"Explica el diagrama de Gantt\"\n• \"Crea una nueva tarea\"\n• \"¿Cuáles son los riesgos?\"\n• \"¿Quién está más cargado?\"\n\n🎤 ¡Grabación de voz disponible!",
+};
+
+// Fallback messages per language
+const FALLBACK: Record<string, { noData: string; helpMore: string; error: string; confirm: string }> = {
+  he: { noData: "אין מספיק נתונים. נסה שאלה אחרת.", helpMore: "במה עוד אוכל לעזור?", error: "שגיאה", confirm: "✅ הבנתי! בוא נוודא שהכל נכון:" },
+  en: { noData: "Not enough data. Try another question.", helpMore: "What else can I help with?", error: "Error", confirm: "✅ Got it! Let me confirm:" },
+  ru: { noData: "Недостаточно данных. Попробуйте другой вопрос.", helpMore: "Чем ещё могу помочь?", error: "Ошибка", confirm: "✅ Понял! Давайте подтвердим:" },
+  fr: { noData: "Pas assez de données. Essayez une autre question.", helpMore: "Comment puis-je vous aider ?", error: "Erreur", confirm: "✅ Compris ! Confirmons :" },
+  es: { noData: "Datos insuficientes. Prueba otra pregunta.", helpMore: "¿En qué más puedo ayudar?", error: "Error", confirm: "✅ ¡Entendido! Confirmemos:" },
 };
 
 export function PersonalAssistant() {
@@ -122,17 +146,13 @@ export function PersonalAssistant() {
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 300);
   }, [isOpen]);
 
-  // Welcome message on first open — ALWAYS in Hebrew (primary app language)
-  // unless user explicitly chose English locale
+  // Welcome message on first open — in the user's UI language
   useEffect(() => {
     if (isOpen && turns.length === 0) {
-      const welcomeLang = locale === "en" ? "en" : "he"; // Default to Hebrew for ALL non-English locales
       setTurns([
         {
           role: "assistant",
-          text: welcomeLang === "he"
-            ? "שלום! 👋 אני העוזר האישי שלך ב-Work OS.\n\nאפשר לדבר איתי או לכתוב. דוגמאות:\n• \"הסבר לי על לוח גאנט\"\n• \"פתח משימה חדשה\"\n• \"מה הסיכונים?\"\n• \"מי הכי עמוס?\"\n• \"איך מגדירים KPI?\"\n\n🎤 אפשר גם להקליט!"
-            : "Hi! 👋 I'm your Work OS Personal Assistant.\n\nYou can speak or type. Examples:\n• \"Explain the Gantt chart\"\n• \"Create a new task\"\n• \"What are the risks?\"\n• \"Who is most loaded?\"\n• \"How to set up KPI?\"\n\n🎤 Voice recording available!",
+          text: WELCOME_MESSAGES[locale] || WELCOME_MESSAGES.he,
           timestamp: Date.now(),
         },
       ]);
@@ -184,8 +204,9 @@ export function PersonalAssistant() {
       setCarryoverAction(data.intent?.action || null);
 
       // Generate assistant reply based on stage
-      // Use text-based language detection: if user wrote Hebrew → respond in Hebrew
+      // Detect language from user text + locale for fallback messages
       const lang = detectLang(text, locale);
+      const fb = FALLBACK[lang] || FALLBACK.he;
       let reply = "";
       if (data.stage === "blocked") {
         setStage("idle");
@@ -198,27 +219,29 @@ export function PersonalAssistant() {
         reply = data.gaps.map((g) => `❓ ${g.prompt[lang] || g.prompt.he || g.prompt.en}`).join("\n");
       } else if (data.stage === "confirmation") {
         setStage("confirmation");
-        reply = lang === "he" ? "✅ הבנתי! בוא נוודא שהכל נכון:" : "✅ Got it! Let me confirm:";
+        reply = fb.confirm;
       } else if (data.stage === "query_response") {
         setStage("idle");
-        reply = data.intent?.responseText || (lang === "he" ? "אין מספיק נתונים לתשובה. נסה שאלה אחרת." : "Not enough data. Try another question.");
+        reply = data.intent?.responseText || fb.noData;
       } else {
         setStage("idle");
-        reply = data.intent?.responseText || (lang === "he" ? "במה עוד אוכל לעזור?" : "What else can I help with?");
+        reply = data.intent?.responseText || fb.helpMore;
       }
 
       const assistantTurn: Turn = { role: "assistant", text: reply, timestamp: Date.now() };
       setTurns((prev) => [...prev, assistantTurn]);
-      // TTS: use detected language, not just locale
-      if (ttsEnabled) speak(reply, hasHebrewChars(reply) ? "he-IL" : "en-US");
+      // TTS: detect language from reply text for correct speech
+      const ttsLang = hasHebrewChars(reply) ? "he" : hasCyrillicChars(reply) ? "ru" : lang;
+      if (ttsEnabled) speak(reply, TTS_LANG[ttsLang] || "he-IL");
     } catch (err) {
       setStage("idle");
       const errLang = detectLang(text, locale);
+      const efb = FALLBACK[errLang] || FALLBACK.he;
       setTurns((prev) => [
         ...prev,
         {
           role: "assistant",
-          text: `${errLang === "he" ? "שגיאה" : "Error"}: ${err instanceof Error ? err.message : (errLang === "he" ? "לא ידוע" : "unknown")}`,
+          text: `${efb.error}: ${err instanceof Error ? err.message : "unknown"}`,
           timestamp: Date.now(),
         },
       ]);

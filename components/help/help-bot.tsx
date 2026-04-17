@@ -16,25 +16,28 @@ interface BotMessage {
   ts: number;
 }
 
-const QUICK_QUESTIONS_HE = [
-  "איך מוסיפים משימה?",
-  "מה זה FTE?",
-  "מה ההבדל בין הבוטים?",
-  "איך עובדות ההרשאות?",
-];
+const QUICK_QUESTIONS: Record<string, string[]> = {
+  he: ["איך מוסיפים משימה?", "מה זה FTE?", "מה ההבדל בין הבוטים?", "איך עובדות ההרשאות?"],
+  en: ["How do I add a task?", "What is FTE?", "What's the difference between bots?", "How do permissions work?"],
+  ru: ["Как добавить задачу?", "Что такое FTE?", "В чём разница между ботами?", "Как работают разрешения?"],
+  fr: ["Comment ajouter une tâche ?", "Qu'est-ce que le FTE ?", "Quelle différence entre les bots ?", "Comment fonctionnent les permissions ?"],
+  es: ["¿Cómo añadir una tarea?", "¿Qué es FTE?", "¿Cuál es la diferencia entre bots?", "¿Cómo funcionan los permisos?"],
+};
 
-const QUICK_QUESTIONS_EN = [
-  "How do I add a task?",
-  "What is FTE?",
-  "What's the difference between bots?",
-  "How do permissions work?",
-];
+const BOT_LABELS: Record<string, { title: string; subtitle: string; welcome: string; placeholder: string; related: string; popular: string; error: string }> = {
+  he: { title: "בוט עזרה", subtitle: "תמיד כאן לעזור", welcome: "שלום! אני בוט העזרה של Work OS. אני יכול לענות על כל שאלה על השימוש במערכת.", placeholder: "שאל אותי משהו...", related: "אולי גם תרצה לדעת", popular: "שאלות נפוצות", error: "מצטער, נתקלתי בשגיאה. נסה לנסח את השאלה אחרת." },
+  en: { title: "Help Bot", subtitle: "Always here to help", welcome: "Hi! I'm the Work OS help bot. I can answer any question about how to use the system.", placeholder: "Ask me anything...", related: "You might also want", popular: "Quick questions", error: "Sorry, I encountered an error. Try rephrasing." },
+  ru: { title: "Бот помощи", subtitle: "Всегда готов помочь", welcome: "Привет! Я бот помощи Work OS. Могу ответить на любой вопрос о системе.", placeholder: "Спросите меня...", related: "Возможно, вас заинтересует", popular: "Популярные вопросы", error: "Извините, произошла ошибка. Попробуйте переформулировать." },
+  fr: { title: "Bot d'aide", subtitle: "Toujours là pour aider", welcome: "Bonjour ! Je suis le bot d'aide Work OS. Je peux répondre à toute question sur le système.", placeholder: "Posez votre question...", related: "Vous pourriez aussi vouloir", popular: "Questions fréquentes", error: "Désolé, une erreur est survenue. Essayez de reformuler." },
+  es: { title: "Bot de ayuda", subtitle: "Siempre aquí para ayudar", welcome: "¡Hola! Soy el bot de ayuda de Work OS. Puedo responder cualquier pregunta sobre el sistema.", placeholder: "Pregúntame algo...", related: "También podría interesarte", popular: "Preguntas frecuentes", error: "Lo siento, ocurrió un error. Intenta reformular." },
+};
 
 export function HelpBot() {
   const { isBotOpen, closeBot } = useHelp();
   const locale = useLocale();
-  // Default to Hebrew for all non-English locales (Hebrew-primary app)
-  const isHe = locale !== "en";
+  const lang = (["he", "en", "ru", "fr", "es"].includes(locale) ? locale : "he") as string;
+  const labels = BOT_LABELS[lang] || BOT_LABELS.he;
+  const isHe = lang === "he";
   const [messages, setMessages] = useState<BotMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -47,9 +50,7 @@ export function HelpBot() {
       setMessages([
         {
           role: "bot",
-          content: isHe
-            ? "שלום! אני בוט העזרה של Work OS. אני יכול לענות על כל שאלה על השימוש במערכת. תרצה להתחיל עם אחת השאלות למטה, או פשוט לשאול אותי?"
-            : "Hi! I'm the Work OS help bot. I can answer any question about how to use the system. Want to start with one of the questions below, or just ask me anything?",
+          content: labels.welcome,
           ts: Date.now(),
         },
       ]);
@@ -97,9 +98,7 @@ export function HelpBot() {
         ...m,
         {
           role: "bot",
-          content: isHe
-            ? "מצטער, נתקלתי בשגיאה. נסה לנסח את השאלה אחרת."
-            : "Sorry, I encountered an error. Try rephrasing.",
+          content: labels.error,
           ts: Date.now(),
         },
       ]);
@@ -108,7 +107,7 @@ export function HelpBot() {
     }
   };
 
-  const quickQuestions = isHe ? QUICK_QUESTIONS_HE : QUICK_QUESTIONS_EN;
+  const quickQuestions = QUICK_QUESTIONS[lang] || QUICK_QUESTIONS.he;
 
   if (!isBotOpen) return null;
 
@@ -124,10 +123,8 @@ export function HelpBot() {
             <HelpCircle className="size-5" />
           </div>
           <div>
-            <div className="font-bold text-base">{isHe ? "בוט עזרה" : "Help Bot"}</div>
-            <div className="text-[11px] opacity-90">
-              {isHe ? "תמיד כאן לעזור" : "Always here to help"}
-            </div>
+            <div className="font-bold text-base">{labels.title}</div>
+            <div className="text-[11px] opacity-90">{labels.subtitle}</div>
           </div>
         </div>
         <button
@@ -172,7 +169,7 @@ export function HelpBot() {
                 <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
                   <div className="text-[10px] font-bold uppercase opacity-70 flex items-center gap-1">
                     <Lightbulb className="size-3" />
-                    {isHe ? "אולי גם תרצה לדעת" : "You might also want"}
+                    {labels.related}
                   </div>
                   {msg.matchedEntries.slice(1).map((entry) => (
                     <button
@@ -209,7 +206,7 @@ export function HelpBot() {
         <div className="px-4 py-3 border-t bg-background/50 space-y-1.5">
           <div className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1">
             <BookOpen className="size-3" />
-            {isHe ? "שאלות נפוצות" : "Quick questions"}
+            {labels.popular}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {quickQuestions.map((q) => (
@@ -237,7 +234,7 @@ export function HelpBot() {
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={isHe ? "שאל אותי משהו..." : "Ask me anything..."}
+          placeholder={labels.placeholder}
           disabled={loading}
           className="flex-1 bg-muted/30 border-0"
         />
