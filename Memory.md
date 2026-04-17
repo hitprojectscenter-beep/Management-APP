@@ -863,7 +863,37 @@
 
 ---
 
-## 🎯 המצב הסופי (12 באפריל 2026)
+---
+
+### 🗨️ סבב 28: תיקון מודל Gemini + זיהוי שפה מטקסט
+
+**👤 משתמש:**
+> "עוזר אישי" לא מתפקד. לא מתקשר איתי בעברית. רק באנגלית.
+
+**🤖 Claude:**
+- **סיבה**: מודל `gemini-2.0-flash-exp` הוסר ע"י Google → 404 → fallback שקט
+- **פתרון**: שרשרת `gemini-2.5-flash` → `gemini-2.0-flash-lite` → `gemini-2.0-flash`
+- אכיפת שפה כפולה: System instruction + prefix בהודעת משתמש
+- זיהוי שפה מתווי Unicode (לא רק locale)
+- הודעת פתיחה עברית לכל locale שאינו "en"
+
+---
+
+### 🗨️ סבב 29: הרחבת 5 שפות לעוזר + בוט + Gemini
+
+**👤 משתמש:**
+> אני רוצה להרחיב את הפונקציונליות לצרפתית, ספרדית, ורוסית.
+
+**🤖 Claude:**
+- **עוזר אישי**: הודעות פתיחה, fallbacks, שגיאות, TTS — 5 שפות מלאות
+- **Gemini**: GEMINI_LANG_CONFIG עם directive+instruction+prefix ב-5 שפות
+- **בוט עזרה**: BOT_LABELS (7 שדות × 5 שפות) + QUICK_QUESTIONS (4 × 5 = 20)
+- **API Route**: זיהוי ru מ-Cyrillic, fr/es מ-locale, regex שאלות ב-ru/fr/es
+- **heuristicParse**: flags isHe/isRu/isFr/isEs
+
+---
+
+## 🎯 המצב הסופי (17 באפריל 2026)
 
 **🟢 פעיל:** Vercel production — https://management-app-henna.vercel.app
 
@@ -875,10 +905,12 @@
 - `/` המשימות שלי, `/dashboard` דשבורדים, `/gantt` גאנט, `/wbs` WBS
 - `/risks` סיכונים, `/portfolios`, `/projects`, `/tasks`, `/calendar` יומן
 - `/ai` מרכז AI, `/reports` דוחות, `/automations` אוטומציות
-- `/team` צוות, `/admin` ניהול מערכת, `/settings` הגדרות
+- `/team` צוות, `/admin` ניהול מערכת (6 טאבים), `/settings` הגדרות
 - `/tasks/[id]` דף משימה, `/projects/[id]` דף פרויקט
 
-**🌐 5 שפות:** עברית 🇮🇱, אנגלית 🇬🇧, רוסית 🇷🇺, צרפתית 🇫🇷, ספרדית 🇪🇸
+**🌐 5 שפות מלאות:** עברית 🇮🇱, אנגלית 🇬🇧, רוסית 🇷🇺, צרפתית 🇫🇷, ספרדית 🇪🇸
+
+**🤖 AI:** Gemini 2.5 Flash + Knowledge Base (42 כרטיסים) + Heuristic fallback
 
 **👥 6 משתמשים (תפקידים):**
 - u1: מנהל פרוגרמת Salesforce (admin)
@@ -890,4 +922,4 @@
 
 **🔐 RBAC:** 5 תפקידים × 12 הרשאות, Role Switcher בסרגל, UI דינמי לפי תפקיד
 
-**סה"כ commits בסשן:** 8 | **קבצים שהשתנו:** ~50
+**📊 סה"כ commits בסשנים האחרונים:** ~20 | **קבצים שהשתנו:** ~60
