@@ -33,7 +33,8 @@ const QUICK_QUESTIONS_EN = [
 export function HelpBot() {
   const { isBotOpen, closeBot } = useHelp();
   const locale = useLocale();
-  const isHe = locale === "he";
+  // Default to Hebrew for all non-English locales (Hebrew-primary app)
+  const isHe = locale !== "en";
   const [messages, setMessages] = useState<BotMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
