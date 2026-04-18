@@ -35,7 +35,6 @@ export default async function LandingPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isHe = locale === "he";
   const t = await getTranslations("landing");
 
   const currentUser = getUserById(CURRENT_USER_ID);
@@ -177,12 +176,12 @@ export default async function LandingPage({
                       className="block p-2 rounded-md hover:bg-accent transition-colors"
                     >
                       <div className="text-sm font-medium line-clamp-1">
-                        {isHe ? project.name : project.nameEn || project.name}
+                        {locale === "he" ? project.name : project.nameEn || project.name}
                       </div>
                       {myMembership && (
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] text-muted-foreground truncate">
-                            {isHe ? myMembership.roleInProject : myMembership.roleInProjectEn || myMembership.roleInProject}
+                            {locale === "he" ? myMembership.roleInProject : myMembership.roleInProjectEn || myMembership.roleInProject}
                           </span>
                           <Badge variant="outline" className="text-[9px] py-0">
                             {myMembership.ftePercent}%
@@ -220,7 +219,7 @@ export default async function LandingPage({
                     <div key={m.id} className="space-y-1">
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-xs font-medium line-clamp-1 flex-1">
-                          {isHe ? node.name : node.nameEn || node.name}
+                          {locale === "he" ? node.name : node.nameEn || node.name}
                         </div>
                         <span className="text-xs font-bold text-primary">{m.ftePercent}%</span>
                       </div>

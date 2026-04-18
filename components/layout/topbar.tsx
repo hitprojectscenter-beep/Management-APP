@@ -13,6 +13,7 @@ import { SidebarContent } from "./sidebar";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import { mockUsers } from "@/lib/db/mock-data";
 import { ROLE_LABELS } from "@/lib/rbac/abilities";
 import { locales, localeNames, localeFlags, type Locale } from "@/lib/i18n/config";
@@ -46,7 +47,7 @@ export function Topbar() {
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const { currentUser, switchUser, role } = useRole();
-  const isHe = locale === "he";
+  const isHe = locale === "he"; // kept for RTL sheet direction
 
   useEffect(() => setMounted(true), []);
 
@@ -66,13 +67,13 @@ export function Topbar() {
             variant="ghost"
             size="icon"
             className="lg:hidden min-w-[44px] min-h-[44px]"
-            aria-label={isHe ? "פתח תפריט" : "Open menu"}
+            aria-label={txt(locale, { he: "פתח תפריט", en: "Open menu" })}
           >
             <Menu className="size-5" />
           </Button>
         </SheetTrigger>
         <SheetContent side={isHe ? "end" : "start"} className="p-0 w-72 max-w-[85vw]">
-          <SheetTitle className="sr-only">{isHe ? "תפריט ניווט" : "Navigation menu"}</SheetTitle>
+          <SheetTitle className="sr-only">{txt(locale, { he: "תפריט ניווט", en: "Navigation menu" })}</SheetTitle>
           <SidebarContent onNavigate={() => setMobileNavOpen(false)} />
         </SheetContent>
       </Sheet>
@@ -96,7 +97,7 @@ export function Topbar() {
               ROLE_BADGE_COLORS[role],
               "hover:opacity-80"
             )}
-            title={isHe ? "החלף תפקיד" : "Switch role"}
+            title={txt(locale, { he: "החלף תפקיד", en: "Switch role" })}
           >
             <RoleIcon className="size-3.5" />
             <span className="hidden sm:inline">{ROLE_LABELS[role]?.[locale] || role}</span>
@@ -108,7 +109,7 @@ export function Topbar() {
               <div className="absolute z-50 mt-1 w-64 rounded-lg bg-card border shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 end-0">
                 <div className="px-3 py-2 border-b bg-muted/30">
                   <div className="text-[10px] text-muted-foreground uppercase font-semibold">
-                    {isHe ? "החלף תפקיד / משתמש" : "Switch Role / User"}
+                    {txt(locale, { he: "החלף תפקיד / משתמש", en: "Switch Role / User" })}
                   </div>
                 </div>
                 {mockUsers.map((user) => {
@@ -138,7 +139,7 @@ export function Topbar() {
                   );
                 })}
                 <div className="px-3 py-2 border-t bg-muted/20 text-[10px] text-muted-foreground">
-                  {isHe ? "💡 הממשק ישתנה בהתאם להרשאות התפקיד" : "💡 UI adapts to the selected role's permissions"}
+                  {txt(locale, { he: "💡 הממשק ישתנה בהתאם להרשאות התפקיד", en: "💡 UI adapts to the selected role's permissions" })}
                 </div>
               </div>
             </>

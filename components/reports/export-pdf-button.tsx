@@ -3,14 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { txt } from "@/lib/utils/locale-text";
 
 export function ExportPdfButton({ locale }: { locale: string }) {
-  const isHe = locale === "he";
   const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
     setExporting(true);
-    toast.info(isHe ? "מכין PDF..." : "Preparing PDF...");
+    toast.info(txt(locale, { he: "מכין PDF...", en: "Preparing PDF..." }));
 
     // Give a brief delay so React can paint the current view
     await new Promise((r) => setTimeout(r, 200));
@@ -58,13 +58,13 @@ export function ExportPdfButton({ locale }: { locale: string }) {
         document.getElementById("print-styles")?.remove();
         setExporting(false);
         toast.success(
-          isHe ? "PDF מוכן!" : "PDF ready!",
-          { description: isHe ? "בחר 'שמור כ-PDF' בחלון ההדפסה" : "Select 'Save as PDF' in the print dialog" }
+          txt(locale, { he: "PDF מוכן!", en: "PDF ready!" }),
+          { description: txt(locale, { he: "בחר 'שמור כ-PDF' בחלון ההדפסה", en: "Select 'Save as PDF' in the print dialog" }) }
         );
       }, 500);
     } catch (err) {
       setExporting(false);
-      toast.error(isHe ? "שגיאה ביצוא" : "Export error");
+      toast.error(txt(locale, { he: "שגיאה ביצוא", en: "Export error" }));
     }
   };
 
@@ -75,7 +75,7 @@ export function ExportPdfButton({ locale }: { locale: string }) {
       ) : (
         <Download className="size-4" />
       )}
-      {isHe ? "ייצוא PDF" : "Export PDF"}
+      {txt(locale, { he: "ייצוא PDF", en: "Export PDF" })}
     </Button>
   );
 }

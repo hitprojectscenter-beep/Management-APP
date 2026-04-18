@@ -12,6 +12,7 @@ import {
   Activity, CheckSquare, Folder, X, Calendar, Clock, User as UserIcon,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import { Link } from "@/lib/i18n/routing";
 
 const ROW_HEIGHT = 32;
@@ -34,7 +35,7 @@ interface SelectedEntity {
 }
 
 export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: Props) {
-  const isHe = locale === "he";
+  const isHe = locale === "he"; // kept for toLocaleDateString locale and data field selection
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [dayWidth, setDayWidth] = useState(DAY_WIDTH_DEFAULT);
   const [showCritical, setShowCritical] = useState(false);
@@ -122,7 +123,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
   const getDuration = (start: string | null, end: string | null) => {
     if (!start || !end) return "—";
     const d = Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / 86400000);
-    return `${d} ${isHe ? "ימים" : "d"}`;
+    return `${d} ${txt(locale, { he: "ימים", en: "d" })}`;
   };
 
   // Selected entity detail popup
@@ -146,13 +147,13 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
         <div className="flex items-center gap-1.5">
           <Button size="sm" variant={showCritical ? "default" : "outline"} onClick={() => setShowCritical(!showCritical)}
             className={cn("h-7 text-[11px]", showCritical && "bg-red-600 hover:bg-red-700 text-white")}>
-            <Zap className="size-3" /> {isHe ? "נתיב קריטי" : "Critical"} {showCritical && `(${cpm.criticalTaskIds.size})`}
+            <Zap className="size-3" /> {txt(locale, { he: "נתיב קריטי", en: "Critical" })} {showCritical && `(${cpm.criticalTaskIds.size})`}
           </Button>
           <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setCollapsed(new Set())}>
-            {isHe ? "הרחב" : "Expand"}
+            {txt(locale, { he: "הרחב", en: "Expand" })}
           </Button>
           <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setCollapsed(new Set(allNodes.map((n) => n.id)))}>
-            {isHe ? "כווץ" : "Collapse"}
+            {txt(locale, { he: "כווץ", en: "Collapse" })}
           </Button>
         </div>
         <div className="flex items-center bg-muted rounded text-[10px]">
@@ -169,11 +170,11 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
           {/* Column headers */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-900 border-b text-[10px] font-semibold text-muted-foreground sticky top-0 z-10" style={{ height: 28 }}>
             <div className="w-8 px-1 text-center border-e shrink-0">#</div>
-            <div className="flex-1 px-2 border-e min-w-0">{isHe ? "שם משימה" : "Task Name"}</div>
-            <div className="w-16 px-1 text-center border-e hidden sm:block shrink-0">{isHe ? "משך" : "Duration"}</div>
-            <div className="w-20 px-1 text-center border-e hidden sm:block shrink-0">{isHe ? "התחלה" : "Start"}</div>
-            <div className="w-20 px-1 text-center border-e hidden sm:block shrink-0">{isHe ? "סיום" : "Finish"}</div>
-            <div className="w-20 px-1 text-center hidden sm:block shrink-0">{isHe ? "אחראי" : "Resource"}</div>
+            <div className="flex-1 px-2 border-e min-w-0">{txt(locale, { he: "שם משימה", en: "Task Name" })}</div>
+            <div className="w-16 px-1 text-center border-e hidden sm:block shrink-0">{txt(locale, { he: "משך", en: "Duration" })}</div>
+            <div className="w-20 px-1 text-center border-e hidden sm:block shrink-0">{txt(locale, { he: "התחלה", en: "Start" })}</div>
+            <div className="w-20 px-1 text-center border-e hidden sm:block shrink-0">{txt(locale, { he: "סיום", en: "Finish" })}</div>
+            <div className="w-20 px-1 text-center hidden sm:block shrink-0">{txt(locale, { he: "אחראי", en: "Resource" })}</div>
           </div>
           {/* Rows */}
           {rows.map((row, idx) => {
@@ -301,7 +302,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
                         onClick={(e) => { e.stopPropagation(); setSelected({ type: "wbs", id: n.id, x: e.clientX, y: e.clientY }); }}>
                         <div className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-black dark:bg-white border border-gray-400"
                           style={{ left: x - 7, transform: "translateY(-50%) rotate(45deg)" }}
-                          title={`${isHe ? "אבן דרך" : "Milestone"}: ${n.name}`}
+                          title={`${txt(locale, { he: "אבן דרך", en: "Milestone" })}: ${n.name}`}
                         />
                         {dayWidth >= 16 && (
                           <span className="absolute text-[9px] text-gray-600 dark:text-gray-400 whitespace-nowrap" style={{ left: x + 10, top: y > 0 ? 4 : 8 }}>
@@ -398,7 +399,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
                   <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                     <Badge variant={t.status === "done" ? "secondary" : t.status === "blocked" ? "destructive" : "default"} className="text-[10px]">{t.status}</Badge>
                     <Badge variant="outline" className="text-[10px]">{t.priority}</Badge>
-                    {isCrit && <Badge className="text-[10px] bg-red-600">⚡ {isHe ? "קריטי" : "Critical"}</Badge>}
+                    {isCrit && <Badge className="text-[10px] bg-red-600">⚡ {txt(locale, { he: "קריטי", en: "Critical" })}</Badge>}
                   </div>
                   <h3 className="font-bold text-sm leading-tight">{isHe ? t.title : t.titleEn || t.title}</h3>
                 </div>
@@ -406,34 +407,34 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
 
                 {/* Dates section */}
                 <div className="bg-muted/30 rounded-md p-2 space-y-1.5 text-xs">
-                  <div className="font-semibold text-[10px] uppercase text-muted-foreground">{isHe ? "תאריכים" : "Dates"}</div>
+                  <div className="font-semibold text-[10px] uppercase text-muted-foreground">{txt(locale, { he: "תאריכים", en: "Dates" })}</div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                    <div className="flex items-center gap-1"><Calendar className="size-3 text-blue-600" />{isHe ? "תכנון" : "Plan"}: <strong>{t.plannedStart ? fmtD(t.plannedStart) : "—"}</strong></div>
-                    <div className="flex items-center gap-1"><Calendar className="size-3 text-blue-600" />{isHe ? "עד" : "Due"}: <strong>{t.plannedEnd ? fmtD(t.plannedEnd) : "—"}</strong></div>
+                    <div className="flex items-center gap-1"><Calendar className="size-3 text-blue-600" />{txt(locale, { he: "תכנון", en: "Plan" })}: <strong>{t.plannedStart ? fmtD(t.plannedStart) : "—"}</strong></div>
+                    <div className="flex items-center gap-1"><Calendar className="size-3 text-blue-600" />{txt(locale, { he: "עד", en: "Due" })}: <strong>{t.plannedEnd ? fmtD(t.plannedEnd) : "—"}</strong></div>
                     {(t.actualStart || t.actualEnd) && (
                       <>
-                        <div className="flex items-center gap-1"><Calendar className="size-3 text-emerald-600" />{isHe ? "בפועל" : "Actual"}: <strong>{t.actualStart ? fmtD(t.actualStart) : "—"}</strong></div>
-                        <div className="flex items-center gap-1"><Calendar className="size-3 text-emerald-600" />{isHe ? "סיום" : "End"}: <strong>{t.actualEnd ? fmtD(t.actualEnd) : "—"}</strong></div>
+                        <div className="flex items-center gap-1"><Calendar className="size-3 text-emerald-600" />{txt(locale, { he: "בפועל", en: "Actual" })}: <strong>{t.actualStart ? fmtD(t.actualStart) : "—"}</strong></div>
+                        <div className="flex items-center gap-1"><Calendar className="size-3 text-emerald-600" />{txt(locale, { he: "סיום", en: "End" })}: <strong>{t.actualEnd ? fmtD(t.actualEnd) : "—"}</strong></div>
                       </>
                     )}
                   </div>
-                  {durDays && <div className="text-[10px] text-muted-foreground">{isHe ? "משך" : "Duration"}: {durDays} {isHe ? "ימים" : "days"}</div>}
+                  {durDays && <div className="text-[10px] text-muted-foreground">{txt(locale, { he: "משך", en: "Duration" })}: {durDays} {txt(locale, { he: "ימים", en: "days" })}</div>}
                 </div>
 
                 {/* Progress */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="flex items-center gap-1"><Clock className="size-3" />{isHe ? "שעות" : "Hours"}: <strong>{t.actualHours}/{t.estimateHours}</strong></div>
-                  <div className="flex items-center gap-1"><Target className="size-3" />{isHe ? "התקדמות" : "Progress"}: <strong>{t.progressPercent}%</strong></div>
+                  <div className="flex items-center gap-1"><Clock className="size-3" />{txt(locale, { he: "שעות", en: "Hours" })}: <strong>{t.actualHours}/{t.estimateHours}</strong></div>
+                  <div className="flex items-center gap-1"><Target className="size-3" />{txt(locale, { he: "התקדמות", en: "Progress" })}: <strong>{t.progressPercent}%</strong></div>
                 </div>
                 <Progress value={t.progressPercent} className="h-2" />
 
                 {/* Dependencies */}
                 {(depTasks.length > 0 || successors.length > 0) && (
                   <div className="bg-indigo-50 dark:bg-indigo-950/20 rounded-md p-2 space-y-1 text-xs">
-                    <div className="font-semibold text-[10px] uppercase text-indigo-600">{isHe ? "תלויות" : "Dependencies"}</div>
+                    <div className="font-semibold text-[10px] uppercase text-indigo-600">{txt(locale, { he: "תלויות", en: "Dependencies" })}</div>
                     {depTasks.length > 0 && (
                       <div>
-                        <span className="text-muted-foreground">{isHe ? "תלוי ב:" : "Depends on:"}</span>
+                        <span className="text-muted-foreground">{txt(locale, { he: "תלוי ב:", en: "Depends on:" })}</span>
                         {depTasks.map((dep) => (
                           <div key={dep!.id} className="flex items-center gap-1 ms-2">
                             <span className="text-indigo-600">←</span>
@@ -444,7 +445,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
                     )}
                     {successors.length > 0 && (
                       <div>
-                        <span className="text-muted-foreground">{isHe ? "חוסם את:" : "Blocks:"}</span>
+                        <span className="text-muted-foreground">{txt(locale, { he: "חוסם את:", en: "Blocks:" })}</span>
                         {successors.map((suc) => (
                           <div key={suc.id} className="flex items-center gap-1 ms-2">
                             <span className="text-red-500">→</span>
@@ -476,7 +477,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
                   </div>
                 )}
                 <Link href={`/tasks/${t.id}`} className="text-xs text-blue-600 hover:underline block pt-1">
-                  → {isHe ? "פתח דף משימה" : "Open task page"}
+                  → {txt(locale, { he: "פתח דף משימה", en: "Open task page" })}
                 </Link>
               </div>
             );
@@ -490,34 +491,34 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
                   <Badge variant="outline" className="text-[10px] mb-1.5 uppercase">{n.level}</Badge>
                   <h3 className="font-bold text-sm">{isHe ? n.name : n.nameEn || n.name}</h3>
                   {n.description && <p className="text-xs text-muted-foreground mt-1">{n.description}</p>}
-                  {n.deliverable && <p className="text-xs mt-1">📦 {isHe ? "תוצר" : "Deliverable"}: {n.deliverable}</p>}
+                  {n.deliverable && <p className="text-xs mt-1">📦 {txt(locale, { he: "תוצר", en: "Deliverable" })}: {n.deliverable}</p>}
                 </div>
 
                 {/* Dates from rollup */}
                 {r && (r.plannedStart || r.plannedEnd) && (
                   <div className="bg-muted/30 rounded-md p-2 text-xs space-y-1">
-                    <div className="font-semibold text-[10px] uppercase text-muted-foreground">{isHe ? "תאריכים (אגרגציה)" : "Dates (rolled up)"}</div>
+                    <div className="font-semibold text-[10px] uppercase text-muted-foreground">{txt(locale, { he: "תאריכים (אגרגציה)", en: "Dates (rolled up)" })}</div>
                     <div className="grid grid-cols-2 gap-2">
-                      {r.plannedStart && <div><Calendar className="size-3 text-blue-600 inline me-1" />{isHe ? "התחלה" : "Start"}: <strong>{fmtD(r.plannedStart)}</strong></div>}
-                      {r.plannedEnd && <div><Calendar className="size-3 text-blue-600 inline me-1" />{isHe ? "סיום" : "End"}: <strong>{fmtD(r.plannedEnd)}</strong></div>}
+                      {r.plannedStart && <div><Calendar className="size-3 text-blue-600 inline me-1" />{txt(locale, { he: "התחלה", en: "Start" })}: <strong>{fmtD(r.plannedStart)}</strong></div>}
+                      {r.plannedEnd && <div><Calendar className="size-3 text-blue-600 inline me-1" />{txt(locale, { he: "סיום", en: "End" })}: <strong>{fmtD(r.plannedEnd)}</strong></div>}
                     </div>
                   </div>
                 )}
 
                 {r && (
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>{isHe ? "משימות" : "Tasks"}: <strong>{r.taskCount}</strong></div>
-                    <div>{isHe ? "הושלמו" : "Done"}: <strong>{r.doneCount}</strong></div>
-                    <div>{isHe ? "חסומות" : "Blocked"}: <strong>{r.blockedCount}</strong></div>
-                    <div>{isHe ? "באיחור" : "Overdue"}: <strong>{r.overdueCount}</strong></div>
-                    <div>{isHe ? "שעות" : "Hours"}: <strong>{Math.round(r.totalActualHours)}/{Math.round(r.totalEstimateHours)}</strong></div>
-                    <div>{isHe ? "התקדמות" : "Progress"}: <strong>{Math.round(r.weightedProgress)}%</strong></div>
+                    <div>{txt(locale, { he: "משימות", en: "Tasks" })}: <strong>{r.taskCount}</strong></div>
+                    <div>{txt(locale, { he: "הושלמו", en: "Done" })}: <strong>{r.doneCount}</strong></div>
+                    <div>{txt(locale, { he: "חסומות", en: "Blocked" })}: <strong>{r.blockedCount}</strong></div>
+                    <div>{txt(locale, { he: "באיחור", en: "Overdue" })}: <strong>{r.overdueCount}</strong></div>
+                    <div>{txt(locale, { he: "שעות", en: "Hours" })}: <strong>{Math.round(r.totalActualHours)}/{Math.round(r.totalEstimateHours)}</strong></div>
+                    <div>{txt(locale, { he: "התקדמות", en: "Progress" })}: <strong>{Math.round(r.weightedProgress)}%</strong></div>
                   </div>
                 )}
                 {r && <Progress value={r.weightedProgress} className="h-2" />}
                 {n.level === "project" && (
                   <Link href={`/projects/${n.id}`} className="text-xs text-blue-600 hover:underline block pt-1">
-                    → {isHe ? "פתח דף פרויקט" : "Open project page"}
+                    → {txt(locale, { he: "פתח דף פרויקט", en: "Open project page" })}
                   </Link>
                 )}
               </div>
@@ -529,12 +530,12 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
       {/* Footer */}
       <div className="px-3 py-1.5 border-t bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between text-[10px] text-muted-foreground flex-wrap gap-1">
         <div className="flex gap-2 sm:gap-3 flex-wrap">
-          <span><strong>{rows.filter((r) => r.kind === "wbs").length}</strong> {isHe ? "חבילות עבודה" : "work packages"}</span>
-          <span><strong>{scopeTasks.length}</strong> {isHe ? "משימות" : "tasks"}</span>
-          <span className="text-red-600"><strong>{cpm.criticalTaskIds.size}</strong> {isHe ? "קריטיות" : "critical"}</span>
-          <span className="text-indigo-600"><strong>{scopeTasks.reduce((s, t) => s + t.dependencies.length, 0)}</strong> {isHe ? "תלויות" : "dependencies"}</span>
+          <span><strong>{rows.filter((r) => r.kind === "wbs").length}</strong> {txt(locale, { he: "חבילות עבודה", en: "work packages" })}</span>
+          <span><strong>{scopeTasks.length}</strong> {txt(locale, { he: "משימות", en: "tasks" })}</span>
+          <span className="text-red-600"><strong>{cpm.criticalTaskIds.size}</strong> {txt(locale, { he: "קריטיות", en: "critical" })}</span>
+          <span className="text-indigo-600"><strong>{scopeTasks.reduce((s, t) => s + t.dependencies.length, 0)}</strong> {txt(locale, { he: "תלויות", en: "dependencies" })}</span>
         </div>
-        <span className="hidden sm:inline">{isHe ? "לחץ על פס או שם לפרטים" : "Click bar or name for details"}</span>
+        <span className="hidden sm:inline">{txt(locale, { he: "לחץ על פס או שם לפרטים", en: "Click bar or name for details" })}</span>
       </div>
     </div>
   );

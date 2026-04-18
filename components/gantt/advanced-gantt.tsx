@@ -23,6 +23,7 @@ import {
   Clock,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 
 const HEALTH_COLORS = {
   green: { bar: "#10B981", text: "text-emerald-600", bg: "bg-emerald-100", border: "border-emerald-500" },
@@ -45,7 +46,7 @@ interface Props {
 }
 
 export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }: Props) {
-  const isHe = locale === "he";
+  const isHe = locale === "he"; // kept for locale formatting in toLocaleDateString
 
   // ============================================================
   // State
@@ -266,7 +267,7 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
             className={showCriticalPath ? "bg-red-600 hover:bg-red-700 text-white" : ""}
           >
             <Zap className="size-3.5" />
-            {isHe ? "נתיב קריטי" : "Critical Path"}
+            {txt(locale, { he: "נתיב קריטי", en: "Critical Path" })}
             {showCriticalPath && cpm.criticalTaskIds.size > 0 && (
               <Badge variant="secondary" className="text-[9px] ms-1">{cpm.criticalTaskIds.size}</Badge>
             )}
@@ -277,16 +278,16 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
             onClick={() => setShowBuffer(!showBuffer)}
           >
             <Target className="size-3.5" />
-            {isHe ? "חוצץ זמן" : "Buffer"}
+            {txt(locale, { he: "חוצץ זמן", en: "Buffer" })}
           </Button>
           <div className="h-6 w-px bg-border mx-1" />
           <Button variant="outline" size="sm" onClick={expandAll}>
             <ChevronDown className="size-3.5" />
-            {isHe ? "הרחב הכל" : "Expand All"}
+            {txt(locale, { he: "הרחב הכ��", en: "Expand All" })}
           </Button>
           <Button variant="outline" size="sm" onClick={collapseAll}>
             <ChevronRight className="size-3.5" />
-            {isHe ? "כווץ הכל" : "Collapse All"}
+            {txt(locale, { he: "כווץ הכ��", en: "Collapse All" })}
           </Button>
         </div>
         <div className="flex items-center gap-2">
@@ -294,7 +295,7 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
             <button
               onClick={() => setDayWidth((w) => Math.max(16, w - 8))}
               className="size-7 flex items-center justify-center hover:bg-accent rounded-s-md"
-              title={isHe ? "התרחק" : "Zoom out"}
+              title={txt(locale, { he: "התרחק", en: "Zoom out" })}
             >
               <ZoomOut className="size-3.5" />
             </button>
@@ -302,18 +303,18 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
             <button
               onClick={() => setDayWidth((w) => Math.min(80, w + 8))}
               className="size-7 flex items-center justify-center hover:bg-accent rounded-e-md"
-              title={isHe ? "התקרב" : "Zoom in"}
+              title={txt(locale, { he: "התקרב", en: "Zoom in" })}
             >
               <ZoomIn className="size-3.5" />
             </button>
           </div>
           <Button variant="outline" size="sm" onClick={handleExportCsv}>
             <Download className="size-3.5" />
-            {isHe ? "Excel" : "CSV"}
+            {txt(locale, { he: "Excel", en: "CSV" })}
           </Button>
           <Button variant="outline" size="sm" onClick={printAsPdf}>
             <Printer className="size-3.5" />
-            {isHe ? "PDF" : "Print"}
+            {txt(locale, { he: "PDF", en: "Print" })}
           </Button>
         </div>
       </div>
@@ -322,27 +323,27 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
       <div className="px-4 py-2 border-b bg-background flex items-center gap-4 text-[11px] flex-wrap">
         <div className="flex items-center gap-1.5">
           <Info className="size-3 text-blue-500" />
-          <span className="text-muted-foreground">{isHe ? "מקרא:" : "Legend:"}</span>
+          <span className="text-muted-foreground">{txt(locale, { he: "מקרא:", en: "Legend:" })}</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-4 h-2 rounded bg-slate-300/50 border border-slate-400" />
-          <span>{isHe ? "מתוכנן" : "Planned (Baseline)"}</span>
+          <span>{txt(locale, { he: "מתוכנן", en: "Planned (Baseline)" })}</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-4 h-2.5 rounded bg-emerald-500" />
-          <span>{isHe ? "ביצוע" : "Actual"}</span>
+          <span>{txt(locale, { he: "ביצוע", en: "Actual" })}</span>
         </div>
         <div className="flex items-center gap-1">
           <Flag className="size-3 text-purple-600" />
-          <span>{isHe ? "אבן דרך" : "Milestone"}</span>
+          <span>{txt(locale, { he: "אבן דרך", en: "Milestone" })}</span>
         </div>
         <div className="flex items-center gap-1">
           <Zap className="size-3 text-red-600" />
-          <span>{isHe ? "נתיב קריטי" : "Critical"}</span>
+          <span>{txt(locale, { he: "נתיב קריטי", en: "Critical" })}</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-4 h-2 rounded bg-blue-200 border border-blue-400 border-dashed" />
-          <span>{isHe ? "חוצץ זמן" : "Buffer"}</span>
+          <span>{txt(locale, { he: "חוצץ זמן", en: "Buffer" })}</span>
         </div>
       </div>
 
@@ -355,10 +356,10 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
             className="flex items-center bg-muted/40 border-b px-2 text-[11px] font-semibold text-muted-foreground"
             style={{ height: HEADER_HEIGHT }}
           >
-            <div className="w-12 px-1">{isHe ? "מס׳" : "#"}</div>
-            <div className="flex-1 px-2">{isHe ? "שם פריט" : "Item Name"}</div>
-            <div className="w-16 text-end px-1">{isHe ? "שעות" : "Hours"}</div>
-            <div className="w-14 text-end px-1">{isHe ? "התקדמות" : "Progress"}</div>
+            <div className="w-12 px-1">{txt(locale, { he: "מס׳", en: "#" })}</div>
+            <div className="flex-1 px-2">{txt(locale, { he: "שם פריט", en: "Item Name" })}</div>
+            <div className="w-16 text-end px-1">{txt(locale, { he: "שעות", en: "Hours" })}</div>
+            <div className="w-14 text-end px-1">{txt(locale, { he: "התקדמות", en: "Progress" })}</div>
           </div>
           {/* WBS rows - scrollable */}
           <div ref={wbsScrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
@@ -673,7 +674,7 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
                           isHighlightCritical ? "border-red-400" : "border-slate-400 dark:border-slate-600"
                         )}
                         style={{ left: plannedX, width: plannedW }}
-                        title={`${isHe ? "מתוכנן" : "Planned"}: ${formatDate(task.plannedStart, locale)} → ${formatDate(task.plannedEnd, locale)}`}
+                        title={`${txt(locale, { he: "מתוכנן", en: "Planned" })}: ${formatDate(task.plannedStart, locale)} → ${formatDate(task.plannedEnd, locale)}`}
                       />
                     )}
 
@@ -733,7 +734,7 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
                   >
                     <div className="absolute inset-y-2 w-full bg-blue-100/40 dark:bg-blue-950/20 border-2 border-dashed border-blue-400 rounded">
                       <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 text-[8px] font-bold bg-blue-500 text-white rounded uppercase tracking-wider whitespace-nowrap">
-                        {isHe ? "חוצץ זמן" : "Time Buffer"}
+                        {txt(locale, { he: "חוצץ זמן", en: "Time Buffer" })}
                       </div>
                     </div>
                   </div>
@@ -749,24 +750,24 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
         <div className="flex gap-4">
           <span>
             <strong className="text-foreground">{visibleNodes.length}</strong>{" "}
-            {isHe ? "פריטי WBS" : "WBS items"}
+            {txt(locale, { he: "פריטי WBS", en: "WBS items" })}
           </span>
           <span>
             <strong className="text-foreground">{projectTasks.length}</strong>{" "}
-            {isHe ? "משימות" : "tasks"}
+            {txt(locale, { he: "משימות", en: "tasks" })}
           </span>
           <span>
             <strong className="text-foreground">{cpm.criticalTaskIds.size}</strong>{" "}
-            {isHe ? "במסלול קריטי" : "on critical path"}
+            {txt(locale, { he: "במסלול קריט��", en: "on critical path" })}
           </span>
           <span>
             <strong className="text-foreground">{Math.round(cpm.totalDays)}</strong>{" "}
-            {isHe ? "ימי עבודה" : "work days"}
+            {txt(locale, { he: "ימי עבוד��", en: "work days" })}
           </span>
         </div>
         <div className="hidden md:flex items-center gap-2">
           <Clock className="size-3" />
-          {isHe ? "עדכון אחרון:" : "Updated:"} {new Date().toLocaleString(isHe ? "he-IL" : "en-US")}
+          {txt(locale, { he: "עדכון אחרון:", en: "Updated:" })} {new Date().toLocaleString(isHe ? "he-IL" : "en-US")}
         </div>
       </div>
     </div>

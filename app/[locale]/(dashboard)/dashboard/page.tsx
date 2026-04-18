@@ -11,6 +11,7 @@ import {
   Info,
 } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
+import { txt } from "@/lib/utils/locale-text";
 import {
   mockTasks,
   mockUsers,
@@ -37,7 +38,6 @@ export default async function DashboardPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isHe = locale === "he";
   const t = await getTranslations("dashboard");
   const tCommon = await getTranslations("common");
 
@@ -59,7 +59,7 @@ export default async function DashboardPage({
       icon: Briefcase,
       bg: "bg-blue-500/10",
       iconColor: "text-blue-600",
-      tip: isHe ? "מספר הפרויקטים הפעילים בארגון כרגע" : "Number of currently active projects",
+      tip: txt(locale, { he: "מספר הפרויקטים הפעילים בארגון כרגע", en: "Number of currently active projects" }),
     },
     {
       label: t("stats.openTasks"),
@@ -67,7 +67,7 @@ export default async function DashboardPage({
       icon: CheckSquare,
       bg: "bg-violet-500/10",
       iconColor: "text-violet-600",
-      tip: isHe ? "כל המשימות שטרם הושלמו או בוטלו" : "All tasks not yet completed or cancelled",
+      tip: txt(locale, { he: "כל המשימות שטרם הושלמו או בוטלו", en: "All tasks not yet completed or cancelled" }),
     },
     {
       label: t("stats.completedThisWeek"),
@@ -75,7 +75,7 @@ export default async function DashboardPage({
       icon: TrendingUp,
       bg: "bg-emerald-500/10",
       iconColor: "text-emerald-600",
-      tip: isHe ? "משימות שהושלמו ב-7 הימים האחרונים" : "Tasks completed in the last 7 days",
+      tip: txt(locale, { he: "משימות שהושלמו ב-7 הימים האחרונים", en: "Tasks completed in the last 7 days" }),
     },
     {
       label: t("stats.atRisk"),
@@ -83,7 +83,7 @@ export default async function DashboardPage({
       icon: AlertTriangle,
       bg: "bg-orange-500/10",
       iconColor: "text-orange-600",
-      tip: isHe ? "סיכונים פעילים שזוהו על ידי מנוע ה-AI" : "Active risks detected by AI engine",
+      tip: txt(locale, { he: "סיכונים פעילים שזוהו על ידי מנוע ה-AI", en: "Active risks detected by AI engine" }),
     },
   ];
 
@@ -95,17 +95,18 @@ export default async function DashboardPage({
             <div className="size-11 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
               <Target className="size-6 text-white" />
             </div>
-            {isHe ? "דשבורדים ו-KPI" : "Dashboards & KPIs"}
+            {txt(locale, { he: "דשבורדים ו-KPI", en: "Dashboards & KPIs" })}
           </h1>
           <p className="text-muted-foreground mt-1.5">
-            {isHe
-              ? "מדדי ביצוע מרכזיים, מגמות, ותמונת מצב מלאה של פעילות הארגון"
-              : "Key performance indicators, trends, and full organizational picture"}
+            {txt(locale, {
+              he: "מדדי ביצוע מרכזיים, מגמות, ותמונת מצב מלאה של פעילות הארגון",
+              en: "Key performance indicators, trends, and full organizational picture",
+            })}
           </p>
         </div>
         <Badge variant={health.status === "healthy" ? "success" : health.status === "at-risk" ? "warning" : "destructive"}>
           <Target className="size-3 me-1" />
-          {isHe ? "בריאות פרויקטים" : "Project Health"}: {health.score}/100
+          {txt(locale, { he: "בריאות פרויקטים", en: "Project Health" })}: {health.score}/100
         </Badge>
       </div>
 
@@ -122,7 +123,7 @@ export default async function DashboardPage({
       <div className="border-t pt-6">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Info className="size-4 text-muted-foreground" />
-          {isHe ? "מבט כללי על הארגון" : "General organizational overview"}
+          {txt(locale, { he: "מבט כללי על הארגון", en: "General organizational overview" })}
         </h2>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -151,14 +152,12 @@ export default async function DashboardPage({
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {isHe ? "התקדמות לאורך זמן" : "Progress Over Time"}
+              {txt(locale, { he: "התקדמות לאורך זמן", en: "Progress Over Time" })}
             </CardTitle>
             <CardDescription className="flex items-start gap-1.5">
               <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
               <span>
-                {isHe
-                  ? "גרף שטח שמראה כמה משימות הושלמו, היו בביצוע ונחסמו בכל אחד מ-6 השבועות האחרונים. עוזר לזהות מגמות במהירות הצוות (velocity) ולאתר שבועות בעייתיים."
-                  : "Area chart showing how many tasks were completed, in-progress, and blocked in each of the last 6 weeks. Helps identify team velocity trends and spot problem weeks."}
+                {txt(locale, { he: "גרף שטח שמראה כמה משימות הושלמו, היו בביצוע ונחסמו בכל אחד מ-6 השבועות האחרונים. עוזר לזהות מגמות במהירות הצוות (velocity) ולאתר שבועות בעייתיים.", en: "Area chart showing how many tasks were completed, in-progress, and blocked in each of the last 6 weeks. Helps identify team velocity trends and spot problem weeks." })}
               </span>
             </CardDescription>
           </CardHeader>
@@ -169,13 +168,11 @@ export default async function DashboardPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>{isHe ? "התפלגות סטטוס" : "Status Distribution"}</CardTitle>
+            <CardTitle>{txt(locale, { he: "התפלגות סטטוס", en: "Status Distribution" })}</CardTitle>
             <CardDescription className="flex items-start gap-1.5">
               <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
               <span>
-                {isHe
-                  ? "כמה משימות נמצאות בכל סטטוס כרגע. מאפשר לראות תמונת מצב מיידית של 'איפה תקועים'."
-                  : "How many tasks are in each status right now. Provides instant visibility into where work is stuck."}
+                {txt(locale, { he: "כמה משימות נמצאות בכל סטטוס כרגע. מאפשר לראות תמונת מצב מיידית של 'איפה תקועים'.", en: "How many tasks are in each status right now. Provides instant visibility into where work is stuck." })}
               </span>
             </CardDescription>
           </CardHeader>
@@ -189,13 +186,11 @@ export default async function DashboardPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>{isHe ? "עומס עבודה לפי חבר צוות" : "Workload by Team Member"}</CardTitle>
+            <CardTitle>{txt(locale, { he: "עומס עבודה לפי חבר צוות", en: "Workload by Team Member" })}</CardTitle>
             <CardDescription className="flex items-start gap-1.5">
               <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
               <span>
-                {isHe
-                  ? "גרף עמודות מצטבר המציג לכל חבר צוות כמה משימות פתוחות יש לו, כמה הושלמו וכמה חסומות. מאפשר לזהות הקצאת יתר או חוסר איזון."
-                  : "Stacked bar chart showing per team member how many open, done, and blocked tasks they have. Helps spot overload and imbalance."}
+                {txt(locale, { he: "גרף עמודות מצטבר המציג לכל חבר צוות כמה משימות פתוחות יש לו, כמה הושלמו וכמה חסומות. מאפשר לזהות הקצאת יתר או חוסר איזון.", en: "Stacked bar chart showing per team member how many open, done, and blocked tasks they have. Helps spot overload and imbalance." })}
               </span>
             </CardDescription>
           </CardHeader>
@@ -209,7 +204,7 @@ export default async function DashboardPage({
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="size-4 text-orange-500" />
-                {isHe ? "תובנות AI" : "AI Insights"}
+                {txt(locale, { he: "תובנות AI", en: "AI Insights" })}
               </CardTitle>
               <Link href="/ai" className="text-xs text-primary hover:underline">
                 {tCommon("more")} →
@@ -218,9 +213,7 @@ export default async function DashboardPage({
             <CardDescription className="flex items-start gap-1.5">
               <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
               <span>
-                {isHe
-                  ? "סיכונים שמנוע ה-AI זיהה אוטומטית - איחורים, חסימות, חריגות תקציב והקצאת יתר."
-                  : "Risks the AI engine detected automatically - delays, blockers, budget overruns, over-allocation."}
+                {txt(locale, { he: "סיכונים שמנוע ה-AI זיהה אוטומטית - איחורים, חסימות, חריגות תקציב והקצאת יתר.", en: "Risks the AI engine detected automatically - delays, blockers, budget overruns, over-allocation." })}
               </span>
             </CardDescription>
           </CardHeader>
@@ -234,17 +227,15 @@ export default async function DashboardPage({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>{isHe ? "משימות עדכניות" : "Recent Tasks"}</CardTitle>
+            <CardTitle>{txt(locale, { he: "משימות עדכניות", en: "Recent Tasks" })}</CardTitle>
             <Link href="/tasks" className="text-xs text-primary hover:underline">
-              {isHe ? "ראה הכל" : "View all"} →
+              {txt(locale, { he: "ראה הכל", en: "View all" })} →
             </Link>
           </div>
           <CardDescription className="flex items-start gap-1.5">
             <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
             <span>
-              {isHe
-                ? "המשימות שעודכנו לאחרונה ברחבי הארגון - לחץ לפתיחת כל משימה."
-                : "Most recently updated tasks across the organization - click to open."}
+              {txt(locale, { he: "המשימות שעודכנו לאחרונה ברחבי הארגון - לחץ לפתיחת כל משימה.", en: "Most recently updated tasks across the organization - click to open." })}
             </span>
           </CardDescription>
         </CardHeader>

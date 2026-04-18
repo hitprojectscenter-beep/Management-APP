@@ -13,8 +13,6 @@ export function PredictiveForecast({
   forecast: ProjectForecast | null;
   locale: string;
 }) {
-  const isHe = locale === "he";
-
   if (!forecast) {
     return (
       <Card>
@@ -76,7 +74,7 @@ export function PredictiveForecast({
               {txt(locale, { he: "תאריך מתוכנן", en: "Planned end" })}
             </div>
             <div className="text-xl font-bold">
-              {forecast.plannedEnd.toLocaleDateString(isHe ? "he-IL" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+              {forecast.plannedEnd.toLocaleDateString(locale === "he" ? "he-IL" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
             </div>
           </div>
 
@@ -87,7 +85,7 @@ export function PredictiveForecast({
               <span className={accent}>{txt(locale, { he: "צפוי AI", en: "AI Forecast" })}</span>
             </div>
             <div className={cn("text-xl font-bold", accent)}>
-              {forecast.forecastEnd.toLocaleDateString(isHe ? "he-IL" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+              {forecast.forecastEnd.toLocaleDateString(locale === "he" ? "he-IL" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
             </div>
           </div>
 

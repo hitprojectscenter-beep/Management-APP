@@ -16,6 +16,8 @@ import { calculateProjectHealth } from "@/lib/ai/risk-engine";
 import { ProjectViews } from "@/components/projects/project-views";
 import { WbsTree } from "@/components/wbs/wbs-tree";
 import { ProjectMembers } from "@/components/members/project-members";
+import { StaffPanel } from "@/components/projects/staff-panel";
+import { ActivitiesPanel } from "@/components/projects/activities-panel";
 
 export default async function ProjectDetailPage({
   params,
@@ -120,6 +122,12 @@ export default async function ProjectDetailPage({
           <ProjectViews tasks={tasks} users={mockUsers} locale={locale} />
         </CardContent>
       </Card>
+
+      {/* Staff + Activities panels */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <StaffPanel projectId={id} locale={locale} />
+        <ActivitiesPanel projectId={id} locale={locale} />
+      </div>
 
       {/* WBS Tree + Team - side by side on desktop, stacked on mobile */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

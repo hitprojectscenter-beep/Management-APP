@@ -12,6 +12,7 @@ import {
 import { Check, X, Crown, Shield, User, Eye, UserX, Plus, Info, Save, RotateCcw } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/rbac/abilities";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import { toast } from "sonner";
 import type { UserRole } from "@/lib/db/types";
 
@@ -65,7 +66,7 @@ interface CustomRole {
 }
 
 export function RolesManager({ locale }: { locale: string }) {
-  const isHe = locale === "he";
+  const isHe = locale === "he"; // kept for data field selection (custom role name)
   const builtInRoles: string[] = ["admin", "manager", "member", "viewer", "guest"];
 
   // Mutable permission state for built-in roles (except admin which is always full)
@@ -85,7 +86,7 @@ export function RolesManager({ locale }: { locale: string }) {
 
   const togglePermission = (roleId: string, permKey: string) => {
     if (roleId === "admin") {
-      toast.error(isHe ? "לא ניתן לשנות הרשאות מנהל מערכת" : "Cannot modify admin permissions");
+      toast.error(txt(locale, { he: "לא ניתן לשנות הרשאות מנהל מערכת", en: "Cannot modify admin permissions" }));
       return;
     }
     setPermissions((prev) => {
@@ -103,8 +104,8 @@ export function RolesManager({ locale }: { locale: string }) {
   };
 
   const handleSave = () => {
-    toast.success(isHe ? "ההרשאות נשמרו בהצלחה" : "Permissions saved successfully", {
-      description: isHe ? "השינויים יחולו מיד על כל המשתמשים בתפקידים שעודכנו" : "Changes apply immediately to all users with updated roles",
+    toast.success(txt(locale, { he: "ההרשאות נשמרו בהצלחה", en: "Permissions saved successfully" }), {
+      description: txt(locale, { he: "השינויים יחולו מיד על כל המשתמשים בתפקידים שעודכנו", en: "Changes apply immediately to all users with updated roles" }),
     });
     setHasChanges(false);
   };
@@ -119,7 +120,7 @@ export function RolesManager({ locale }: { locale: string }) {
     }
     setPermissions(initial);
     setHasChanges(false);
-    toast.info(isHe ? "ההרשאות אופסו לברירת מחדל" : "Permissions reset to defaults");
+    toast.info(txt(locale, { he: "ההרשאות אופסו לברירת מחדל", en: "Permissions reset to defaults" }));
   };
 
   const addCustomRole = (name: string, nameEn: string, perms: Set<string>) => {
@@ -127,7 +128,7 @@ export function RolesManager({ locale }: { locale: string }) {
     const newRole: CustomRole = { id, name, nameEn, permissions: perms };
     setCustomRoles((prev) => [...prev, newRole]);
     setPermissions((prev) => ({ ...prev, [id]: new Set(perms) }));
-    toast.success(isHe ? `התפקיד "${name}" נוצר בהצלחה` : `Role "${nameEn}" created successfully`);
+    toast.success(txt(locale, { he: `התפקיד "${name}" נוצר בהצלחה`, en: `Role "${nameEn}" created successfully` }));
   };
 
   const deleteCustomRole = (id: string) => {
@@ -137,7 +138,7 @@ export function RolesManager({ locale }: { locale: string }) {
       delete next[id];
       return next;
     });
-    toast.success(isHe ? "התפקיד המותאם נמחק" : "Custom role deleted");
+    toast.success(txt(locale, { he: "התפקיד המותאם נמחק", en: "Custom role deleted" }));
   };
 
   const getRoleLabel = (roleId: string) => {
@@ -166,7 +167,7 @@ export function RolesManager({ locale }: { locale: string }) {
                 </div>
                 <div className="font-semibold text-sm">{getRoleLabel(role)}</div>
                 <div className="text-[10px] text-muted-foreground mt-1">
-                  {permCount}/{PERMISSIONS.length} {isHe ? "הרשאות" : "permissions"}
+                  {permCount}/{PERMISSIONS.length} {txt(locale, { he: "הרשאות", en: "permissions" })}
                 </div>
               </CardContent>
             </Card>
@@ -184,14 +185,14 @@ export function RolesManager({ locale }: { locale: string }) {
                 </div>
                 <div className="font-semibold text-sm">{isHe ? cr.name : cr.nameEn}</div>
                 <div className="text-[10px] text-muted-foreground mt-1">
-                  {permCount}/{PERMISSIONS.length} {isHe ? "הרשאות" : "permissions"}
+                  {permCount}/{PERMISSIONS.length} {txt(locale, { he: "הרשאות", en: "permissions" })}
                 </div>
                 <Button
                   variant="ghost" size="sm"
                   className="mt-1 text-red-600 text-[10px] h-6"
                   onClick={() => deleteCustomRole(cr.id)}
                 >
-                  {isHe ? "מחק תפקיד" : "Delete role"}
+                  {txt(locale, { he: "מחק תפקיד", en: "Delete role" })}
                 </Button>
               </CardContent>
             </Card>
@@ -205,28 +206,29 @@ export function RolesManager({ locale }: { locale: string }) {
           <div>
             <h3 className="font-semibold flex items-center gap-2">
               <Info className="size-4 text-blue-500" />
-              {isHe ? "מטריצת הרשאות" : "Permissions Matrix"}
+              {txt(locale, { he: "מטריצת הרשאות", en: "Permissions Matrix" })}
               {hasChanges && (
                 <Badge variant="destructive" className="text-[9px] py-0">
-                  {isHe ? "שינויים לא שמורים" : "Unsaved"}
+                  {txt(locale, { he: "שינויים לא שמורים", en: "Unsaved" })}
                 </Badge>
               )}
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              {isHe
-                ? "לחץ על תא כדי לשנות הרשאה. Admin תמיד מלא ולא ניתן לעריכה."
-                : "Click a cell to toggle permission. Admin is always full and non-editable."}
+              {txt(locale, {
+                he: "לחץ על תא כדי לשנות הרשאה. Admin תמיד מלא ולא ניתן לעריכה.",
+                en: "Click a cell to toggle permission. Admin is always full and non-editable.",
+              })}
             </p>
           </div>
           {hasChanges && (
             <div className="flex gap-2 shrink-0">
               <Button size="sm" variant="outline" onClick={handleReset} className="h-8 text-xs">
                 <RotateCcw className="size-3" />
-                {isHe ? "אפס" : "Reset"}
+                {txt(locale, { he: "אפס", en: "Reset" })}
               </Button>
               <Button size="sm" onClick={handleSave} className="h-8 text-xs">
                 <Save className="size-3" />
-                {isHe ? "שמור שינויים" : "Save"}
+                {txt(locale, { he: "שמור שינויים", en: "Save" })}
               </Button>
             </div>
           )}
@@ -236,7 +238,7 @@ export function RolesManager({ locale }: { locale: string }) {
             <thead className="bg-muted/30 text-xs">
               <tr>
                 <th className="text-start px-4 py-3 font-medium sticky start-0 bg-muted/30 z-10">
-                  {isHe ? "הרשאה" : "Permission"}
+                  {txt(locale, { he: "הרשאה", en: "Permission" })}
                 </th>
                 {allRoles.map((roleId) => {
                   const Icon = getRoleIcon(roleId);
@@ -257,7 +259,7 @@ export function RolesManager({ locale }: { locale: string }) {
               {PERMISSIONS.map((perm) => (
                 <tr key={perm.key} className="border-t hover:bg-accent/20">
                   <td className="px-4 py-3 font-medium sticky start-0 bg-background z-10">
-                    {isHe ? perm.labelHe : perm.labelEn}
+                    {txt(locale, { he: perm.labelHe, en: perm.labelEn })}
                   </td>
                   {allRoles.map((roleId) => {
                     const allowed = permissions[roleId]?.has(perm.key) || false;
@@ -276,8 +278,8 @@ export function RolesManager({ locale }: { locale: string }) {
                                 : "bg-slate-100 dark:bg-slate-800 hover:bg-red-100 dark:hover:bg-red-950/30 cursor-pointer hover:ring-2 hover:ring-slate-300"
                           )}
                           title={isAdmin
-                            ? (isHe ? "Admin תמיד מלא" : "Admin always full")
-                            : (isHe ? "לחץ לשינוי" : "Click to toggle")}
+                            ? txt(locale, { he: "Admin תמיד מלא", en: "Admin always full" })
+                            : txt(locale, { he: "לחץ לשינוי", en: "Click to toggle" })}
                         >
                           {allowed ? (
                             <Check className={cn("size-4", isAdmin ? "text-emerald-600" : "text-emerald-600")} />
@@ -298,9 +300,10 @@ export function RolesManager({ locale }: { locale: string }) {
       {/* Actions row */}
       <div className="flex items-center justify-between">
         <div className="text-xs text-muted-foreground">
-          {isHe
-            ? `${builtInRoles.length} תפקידים מובנים · ${customRoles.length} מותאמים`
-            : `${builtInRoles.length} built-in · ${customRoles.length} custom roles`}
+          {txt(locale, {
+            he: `${builtInRoles.length} תפקידים מובנים · ${customRoles.length} מותאמים`,
+            en: `${builtInRoles.length} built-in · ${customRoles.length} custom roles`,
+          })}
         </div>
         <CreateCustomRoleDialog locale={locale} onCreateRole={addCustomRole} />
       </div>
@@ -318,7 +321,6 @@ function CreateCustomRoleDialog({
   locale: string;
   onCreateRole: (name: string, nameEn: string, perms: Set<string>) => void;
 }) {
-  const isHe = locale === "he";
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [nameEn, setNameEn] = useState("");
@@ -335,7 +337,7 @@ function CreateCustomRoleDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      toast.error(isHe ? "שם התפקיד נדרש" : "Role name is required");
+      toast.error(txt(locale, { he: "שם התפקיד נדרש", en: "Role name is required" }));
       return;
     }
     onCreateRole(name.trim(), nameEn.trim() || name.trim(), new Set(selectedPerms));
@@ -355,19 +357,20 @@ function CreateCustomRoleDialog({
       <DialogTrigger asChild>
         <Button variant="outline">
           <Plus className="size-4" />
-          {isHe ? "צור תפקיד מותאם" : "Create Custom Role"}
+          {txt(locale, { he: "צור תפקיד מותאם", en: "Create Custom Role" })}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="size-5 text-purple-600" />
-            {isHe ? "יצירת תפקיד מותאם" : "Create Custom Role"}
+            {txt(locale, { he: "יצירת תפקיד מותאם", en: "Create Custom Role" })}
           </DialogTitle>
           <DialogDescription>
-            {isHe
-              ? "הגדר שם ובחר הרשאות לתפקיד החדש. אפשר להתחיל מתבנית קיימת."
-              : "Set a name and choose permissions. Start from an existing template if needed."}
+            {txt(locale, {
+              he: "הגדר שם ובחר הרשאות לתפקיד החדש. אפשר להתחיל מתבנית קיימת.",
+              en: "Set a name and choose permissions. Start from an existing template if needed.",
+            })}
           </DialogDescription>
         </DialogHeader>
 
@@ -375,16 +378,16 @@ function CreateCustomRoleDialog({
           {/* Name fields */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>{isHe ? "שם בעברית" : "Hebrew Name"} *</Label>
+              <Label>{txt(locale, { he: "שם בעברית", en: "Hebrew Name" })} *</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={isHe ? "למשל: מנהל צוות" : "e.g., Team Lead"}
+                placeholder={txt(locale, { he: "למשל: מנהל צוות", en: "e.g., Team Lead" })}
                 className="min-h-[44px]"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>{isHe ? "שם באנגלית" : "English Name"}</Label>
+              <Label>{txt(locale, { he: "שם באנגלית", en: "English Name" })}</Label>
               <Input
                 value={nameEn}
                 onChange={(e) => setNameEn(e.target.value)}
@@ -396,26 +399,26 @@ function CreateCustomRoleDialog({
 
           {/* Presets */}
           <div>
-            <Label className="mb-2 block">{isHe ? "התחל מתבנית" : "Start from template"}</Label>
+            <Label className="mb-2 block">{txt(locale, { he: "התחל מתבנית", en: "Start from template" })}</Label>
             <div className="flex gap-2 flex-wrap">
               <Button type="button" size="sm" variant="outline" onClick={() => applyPreset("manager")} className="text-xs h-7">
-                {isHe ? "כמנהל" : "As Manager"} (8)
+                {txt(locale, { he: "כמנהל", en: "As Manager" })} (8)
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => applyPreset("member")} className="text-xs h-7">
-                {isHe ? "כחבר צוות" : "As Member"} (5)
+                {txt(locale, { he: "כחבר צוות", en: "As Member" })} (5)
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => applyPreset("viewer")} className="text-xs h-7">
-                {isHe ? "כצופה" : "As Viewer"} (2)
+                {txt(locale, { he: "כצופה", en: "As Viewer" })} (2)
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => setSelectedPerms(new Set())} className="text-xs h-7">
-                {isHe ? "נקה הכל" : "Clear all"}
+                {txt(locale, { he: "נקה הכל", en: "Clear all" })}
               </Button>
             </div>
           </div>
 
           {/* Permissions checkboxes */}
           <div className="space-y-1.5">
-            <Label>{isHe ? "הרשאות" : "Permissions"} ({selectedPerms.size}/{PERMISSIONS.length})</Label>
+            <Label>{txt(locale, { he: "הרשאות", en: "Permissions" })} ({selectedPerms.size}/{PERMISSIONS.length})</Label>
             <div className="border rounded-lg divide-y max-h-[300px] overflow-y-auto">
               {PERMISSIONS.map((perm) => {
                 const checked = selectedPerms.has(perm.key);
@@ -430,7 +433,7 @@ function CreateCustomRoleDialog({
                     )}
                   >
                     <span className={cn(checked && "font-medium")}>
-                      {isHe ? perm.labelHe : perm.labelEn}
+                      {txt(locale, { he: perm.labelHe, en: perm.labelEn })}
                     </span>
                     <div className={cn(
                       "size-5 rounded border flex items-center justify-center transition-colors",
@@ -446,11 +449,11 @@ function CreateCustomRoleDialog({
 
           <DialogFooter className="gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} className="min-h-[44px]">
-              {isHe ? "ביטול" : "Cancel"}
+              {txt(locale, { he: "ביטול", en: "Cancel" })}
             </Button>
             <Button type="submit" className="min-h-[44px]" disabled={!name.trim()}>
               <Plus className="size-4" />
-              {isHe ? `צור תפקיד (${selectedPerms.size} הרשאות)` : `Create Role (${selectedPerms.size} perms)`}
+              {txt(locale, { he: `צור תפקיד (${selectedPerms.size} הרשאות)`, en: `Create Role (${selectedPerms.size} perms)` })}
             </Button>
           </DialogFooter>
         </form>

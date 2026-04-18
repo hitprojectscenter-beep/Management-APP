@@ -30,7 +30,6 @@ export function MyTasksTabs({
   locale: string;
 }) {
   const [activeTab, setActiveTab] = useState<TabKey>("all");
-  const isHe = locale === "he";
   const { can } = useRole();
 
   const tabs: { key: TabKey; count?: number }[] = useMemo(() => {
@@ -153,7 +152,7 @@ export function MyTasksTabs({
               <div className="flex items-center gap-2 mb-2 px-1">
                 <Briefcase className="size-4 text-blue-600" />
                 <h3 className="font-semibold">
-                  {isHe ? project.name : project.nameEn || project.name}
+                  {locale === "he" ? project.name : project.nameEn || project.name}
                 </h3>
                 <Badge variant="outline">{pTasks.length}</Badge>
               </div>
@@ -192,7 +191,6 @@ function TaskCard({
   users: MockUser[];
   locale: string;
 }) {
-  const isHe = locale === "he";
   const assignee = users.find((u) => u.id === task.assigneeId);
   const remaining = task.plannedEnd ? getTimeRemaining(task.plannedEnd) : null;
 
@@ -216,7 +214,7 @@ function TaskCard({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h4 className="font-semibold text-sm line-clamp-1">
-                  {isHe ? task.title : task.titleEn || task.title}
+                  {locale === "he" ? task.title : task.titleEn || task.title}
                 </h4>
                 <span className={cn("status-badge text-[9px]", `priority-${task.priority}`)}>
                   {txt(locale, PRIORITY_LABELS_ML[task.priority])}

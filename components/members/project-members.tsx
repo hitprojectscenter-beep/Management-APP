@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Users, UserPlus, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 
 const fteColor = (pct: number): string => {
   if (pct >= 80) return "text-emerald-600 bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-300";
@@ -27,13 +28,11 @@ export function ProjectMembers({
   title?: string;
   variant?: "card" | "compact";
 }) {
-  const isHe = locale === "he";
-
   if (members.length === 0) {
     return (
       <Card>
         <CardContent className="py-6 text-center text-sm text-muted-foreground">
-          {isHe ? "אין משתתפים עדיין" : "No members yet"}
+          {txt(locale, { he: "אין משתתפים עדיין", en: "No members yet" })}
         </CardContent>
       </Card>
     );
@@ -53,7 +52,7 @@ export function ProjectMembers({
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate">{user.name}</div>
                 <div className="text-xs text-muted-foreground truncate">
-                  {isHe ? member.roleInProject : member.roleInProjectEn || member.roleInProject}
+                  {locale === "he" ? member.roleInProject : member.roleInProjectEn || member.roleInProject}
                 </div>
               </div>
               <div className={cn("text-xs font-bold px-2 py-1 rounded-full", fteColor(member.ftePercent))}>
@@ -72,22 +71,22 @@ export function ProjectMembers({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <Users className="size-4" />
-            {title || (isHe ? "משתתפים" : "Members")}
+            {title || txt(locale, { he: "משתתפים", en: "Members" })}
             <span className="text-xs font-normal text-muted-foreground">
               ({members.length})
             </span>
           </CardTitle>
           <Button size="sm" variant="outline">
             <UserPlus className="size-3" />
-            {isHe ? "הוסף" : "Add"}
+            {txt(locale, { he: "הוסף", en: "Add" })}
           </Button>
         </div>
         <div className="text-xs text-muted-foreground mt-1">
-          {isHe ? "סך הקצאת משרה: " : "Total FTE allocation: "}
+          {txt(locale, { he: "סך הקצאת משרה: ", en: "Total FTE allocation: " })}
           <span className="font-semibold text-foreground">{totalFte}%</span>
           {totalFte >= 100 && (
             <span className="ms-1 text-emerald-600">
-              ({((totalFte / 100)).toFixed(1)} {isHe ? "משרות מלאות" : "FTEs"})
+              ({((totalFte / 100)).toFixed(1)} {txt(locale, { he: "משרות מלאות", en: "FTEs" })})
             </span>
           )}
         </div>
@@ -106,7 +105,7 @@ export function ProjectMembers({
                 <div className="font-semibold text-sm">{user.name}</div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                   <Briefcase className="size-3" />
-                  {isHe ? member.roleInProject : member.roleInProjectEn || member.roleInProject}
+                  {locale === "he" ? member.roleInProject : member.roleInProjectEn || member.roleInProject}
                 </div>
               </div>
               <div className="text-end">
@@ -114,7 +113,7 @@ export function ProjectMembers({
                   {member.ftePercent}%
                 </div>
                 <div className="text-[10px] text-muted-foreground mt-1">
-                  {isHe ? "משרה" : "FTE"}
+                  {txt(locale, { he: "משרה", en: "FTE" })}
                 </div>
               </div>
             </div>

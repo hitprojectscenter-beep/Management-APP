@@ -6,6 +6,7 @@ import { TOUR_STEPS } from "@/lib/help/tour-steps";
 import { Button } from "@/components/ui/button";
 import { X, ArrowRight, ArrowLeft, SkipForward } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 
 interface SpotlightRect {
   top: number;
@@ -20,7 +21,7 @@ const PADDING = 8;
 export function WelcomeTour() {
   const { isTourActive, tourStepIndex, nextStep, prevStep, stopTour } = useHelp();
   const locale = useLocale();
-  const isHe = locale === "he";
+  const isHe = locale === "he"; // kept for RTL arrow key navigation and arrow icon direction
   const [rect, setRect] = useState<SpotlightRect | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -151,7 +152,7 @@ export function WelcomeTour() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-[10px] font-bold tracking-wider opacity-80 uppercase mb-1">
-                {isHe ? "סיור" : "Tour"} · {tourStepIndex + 1}/{TOUR_STEPS.length}
+                {txt(locale, { he: "סיור", en: "Tour" })} · {tourStepIndex + 1}/{TOUR_STEPS.length}
               </div>
               <h3 className="text-lg font-bold leading-tight">{step.title[locale]}</h3>
             </div>
@@ -188,17 +189,17 @@ export function WelcomeTour() {
             className="text-muted-foreground"
           >
             <SkipForward className="size-3" />
-            {isHe ? "דלג" : "Skip"}
+            {txt(locale, { he: "דלג", en: "Skip" })}
           </Button>
           <div className="flex gap-2">
             {!isFirst && (
               <Button variant="outline" size="sm" onClick={prevStep}>
                 {isHe ? <ArrowRight className="size-3" /> : <ArrowLeft className="size-3" />}
-                {isHe ? "הקודם" : "Back"}
+                {txt(locale, { he: "הקודם", en: "Back" })}
               </Button>
             )}
             <Button size="sm" onClick={isLast ? stopTour : nextStep}>
-              {isLast ? (isHe ? "סיום 🎉" : "Finish 🎉") : isHe ? "הבא" : "Next"}
+              {isLast ? txt(locale, { he: "סיום 🎉", en: "Finish 🎉" }) : txt(locale, { he: "הבא", en: "Next" })}
               {!isLast && (isHe ? <ArrowLeft className="size-3" /> : <ArrowRight className="size-3" />)}
             </Button>
           </div>

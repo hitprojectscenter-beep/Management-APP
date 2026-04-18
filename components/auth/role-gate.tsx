@@ -1,5 +1,6 @@
 "use client";
 import { useRole } from "@/lib/auth/role-context";
+import { txt } from "@/lib/utils/locale-text";
 import type { ReactNode } from "react";
 
 /**
@@ -31,11 +32,10 @@ export function RoleGate({
  */
 export function CurrentUserBanner({ locale }: { locale: string }) {
   const { currentUser, role } = useRole();
-  const isHe = locale === "he";
 
   return (
     <div className="text-xs text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-md flex items-center gap-2">
-      <span>{isHe ? "מחובר כ:" : "Logged in as:"}</span>
+      <span>{txt(locale, { he: "מחובר כ:", en: "Logged in as:" })}</span>
       <span className="font-semibold">{currentUser.name}</span>
       <span className="text-[10px] bg-background px-1.5 py-0.5 rounded">{role}</span>
     </div>

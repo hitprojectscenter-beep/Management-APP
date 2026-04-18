@@ -25,25 +25,24 @@ export function ResourceBottlenecks({
   users: MockUser[];
   locale: string;
 }) {
-  const isHe = locale === "he";
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="size-5 text-violet-600" />
-          {isHe ? "צווארי בקבוק במשאבים" : "Resource Bottlenecks"}
+          {txt(locale, { he: "צווארי בקבוק במשאבים", en: "Resource Bottlenecks" })}
           <Badge variant="outline" className="ms-auto">
             <Zap className="size-3 me-1" />
-            {isHe ? "ניתוח AI" : "AI Analysis"}
+            {txt(locale, { he: "ניתוח AI", en: "AI Analysis" })}
           </Badge>
         </CardTitle>
         <CardDescription className="flex items-start gap-1.5">
           <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
           <span>
-            {isHe
-              ? "ה-AI מנתח את הקיבולת של חברי הצוות אל מול המשימות שהוקצו להם. אם חבר צוות שאחראי על משימה בנתיב הקריטי מוקצה ב-80%+, זה מסומן כצוואר בקבוק עוד לפני שהעבודה מתחילה."
-              : "AI analyzes team capacity vs assigned work. If a team member responsible for critical-path tasks is allocated >80%, it's flagged as a bottleneck before work begins."}
+            {txt(locale, {
+              he: "ה-AI מנתח את הקיבולת של חברי הצוות אל מול המשימות שהוקצו להם. אם חבר צוות שאחראי על משימה בנתיב הקריטי מוקצה ב-80%+, זה מסומן כצוואר בקבוק עוד לפני שהעבודה מתחילה.",
+              en: "AI analyzes team capacity vs assigned work. If a team member responsible for critical-path tasks is allocated >80%, it's flagged as a bottleneck before work begins.",
+            })}
           </span>
         </CardDescription>
       </CardHeader>
@@ -51,7 +50,7 @@ export function ResourceBottlenecks({
         {bottlenecks.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground">
             <Users className="size-10 mx-auto opacity-30 mb-2" />
-            {isHe ? "אין צווארי בקבוק - העומסים מאוזנים 🎉" : "No bottlenecks - workloads are balanced 🎉"}
+            {txt(locale, { he: "אין צווארי בקבוק - העומסים מאוזנים 🎉", en: "No bottlenecks - workloads are balanced 🎉" })}
           </div>
         ) : (
           <div className="space-y-3">
@@ -72,7 +71,7 @@ export function ResourceBottlenecks({
                         {b.criticalAssignments > 0 && (
                           <Badge variant="outline" className="border-red-400 text-red-700">
                             <Zap className="size-2.5 me-0.5" />
-                            {b.criticalAssignments} {isHe ? "קריטיות" : "critical"}
+                            {b.criticalAssignments} {txt(locale, { he: "קריטיות", en: "critical" })}
                           </Badge>
                         )}
                       </div>
@@ -82,7 +81,7 @@ export function ResourceBottlenecks({
                       <div className="mt-3">
                         <div className="flex items-center justify-between text-[11px] mb-1">
                           <span className="text-muted-foreground">
-                            {isHe ? "הקצאה" : "Allocation"}
+                            {txt(locale, { he: "הקצאה", en: "Allocation" })}
                           </span>
                           <span className={cn("font-bold", b.totalFte > 100 ? "text-red-600" : b.totalFte > 80 ? "text-amber-600" : "text-emerald-600")}>
                             {b.totalFte}%
@@ -101,7 +100,7 @@ export function ResourceBottlenecks({
                         </div>
                         <div className="flex items-center justify-between text-[9px] text-muted-foreground mt-0.5">
                           <span>0%</span>
-                          <span className="text-red-600 font-semibold">80% {isHe ? "סף בטיחות" : "safety line"}</span>
+                          <span className="text-red-600 font-semibold">80% {txt(locale, { he: "סף בטיחות", en: "safety line" })}</span>
                           <span>100%</span>
                         </div>
                       </div>
@@ -110,7 +109,7 @@ export function ResourceBottlenecks({
                       <div className="mt-3 text-xs bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 px-3 py-2 rounded flex items-start gap-1.5">
                         <span>💡</span>
                         <div>
-                          <span className="font-semibold">{isHe ? "המלצה: " : "Recommendation: "}</span>
+                          <span className="font-semibold">{txt(locale, { he: "המלצה: ", en: "Recommendation: " })}</span>
                           {b.recommendation}
                         </div>
                       </div>

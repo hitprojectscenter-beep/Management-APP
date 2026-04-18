@@ -17,7 +17,7 @@ export function DependencyImpactCard({
   tasks: MockTask[];
   locale: string;
 }) {
-  const isHe = locale === "he";
+  const isHe = locale === "he"; // kept for RTL arrow direction
   const Arrow = isHe ? ArrowLeft : ArrowRight;
 
   return (

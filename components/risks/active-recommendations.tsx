@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Lightbulb, Info, Zap, Clock, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { txt } from "@/lib/utils/locale-text";
 import type { ActiveRecommendation } from "@/lib/ai/risk-engine";
 
 const PRIORITY_STYLES = {
@@ -51,14 +52,12 @@ export function ActiveRecommendations({
   recommendations: ActiveRecommendation[];
   locale: string;
 }) {
-  const isHe = locale === "he";
-
   return (
     <Card className="border-2 border-orange-300 bg-gradient-to-br from-orange-50/40 to-pink-50/30 dark:from-orange-950/10 dark:to-pink-950/10">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Lightbulb className="size-5 text-orange-600" />
-          {isHe ? "המלצות פעולה של ה-AI" : "AI Active Recommendations"}
+          {txt(locale, { he: "המלצות פעולה של ה-AI", en: "AI Active Recommendations" })}
           <Badge variant="outline" className="ms-auto bg-background">
             <Zap className="size-3 me-1" />
             {recommendations.length}
@@ -67,16 +66,17 @@ export function ActiveRecommendations({
         <CardDescription className="flex items-start gap-1.5">
           <Info className="size-3.5 mt-0.5 shrink-0 text-blue-500" />
           <span>
-            {isHe
-              ? 'במקום לחפש סיכונים בדאשבורדים, ה-AI מציג ישירות מה לעשות עכשיו - לפי דחיפות ועם פעולה ספציפית להפעיל.'
-              : "Instead of digging through dashboards, AI shows you exactly what to do now - by priority with specific actions."}
+            {txt(locale, {
+              he: 'במקום לחפש סיכונים בדאשבורדים, ה-AI מציג ישירות מה לעשות עכשיו - לפי דחיפות ועם פעולה ספציפית להפעיל.',
+              en: "Instead of digging through dashboards, AI shows you exactly what to do now - by priority with specific actions.",
+            })}
           </span>
         </CardDescription>
       </CardHeader>
       <CardContent>
         {recommendations.length === 0 ? (
           <div className="text-center py-6 text-sm text-muted-foreground">
-            🎉 {isHe ? "אין פעולות דחופות - הפרויקטים במצב טוב" : "No urgent actions - projects are in good shape"}
+            🎉 {txt(locale, { he: "אין פעולות דחופות - הפרויקטים במצב טוב", en: "No urgent actions - projects are in good shape" })}
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -98,7 +98,7 @@ export function ActiveRecommendations({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <Badge variant={styles.badge} className="text-[9px]">
-                        {isHe ? styles.label : styles.labelEn}
+                        {txt(locale, { he: styles.label, en: styles.labelEn })}
                       </Badge>
                       <Badge variant="outline" className="text-[9px]">
                         {CATEGORY_LABELS[rec.category][locale]}

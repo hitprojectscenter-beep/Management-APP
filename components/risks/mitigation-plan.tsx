@@ -65,7 +65,7 @@ export function MitigationPlanCard({
   users: MockUser[];
   locale: string;
 }) {
-  const isHe = locale === "he";
+  const isHe = locale === "he"; // kept for RTL arrow direction
   const Arrow = isHe ? ArrowLeft : ArrowRight;
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
 
@@ -314,10 +314,10 @@ export function MitigationPlanCard({
                                   <p className="text-xs text-muted-foreground mt-1">{action.detail}</p>
                                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                                     <Badge variant="outline" className={cn("text-[10px]", EFFORT_LABELS[action.effort].color)}>
-                                      ⚡ {isHe ? EFFORT_LABELS[action.effort].he : EFFORT_LABELS[action.effort].en}
+                                      ⚡ {txt(locale, { he: EFFORT_LABELS[action.effort].he, en: EFFORT_LABELS[action.effort].en })}
                                     </Badge>
                                     <Badge variant="outline" className={cn("text-[10px]", IMPACT_LABELS[action.impact].color)}>
-                                      📈 {isHe ? IMPACT_LABELS[action.impact].he : IMPACT_LABELS[action.impact].en}
+                                      📈 {txt(locale, { he: IMPACT_LABELS[action.impact].he, en: IMPACT_LABELS[action.impact].en })}
                                     </Badge>
                                     <Badge variant="outline" className="text-[10px]">
                                       🕐 {action.timeframe}
