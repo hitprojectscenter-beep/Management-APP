@@ -69,11 +69,13 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed inset-x-2 sm:inset-x-auto sm:start-[50%] top-[50%] z-50 grid w-auto sm:w-full sm:max-w-lg gap-3 sm:gap-4 border bg-background p-4 sm:p-6 shadow-2xl duration-200 rounded-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 max-h-[85vh] overflow-y-auto",
+          "fixed z-50 grid w-[calc(100%-1rem)] sm:w-full sm:max-w-lg gap-3 sm:gap-4 border bg-background p-4 sm:p-6 shadow-2xl duration-200 rounded-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 max-h-[85vh] overflow-y-auto",
           isDragging && "transition-none cursor-grabbing",
           className
         )}
         style={{
+          left: "50%",
+          top: "50%",
           transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`,
         }}
         onPointerDown={handlePointerDown}
@@ -81,10 +83,10 @@ const DialogContent = React.forwardRef<
         onPointerUp={handlePointerUp}
         {...props}
       >
-        {/* Drag handle bar */}
+        {/* Drag handle bar — visible on both mobile and desktop */}
         <div
           data-drag-handle
-          className="hidden sm:flex items-center justify-center -mt-2 mb-1 cursor-grab active:cursor-grabbing select-none"
+          className="flex items-center justify-center -mt-2 mb-1 cursor-grab active:cursor-grabbing select-none"
           title="Drag to move"
         >
           <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-muted/50 hover:bg-muted transition-colors">

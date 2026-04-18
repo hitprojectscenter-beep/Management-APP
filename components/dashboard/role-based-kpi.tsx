@@ -21,6 +21,7 @@ import {
   Layers,
   Sparkles,
   BarChart3,
+  ShieldAlert,
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -423,6 +424,112 @@ function ProjectManagerView({
             <Progress value={budgetPercent} className="h-1.5 mt-2" />
             <div className="text-xs text-muted-foreground mt-1">
               ₪{(budgetSpent / 1000).toFixed(0)}k / ₪{(budgetTotal / 1000).toFixed(0)}k · {txt(locale, { he: "לחץ", en: "click" })}
+            </div>
+          </CardContent>
+        </ClickableKpiCard>
+      </div>
+
+      {/* NEW: Management Attention Index + Risk Response Compliance */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Management Attention Index (MAI) — "Executive Engagement Score" */}
+        <ClickableKpiCard
+          borderColor="border-violet-300"
+          popupTitle={txt(locale, { he: "מדד קשב ניהולי (MAI) — פירוט", en: "Management Attention Index (MAI) — Details" })}
+          popupContent={
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground mb-2">
+                {txt(locale, {
+                  he: "מודד את מספר הכניסות של דרג ניהולי (בעלים, מנכ\"ל, מנהל חטיבה) למדדי הפרויקט ב-7 הימים האחרונים. ציון גבוה מעיד על מעורבות ניהולית פעילה.",
+                  en: "Measures senior management logins (owners, CEO, division heads) to project KPIs in the last 7 days. High score indicates active executive engagement.",
+                })}
+              </div>
+              {[
+                { name: txt(locale, { he: "מנכ\"ל", en: "CEO" }), visits: 3, trend: "+1" },
+                { name: txt(locale, { he: "מנהל כלל הפעילויות", en: "Operations Manager" }), visits: 7, trend: "+2" },
+                { name: txt(locale, { he: "בעלים - שיווק", en: "Marketing Owner" }), visits: 4, trend: "0" },
+                { name: txt(locale, { he: "בעלים - CRM", en: "CRM Owner" }), visits: 2, trend: "-1" },
+              ].map((mgr, i) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                  <span className="font-medium text-xs">{mgr.name}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{mgr.visits} {txt(locale, { he: "כניסות", en: "visits" })}</Badge>
+                    <span className={`text-[10px] ${mgr.trend.startsWith("+") ? "text-emerald-600" : mgr.trend.startsWith("-") ? "text-red-600" : "text-muted-foreground"}`}>{mgr.trend}</span>
+                  </div>
+                </div>
+              ))}
+              <div className="text-[10px] text-muted-foreground pt-1">
+                {txt(locale, { he: "📊 מקובל בספרות: Executive Engagement Score (EES) / Management Attention Index", en: "📊 Industry term: Executive Engagement Score (EES) / Management Attention Index" })}
+              </div>
+            </div>
+          }
+        >
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-muted-foreground uppercase">
+                {txt(locale, { he: "מדד קשב ניהולי (MAI)", en: "Mgmt Attention Index" })}
+              </div>
+              <Users className="size-4 text-violet-600" />
+            </div>
+            <div className="text-3xl font-bold text-violet-600">16</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {txt(locale, { he: "כניסות דרג ניהולי ב-7 ימים · לחץ", en: "executive visits in 7 days · click" })}
+            </div>
+            <Progress value={64} className="h-1.5 mt-2" />
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+              <span>{txt(locale, { he: "יעד: 25 כניסות/שבוע", en: "Target: 25 visits/week" })}</span>
+              <span>64%</span>
+            </div>
+          </CardContent>
+        </ClickableKpiCard>
+
+        {/* Risk Response Compliance (RRC) — "Risk Mitigation Adherence Rate" */}
+        <ClickableKpiCard
+          borderColor="border-rose-300"
+          popupTitle={txt(locale, { he: "מדד ציות לניהול סיכונים (RRC) — פירוט", en: "Risk Response Compliance (RRC) — Details" })}
+          popupContent={
+            <div className="space-y-2">
+              <div className="text-xs text-muted-foreground mb-2">
+                {txt(locale, {
+                  he: "מודד עד כמה מנהל הפרויקט והצוות פועלים בהתאם להמלצות AI לניהול סיכונים. כולל: ביצוע פעולות גידור, עמידה ביעדי זמן, ותגובה להתראות.",
+                  en: "Measures how well the PM and team follow AI risk recommendations. Includes: mitigation actions executed, timeline compliance, and alert responses.",
+                })}
+              </div>
+              {[
+                { action: txt(locale, { he: "פעולות גידור שבוצעו", en: "Mitigations executed" }), done: 5, total: 7 },
+                { action: txt(locale, { he: "עמידה ביעדי זמן", en: "Timeline compliance" }), done: 4, total: 7 },
+                { action: txt(locale, { he: "תגובה להתראות AI", en: "AI alert responses" }), done: 6, total: 8 },
+              ].map((item, i) => (
+                <div key={i} className="p-2 rounded-md bg-muted/30">
+                  <div className="flex items-center justify-between text-xs">
+                    <span>{item.action}</span>
+                    <Badge variant={item.done / item.total > 0.7 ? "secondary" : "destructive"}>
+                      {item.done}/{item.total}
+                    </Badge>
+                  </div>
+                  <Progress value={(item.done / item.total) * 100} className="h-1 mt-1" />
+                </div>
+              ))}
+              <div className="text-[10px] text-muted-foreground pt-1">
+                {txt(locale, { he: "📊 מקובל בספרות: Risk Response Compliance Rate / Risk Mitigation Adherence", en: "📊 Industry term: Risk Response Compliance Rate / Mitigation Adherence" })}
+              </div>
+            </div>
+          }
+        >
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-muted-foreground uppercase">
+                {txt(locale, { he: "ציות לניהול סיכונים (RRC)", en: "Risk Response Compliance" })}
+              </div>
+              <ShieldAlert className="size-4 text-rose-600" />
+            </div>
+            <div className="text-3xl font-bold text-rose-600">68%</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {txt(locale, { he: "ציות להמלצות AI · לחץ לפרטים", en: "AI recommendation compliance · click" })}
+            </div>
+            <Progress value={68} className="h-1.5 mt-2" />
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+              <span>{txt(locale, { he: "יעד: 80%+", en: "Target: 80%+" })}</span>
+              <span className="text-amber-600">{txt(locale, { he: "דורש שיפור", en: "Needs improvement" })}</span>
             </div>
           </CardContent>
         </ClickableKpiCard>
