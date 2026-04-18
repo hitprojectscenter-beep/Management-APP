@@ -307,15 +307,59 @@ export function useSpeechRecognition(
 }
 
 /**
- * Text-to-speech helper
+ * Clean text for TTS — remove emojis, markdown formatting, special chars
+ * that speech engines read aloud as "asterisk", "bullet", etc.
+ */
+function cleanTextForSpeech(text: string): string {
+  return text
+    // Remove emoji (Unicode emoji ranges)
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, "") // emoticons
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, "") // symbols & pictographs
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, "") // transport & map
+    .replace(/[\u{1F700}-\u{1F77F}]/gu, "") // alchemical
+    .replace(/[\u{1F780}-\u{1F7FF}]/gu, "") // geometric
+    .replace(/[\u{1F800}-\u{1F8FF}]/gu, "") // supplemental arrows
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, "") // supplemental symbols
+    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, "") // chess symbols
+    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, "") // symbols extended
+    .replace(/[\u{2600}-\u{26FF}]/gu, "")   // misc symbols
+    .replace(/[\u{2700}-\u{27BF}]/gu, "")   // dingbats
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, "")   // variation selectors
+    .replace(/[\u{200D}]/gu, "")             // zero width joiner
+    // Remove markdown formatting
+    .replace(/\*\*/g, "")        // bold markers
+    .replace(/\*/g, "")          // italic markers
+    .replace(/^[•●▪◦-]\s*/gm, "") // bullet points
+    .replace(/^→\s*/gm, "")     // arrow bullets
+    .replace(/^❓\s*/gm, "")    // question mark bullets
+    .replace(/^⛔\s*/gm, "")    // block markers
+    .replace(/^💡\s*/gm, "")    // idea markers
+    .replace(/^📖\s*/gm, "")    // book markers
+    .replace(/\[.*?\]/g, "")     // [bracketed text]
+    // Clean up whitespace
+    .replace(/\n{3,}/g, "\n")   // multiple newlines → one
+    .replace(/\n/g, ". ")       // newlines → pauses
+    .replace(/\s{2,}/g, " ")    // multiple spaces → one
+    .trim();
+}
+
+/**
+ * Text-to-speech helper — cleans text before speaking
  */
 export function speak(text: string, lang: string = "he-IL"): void {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   try {
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const clean = cleanTextForSpeech(text);
+    if (!clean) return; // Nothing to speak
+    const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = lang;
-    utterance.rate = 1.0;
+    utterance.rate = 0.95; // Slightly slower for clarity
+    // Try to find a voice matching the language
+    const voices = window.speechSynthesis.getVoices();
+    const langPrefix = lang.split("-")[0]; // "he" from "he-IL"
+    const matchingVoice = voices.find((v) => v.lang.startsWith(langPrefix));
+    if (matchingVoice) utterance.voice = matchingVoice;
     window.speechSynthesis.speak(utterance);
   } catch {}
 }
