@@ -76,6 +76,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               href={item.href}
               onClick={onNavigate}
               data-tour={item.key === "ai" ? "ai-link" : undefined}
+              title={item.tooltips?.[locale] || item.tooltips?.en || ""}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px]",
                 isActive

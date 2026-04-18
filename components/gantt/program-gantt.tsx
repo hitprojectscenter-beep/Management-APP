@@ -88,24 +88,25 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
     return result;
   }, [allNodes, rootNodeId, rootDescendantIds, collapsed, scopeTasks]);
 
-  // Date range
+  // Date range — starts at TODAY, default view = 31 days forward
+  // Extends to include all task dates outside this window
   const { startDate, totalDays, days } = useMemo(() => {
-    const dates: number[] = [];
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    const endDefault = new Date(now.getTime() + 31 * 86400000);
+    // Also gather task dates to extend range if needed
+    const allDates: number[] = [now.getTime(), endDefault.getTime()];
     for (const t of scopeTasks) {
-      if (t.plannedStart) dates.push(new Date(t.plannedStart).getTime());
-      if (t.plannedEnd) dates.push(new Date(t.plannedEnd).getTime());
+      if (t.plannedStart) allDates.push(new Date(t.plannedStart).getTime());
+      if (t.plannedEnd) allDates.push(new Date(t.plannedEnd).getTime());
     }
     for (const id of rootDescendantIds) {
       const r = rollups.get(id);
-      if (r?.plannedStart) dates.push(new Date(r.plannedStart).getTime());
-      if (r?.plannedEnd) dates.push(new Date(r.plannedEnd).getTime());
+      if (r?.plannedStart) allDates.push(new Date(r.plannedStart).getTime());
+      if (r?.plannedEnd) allDates.push(new Date(r.plannedEnd).getTime());
     }
-    if (!dates.length) {
-      const t = new Date();
-      return { startDate: t, totalDays: 60, days: Array.from({ length: 60 }, (_, i) => { const d = new Date(t); d.setDate(d.getDate() + i); return d; }) };
-    }
-    let min = new Date(Math.min(...dates)); let max = new Date(Math.max(...dates));
-    min.setDate(min.getDate() - 7); max.setDate(max.getDate() + 14);
+    const min = new Date(Math.min(...allDates));
+    const max = new Date(Math.max(...allDates));
+    min.setHours(0, 0, 0, 0);
     const total = Math.ceil((max.getTime() - min.getTime()) / 86400000);
     const list: Date[] = [];
     for (let i = 0; i <= total; i++) { const d = new Date(min); d.setDate(d.getDate() + i); list.push(d); }

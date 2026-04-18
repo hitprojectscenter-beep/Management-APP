@@ -30,6 +30,7 @@ import {
   TrendingUp,
   Activity,
   ChevronDown,
+  ChevronUp,
   Info,
   CheckCircle2,
   Clock,
@@ -93,6 +94,10 @@ export function RiskDashboard({ locale }: { locale: string }) {
   const projects = useMemo(() => getProjects(), []);
   const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.id ?? "");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({
+    info: true, risks: true, matrix: true, timeline: true
+  });
+  const toggle = (key: string) => setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
 
   // Derived data
   const selectedProject = useMemo(
@@ -284,13 +289,14 @@ export function RiskDashboard({ locale }: { locale: string }) {
       {/* ===== SECTION 2: Project Info Summary ===== */}
       {selectedProject && (
         <Card className="border-2 border-indigo-200 dark:border-indigo-800 bg-gradient-to-bl from-indigo-50/50 via-white to-purple-50/30 dark:from-indigo-950/20 dark:via-background dark:to-purple-950/10 shadow-lg">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 cursor-pointer hover:bg-accent/20 transition-colors" onClick={() => toggle("info")}>
             <CardTitle className="flex items-center gap-2 text-lg">
               <ShieldAlert className="size-5 text-indigo-600" />
               {txt(locale, { he: "סיכום פרויקט", en: "Project Summary" })}
+              {expanded.info ? <ChevronUp className="size-5 text-muted-foreground ms-auto" /> : <ChevronDown className="size-5 text-muted-foreground ms-auto" />}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          {expanded.info && <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
               {/* Name + methodology */}
               <div className="col-span-2 sm:col-span-3 lg:col-span-2 flex flex-col gap-2">
@@ -367,22 +373,23 @@ export function RiskDashboard({ locale }: { locale: string }) {
                 </span>
               </div>
             </div>
-          </CardContent>
+          </CardContent>}
         </Card>
       )}
 
       {/* ===== SECTION 3: Top 7 Risks ===== */}
       <Card className="shadow-lg border-2 border-rose-200 dark:border-rose-800 bg-gradient-to-br from-rose-50/30 to-orange-50/20 dark:from-rose-950/10 dark:to-orange-950/10">
-        <CardHeader>
+        <CardHeader className="cursor-pointer hover:bg-accent/20 transition-colors" onClick={() => toggle("risks")}>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="size-5 text-rose-600" />
             {txt(locale, { he: "7 סיכונים מובילים", en: "Top 7 Risks" })}
-            <Badge variant="outline" className="ms-auto bg-background">
+            <Badge variant="outline" className="bg-background">
               {allRisks.length} {txt(locale, { he: "סה״כ", en: "total" })}
             </Badge>
+            {expanded.risks ? <ChevronUp className="size-5 text-muted-foreground ms-auto" /> : <ChevronDown className="size-5 text-muted-foreground ms-auto" />}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        {expanded.risks && <CardContent>
           {top7Risks.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               {txt(locale, { he: "לא נמצאו סיכונים - מצוין!", en: "No risks found - excellent!" })}
@@ -451,18 +458,19 @@ export function RiskDashboard({ locale }: { locale: string }) {
               })}
             </div>
           )}
-        </CardContent>
+        </CardContent>}
       </Card>
 
       {/* ===== SECTION 4: Risk Assessment Matrix (5x5) ===== */}
       <Card className="shadow-lg border-2 border-violet-200 dark:border-violet-800 bg-gradient-to-br from-violet-50/30 to-indigo-50/20 dark:from-violet-950/10 dark:to-indigo-950/10">
-        <CardHeader>
+        <CardHeader className="cursor-pointer hover:bg-accent/20 transition-colors" onClick={() => toggle("matrix")}>
           <CardTitle className="flex items-center gap-2">
             <Target className="size-5 text-violet-600" />
             {txt(locale, { he: "מטריצת הערכת סיכונים", en: "Risk Assessment Matrix" })}
+            {expanded.matrix ? <ChevronUp className="size-5 text-muted-foreground ms-auto" /> : <ChevronDown className="size-5 text-muted-foreground ms-auto" />}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        {expanded.matrix && <CardContent>
           <div className="overflow-x-auto">
             <div className="min-w-[420px]">
               {/* Y-axis label */}
@@ -574,24 +582,27 @@ export function RiskDashboard({ locale }: { locale: string }) {
               ))}
             </div>
           </div>
-        </CardContent>
+        </CardContent>}
       </Card>
 
       {/* ===== SECTION 5: Risk Management Timeline (enriched) ===== */}
       <Card className="shadow-lg border-2 border-cyan-200 dark:border-cyan-800 bg-gradient-to-br from-cyan-50/30 to-sky-50/20 dark:from-cyan-950/10 dark:to-sky-950/10">
-        <CardHeader>
+        <CardHeader className="cursor-pointer hover:bg-accent/20 transition-colors" onClick={() => toggle("timeline")}>
           <CardTitle className="flex items-center gap-2">
             <Clock className="size-5 text-cyan-600" />
             {txt(locale, { he: "ציר זמן לניהול סיכונים", en: "Risk Management Timeline" })}
+            {expanded.timeline ? <ChevronUp className="size-5 text-muted-foreground ms-auto" /> : <ChevronDown className="size-5 text-muted-foreground ms-auto" />}
           </CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            {txt(locale, {
-              he: "סדר לוגי: זיהוי → הערכה (מטריצה) → תכנית גידור → מעקב → סגירה. כל סיכון מוצג לפי תאריך זיהוי עם יעד פתרון.",
-              en: "Logical order: Detection → Assessment (matrix) → Mitigation plan → Monitoring → Closure. Each risk shown by detection date with resolution target.",
-            })}
-          </p>
+          {expanded.timeline && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {txt(locale, {
+                he: "סדר לוגי: זיהוי → הערכה (מטריצה) → תכנית גידור → מעקב → סגירה. כל סיכון מוצג לפי תאריך זיהוי עם יעד פתרון.",
+                en: "Logical order: Detection → Assessment (matrix) → Mitigation plan → Monitoring → Closure. Each risk shown by detection date with resolution target.",
+              })}
+            </p>
+          )}
         </CardHeader>
-        <CardContent>
+        {expanded.timeline && <CardContent>
           {top7Risks.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               {txt(locale, { he: "אין סיכונים להצגה", en: "No risks to display" })}
@@ -735,7 +746,7 @@ export function RiskDashboard({ locale }: { locale: string }) {
               </div>
             </div>
           )}
-        </CardContent>
+        </CardContent>}
       </Card>
     </div>
   );

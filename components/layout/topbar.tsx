@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import { HelpTrigger } from "@/components/help/help-trigger";
 import { SidebarContent } from "./sidebar";
 import { useTheme } from "next-themes";
@@ -186,29 +187,31 @@ export function Topbar() {
         </div>
 
         {mounted && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            title="Toggle theme"
-            data-tour="theme-toggle"
-            className="min-w-[44px] min-h-[44px]"
-          >
-            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-          </Button>
+          <SimpleTooltip content={txt(locale, { he: "מעבר בין מצב בהיר לכהה", en: "Toggle light/dark mode", ru: "Переключить тему", fr: "Changer le thème", es: "Cambiar tema" })}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              data-tour="theme-toggle"
+              className="min-w-[44px] min-h-[44px]"
+            >
+              {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </Button>
+          </SimpleTooltip>
         )}
 
         <HelpTrigger />
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative min-w-[44px] min-h-[44px] hidden sm:inline-flex"
-          title="Notifications"
-        >
-          <Bell className="size-4" />
-          <span className="absolute top-1.5 end-1.5 size-2 rounded-full bg-red-500" />
-        </Button>
+        <SimpleTooltip content={txt(locale, { he: "התראות — הודעות על שינויים, עדכונים ואירועים חשובים", en: "Notifications — alerts about changes, updates and important events" })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative min-w-[44px] min-h-[44px] hidden sm:inline-flex"
+          >
+            <Bell className="size-4" />
+            <span className="absolute top-1.5 end-1.5 size-2 rounded-full bg-red-500" />
+          </Button>
+        </SimpleTooltip>
 
         {/* User avatar */}
         <div className="ms-1 sm:ms-2 flex items-center gap-2 px-1.5 sm:px-2 py-1 rounded-md hover:bg-accent cursor-pointer">

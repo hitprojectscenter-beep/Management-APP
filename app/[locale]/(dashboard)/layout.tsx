@@ -6,9 +6,11 @@ import { HelpBot } from "@/components/help/help-bot";
 import { HelpFloatingButton } from "@/components/help/help-trigger";
 import { PersonalAssistant } from "@/components/assistant/personal-assistant";
 import { RoleProvider } from "@/lib/auth/role-context";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
+    <TooltipProvider>
     <RoleProvider>
     <HelpProvider>
       <div className="min-h-screen flex bg-muted/20">
@@ -24,5 +26,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <PersonalAssistant />
     </HelpProvider>
     </RoleProvider>
+    </TooltipProvider>
   );
 }
