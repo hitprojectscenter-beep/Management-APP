@@ -37,10 +37,10 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   });
 
   return (
-    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
+    <div className="flex flex-col h-full bg-gradient-to-b from-slate-900 via-indigo-950 to-purple-950 text-sidebar-foreground">
       <div className="px-5 py-5 border-b border-sidebar-border">
         <Link href="/" onClick={onNavigate} className="flex items-center gap-3 group">
-          <div className="size-12 rounded-lg bg-white flex items-center justify-center shadow-lg shrink-0 p-1">
+          <div className="size-12 rounded-lg bg-white shadow-lg shadow-indigo-500/30 ring-2 ring-white/20 flex items-center justify-center shrink-0 p-1">
             <Image
               src="/mapi-logo.png"
               alt="המרכז למיפוי ישראל"
@@ -79,8 +79,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px]",
                 isActive
-                  ? "bg-sidebar-accent text-white shadow-sm"
-                  : "text-sidebar-foreground hover:bg-white/5 hover:text-white active:bg-white/10"
+                  ? "bg-white/15 text-white shadow-lg nav-glow backdrop-blur-sm"
+                  : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-white active:bg-white/15 transition-all duration-200"
               )}
             >
               <Icon className="size-4 shrink-0" />

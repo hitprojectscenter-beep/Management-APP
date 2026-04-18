@@ -24,6 +24,8 @@ export type RiskSeverity = "low" | "medium" | "high" | "critical";
 
 export type UserRole = "admin" | "manager" | "member" | "viewer" | "guest";
 
+export type ProjectMethodology = "waterfall" | "agile" | "kanban";
+
 export const TASK_STATUSES: TaskStatus[] = [
   "not_started",
   "in_progress",

@@ -30,20 +30,28 @@ const TASK_SOURCES = [
   { value: "other", labelHe: "אחר", labelEn: "Other" },
 ] as const;
 
+// Project methodology options
+const METHODOLOGY_OPTIONS = [
+  { value: "waterfall", icon: "📊", he: "Waterfall — מפל מים", en: "Waterfall", desc: { he: "שלבים רציפים, שערי שלב", en: "Sequential phases, gate reviews" } },
+  { value: "agile", icon: "🔄", he: "Agile — גמיש", en: "Agile / Scrum", desc: { he: "Sprints, velocity, user stories", en: "Sprints, velocity, user stories" } },
+  { value: "kanban", icon: "📋", he: "Kanban — זרימה", en: "Kanban", desc: { he: "זרימה רציפה, WIP limit", en: "Continuous flow, WIP limits" } },
+] as const;
+
 interface AddTaskFormData {
   title: string;
   taskType: string;
-  taskTypeOther: string; // free text when taskType === "tt-other"
+  taskTypeOther: string;
   parentType: "project" | "program";
   parentId: string;
+  methodology: string; // waterfall | agile | kanban
   description: string;
-  teamMembers: string[]; // array of user IDs
+  teamMembers: string[];
   plannedStart: string;
   plannedEnd: string;
   source: string;
-  sourceOther: string; // free text when source === "other"
+  sourceOther: string;
   priority: string;
-  attachments: File[]; // files up to 5MB each
+  attachments: File[];
 }
 
 export function AddTaskDialog({
@@ -69,6 +77,7 @@ export function AddTaskDialog({
     taskTypeOther: "",
     parentType: "project",
     parentId: projectsOnly[0]?.id || "",
+    methodology: "waterfall",
     description: "",
     teamMembers: [],
     plannedStart: new Date().toISOString().slice(0, 10),
@@ -271,6 +280,32 @@ export function AddTaskDialog({
             </select>
             {errors.parentId && <p className="text-xs text-red-500">{errors.parentId}</p>}
           </div>
+
+          {/* Project Methodology selector */}
+          {form.parentType === "project" && (
+            <div className="space-y-1.5">
+              <Label>{txt(locale, { he: "שיטת ניהול", en: "Methodology" })}</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {METHODOLOGY_OPTIONS.map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, methodology: m.value })}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all min-h-[44px]",
+                      form.methodology === m.value
+                        ? "border-primary bg-primary/10 text-primary shadow-md ring-2 ring-primary/20"
+                        : "border-border hover:bg-accent hover:border-primary/30"
+                    )}
+                  >
+                    <span className="text-lg">{m.icon}</span>
+                    <span className="text-xs font-semibold">{txt(locale, { he: m.he.split(" — ")[0], en: m.en })}</span>
+                    <span className="text-[9px] text-muted-foreground leading-tight">{txt(locale, m.desc)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Description (max 300) */}
           <div className="space-y-1.5">

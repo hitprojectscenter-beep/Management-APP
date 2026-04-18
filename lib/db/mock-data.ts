@@ -26,6 +26,7 @@ export interface MockWbsNode {
   nameEn?: string;
   description?: string;
   deliverable?: string;
+  methodology?: string;
   position: number;
 }
 
@@ -275,6 +276,7 @@ export const mockWbsNodes: MockWbsNode[] = [
     name: "מעבר ל-AWS",
     nameEn: "AWS Migration",
     description: "מעבר כל המערכות הליבה לסביבת AWS עם אפס downtime",
+    methodology: "waterfall",
     position: 0,
   },
   {
@@ -283,6 +285,7 @@ export const mockWbsNodes: MockWbsNode[] = [
     level: "project",
     name: "פלטפורמת AI פנימית",
     nameEn: "Internal AI Platform",
+    methodology: "waterfall",
     position: 0,
   },
   // Goals
@@ -354,6 +357,7 @@ export const mockWbsNodes: MockWbsNode[] = [
     nameEn: "Salesforce CRM",
     description:
       "מערכת ניהול קשרי לקוחות למרכז למיפוי ישראל. הסתיים ב-20/03/2026 עם חריגה של 3 חודשים. כעת בסטטוס תחזוקה.",
+    methodology: "waterfall",
     position: 0,
   },
   // Project 2: Marketing, Sales & Revenue on Salesforce (real data from Excel)
@@ -365,6 +369,7 @@ export const mockWbsNodes: MockWbsNode[] = [
     nameEn: "Salesforce Marketing, Sales & Revenue Applications",
     description:
       "ביצוע יישומים בפלטפורמת סיילספורס לטובת אגף שיווק, מכירות והכנסות. 14 מסלולי מכירה ב-4 סשנים + שלב תחזוקה. צפוי להסתיים 07/2028.",
+    methodology: "agile",
     position: 1,
   },
   // Phase 1: Brief publication
@@ -453,6 +458,7 @@ export const mockWbsNodes: MockWbsNode[] = [
     nameEn: "Salesforce-based Task Management Implementation",
     description:
       "תת-פרויקט להטמעת מערכת ניהול משימות פנימית מבוססת Salesforce. החל ב-01/08/2025, היה צפוי להסתיים ב-26/02/2026 וטרם הסתיים.",
+    methodology: "kanban",
     position: 2,
   },
 ];

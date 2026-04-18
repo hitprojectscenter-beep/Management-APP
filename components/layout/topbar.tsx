@@ -58,7 +58,7 @@ export function Topbar() {
   const RoleIcon = ROLE_ICONS[role] || Shield;
 
   return (
-    <header className="h-14 bg-background border-b border-border flex items-center px-3 sm:px-4 lg:px-6 gap-2 sm:gap-4 sticky top-0 z-30 backdrop-blur-md bg-background/80">
+    <header className="h-14 border-b border-border/50 flex items-center px-3 sm:px-4 lg:px-6 gap-2 sm:gap-4 sticky top-0 z-30 backdrop-blur-xl bg-background/70 shadow-sm">
       {/* Mobile hamburger */}
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetTrigger asChild>

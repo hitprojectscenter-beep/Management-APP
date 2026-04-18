@@ -189,6 +189,50 @@
   .gantt-bar {
     @apply rounded-md transition-all hover:brightness-110 cursor-pointer;
   }
+
+  /* === PREMIUM WOW DESIGN === */
+
+  /* Premium card with gradient border on hover */
+  .premium-card {
+    @apply border border-border/50 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 rounded-xl overflow-hidden;
+  }
+  .premium-card:hover {
+    border-color: transparent;
+    background: linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+                linear-gradient(135deg, hsl(217 91% 60% / 0.5), hsl(271 91% 65% / 0.5)) border-box;
+    border: 1px solid transparent;
+  }
+
+  /* Glass morphism - premium level */
+  .glass-premium {
+    @apply backdrop-blur-xl border border-white/10 shadow-xl;
+    background: hsl(var(--background) / 0.75);
+  }
+
+  /* Gradient stat card (for landing page stats) */
+  .stat-gradient {
+    @apply text-white rounded-xl p-5 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02];
+  }
+
+  /* Glow on active sidebar item */
+  .nav-glow {
+    box-shadow: 0 0 20px -5px hsl(217 91% 60% / 0.3), inset 0 0 0 1px hsl(217 91% 60% / 0.15);
+  }
+
+  /* Animated entrance classes */
+  .animate-fade-up {
+    animation: fadeUp 0.5s ease-out both;
+  }
+  .animate-fade-up-delay-1 { animation: fadeUp 0.5s ease-out 0.1s both; }
+  .animate-fade-up-delay-2 { animation: fadeUp 0.5s ease-out 0.2s both; }
+  .animate-fade-up-delay-3 { animation: fadeUp 0.5s ease-out 0.3s both; }
+
+  /* Shimmer loading effect */
+  .shimmer {
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--primary) / 0.08) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
 }
 
 @layer utilities {
@@ -196,4 +240,14 @@
   .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
   .text-balance { text-wrap: balance; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
 }

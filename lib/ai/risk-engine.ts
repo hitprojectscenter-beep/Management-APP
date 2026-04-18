@@ -19,7 +19,8 @@ export interface DetectedRisk {
   severity: RiskSeverity;
   type: string;
   message: string;
-  suggestion: string;
+  suggestion?: string;
+  detectedAt?: string;
 }
 
 export function scanTasksForRisks(tasks: MockTask[]): DetectedRisk[] {
@@ -554,4 +555,163 @@ export function generateActiveRecommendations(
   // Sort by priority
   const order = { now: 0, soon: 1, watch: 2 };
   return recommendations.sort((a, b) => order[a.priority] - order[b.priority]);
+}
+
+// ============================================================
+// Methodology-Aware Risk Scanner
+// ============================================================
+
+/**
+ * Methodology-aware risk scanner.
+ * Detects risks specific to the project management methodology.
+ */
+export function scanMethodologyRisks(
+  tasks: MockTask[],
+  methodology: string
+): DetectedRisk[] {
+  const risks: DetectedRisk[] = [];
+  const now = Date.now();
+  const activeTasks = tasks.filter(t => t.status !== "done" && t.status !== "cancelled");
+  const inProgressTasks = activeTasks.filter(t => t.status === "in_progress");
+  const blockedTasks = activeTasks.filter(t => t.status === "blocked");
+  const doneTasks = tasks.filter(t => t.status === "done");
+
+  if (methodology === "waterfall") {
+    // WATERFALL RISK 1: Dependency violation — successor started before predecessor finished
+    for (const task of activeTasks) {
+      if (task.dependencies.length === 0) continue;
+      for (const depId of task.dependencies) {
+        const dep = tasks.find(t => t.id === depId);
+        if (dep && dep.status !== "done" && task.status === "in_progress") {
+          risks.push({
+            taskId: task.id,
+            type: "waterfall_dependency_violation",
+            severity: "high",
+            message: `משימה "${task.title}" התחילה לפני שהמשימה הקודמת "${dep.title}" הסתיימה — הפרת רצף Waterfall`,
+            detectedAt: new Date().toISOString(),
+          });
+        }
+      }
+    }
+
+    // WATERFALL RISK 2: Phase gate delay — critical/milestone task overdue blocks downstream
+    const criticalOverdue = activeTasks.filter(t =>
+      t.priority === "critical" && t.plannedEnd && new Date(t.plannedEnd).getTime() < now
+    );
+    for (const task of criticalOverdue) {
+      const blocked = activeTasks.filter(t => t.dependencies.includes(task.id));
+      if (blocked.length > 0) {
+        risks.push({
+          taskId: task.id,
+          type: "waterfall_phase_gate_delay",
+          severity: "critical",
+          message: `שער שלבי "${task.title}" באיחור — חוסם ${blocked.length} משימות המשך`,
+          detectedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    // WATERFALL RISK 3: Scope creep — high ratio of not_started tasks suggests late additions
+    const notStarted = activeTasks.filter(t => t.status === "not_started");
+    if (activeTasks.length > 5 && notStarted.length / activeTasks.length > 0.4) {
+      risks.push({
+        taskId: activeTasks[0].id,
+        type: "waterfall_scope_creep",
+        severity: "medium",
+        message: `${Math.round(notStarted.length / activeTasks.length * 100)}% מהמשימות טרם התחילו — חשד לתחולת היקף (Scope Creep)`,
+        detectedAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  else if (methodology === "agile") {
+    // AGILE RISK 1: Velocity miss — completed tasks < 70% of total
+    const completionRate = tasks.length > 0 ? doneTasks.length / tasks.length : 0;
+    if (tasks.length > 5 && completionRate < 0.7) {
+      risks.push({
+        taskId: activeTasks[0]?.id || tasks[0].id,
+        type: "agile_velocity_miss",
+        severity: "high",
+        message: `Sprint velocity ירוד: רק ${Math.round(completionRate * 100)}% מהמשימות הושלמו (סף: 70%)`,
+        detectedAt: new Date().toISOString(),
+      });
+    }
+
+    // AGILE RISK 2: WIP overflow — more than 3 in-progress per person
+    const userWip = new Map<string, number>();
+    for (const t of inProgressTasks) {
+      if (t.assigneeId) userWip.set(t.assigneeId, (userWip.get(t.assigneeId) || 0) + 1);
+    }
+    for (const [userId, count] of userWip) {
+      if (count > 3) {
+        risks.push({
+          taskId: inProgressTasks.find(t => t.assigneeId === userId)!.id,
+          type: "agile_wip_overflow",
+          severity: "medium",
+          message: `עובד מחזיק ${count} משימות בביצוע בו-זמנית (מקסימום מומלץ: 3) — פגיעה בפוקוס`,
+          detectedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    // AGILE RISK 3: Critical story incomplete
+    const criticalIncomplete = activeTasks.filter(t => t.priority === "critical" || t.priority === "high");
+    if (criticalIncomplete.length > 0 && completionRate > 0.5) {
+      risks.push({
+        taskId: criticalIncomplete[0].id,
+        type: "agile_story_incomplete",
+        severity: "high",
+        message: `${criticalIncomplete.length} User Stories קריטיות טרם הושלמו — סיכון לסיום Sprint ללא תוצר`,
+        detectedAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  else if (methodology === "kanban") {
+    // KANBAN RISK 1: WIP limit exceeded — more than 5 in-progress across team
+    if (inProgressTasks.length > 5) {
+      risks.push({
+        taskId: inProgressTasks[0].id,
+        type: "kanban_wip_exceeded",
+        severity: "high",
+        message: `${inProgressTasks.length} משימות בביצוע — חריגה מגבול WIP (מקסימום: 5)`,
+        detectedAt: new Date().toISOString(),
+      });
+    }
+
+    // KANBAN RISK 2: Cycle time anomaly — task in progress > 2x average
+    const avgDays = inProgressTasks.reduce((sum, t) => {
+      const start = t.actualStart || t.plannedStart;
+      if (!start) return sum;
+      return sum + (now - new Date(start).getTime()) / 86400000;
+    }, 0) / Math.max(inProgressTasks.length, 1);
+
+    for (const t of inProgressTasks) {
+      const start = t.actualStart || t.plannedStart;
+      if (!start) continue;
+      const days = (now - new Date(start).getTime()) / 86400000;
+      if (days > avgDays * 2 && days > 5) {
+        risks.push({
+          taskId: t.id,
+          type: "kanban_cycle_time_anomaly",
+          severity: "medium",
+          message: `"${t.title}" בביצוע כבר ${Math.round(days)} ימים (ממוצע: ${Math.round(avgDays)}) — חריגת Cycle Time`,
+          detectedAt: new Date().toISOString(),
+        });
+      }
+    }
+
+    // KANBAN RISK 3: Bottleneck — blocked > 20% of active
+    if (activeTasks.length > 3 && blockedTasks.length / activeTasks.length > 0.2) {
+      risks.push({
+        taskId: blockedTasks[0].id,
+        type: "kanban_bottleneck",
+        severity: "high",
+        message: `${blockedTasks.length} משימות חסומות מתוך ${activeTasks.length} (${Math.round(blockedTasks.length / activeTasks.length * 100)}%) — צוואר בקבוק`,
+        detectedAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  return risks;
 }

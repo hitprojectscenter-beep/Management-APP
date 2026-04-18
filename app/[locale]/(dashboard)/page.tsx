@@ -104,6 +104,7 @@ export default async function LandingPage({
       {/* Stats cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats">
         <StatCard
+          delay={0}
           icon={CheckSquare}
           label={txt(locale, { he: "סך משימות פתוחות", en: "Total Open Tasks", ru: "Открытые задачи", fr: "Tâches ouvertes", es: "Tareas abiertas" })}
           value={myOpenTasks.length}
@@ -113,6 +114,7 @@ export default async function LandingPage({
           tooltip={txt(locale, { he: "כל המשימות שעוד לא הושלמו או בוטלו", en: "All tasks not yet completed or cancelled", ru: "Все незавершённые задачи", fr: "Toutes les tâches non terminées", es: "Todas las tareas no completadas" })}
         />
         <StatCard
+          delay={100}
           icon={Clock}
           label={txt(locale, { he: "בביצוע", en: "In Progress", ru: "В работе", fr: "En cours", es: "En progreso" })}
           value={inProgress}
@@ -122,6 +124,7 @@ export default async function LandingPage({
           tooltip={txt(locale, { he: "משימות שכבר התחלת לעבוד עליהן", en: "Tasks you've started working on", ru: "Задачи, над которыми вы работаете", fr: "Tâches en cours de réalisation", es: "Tareas en las que estás trabajando" })}
         />
         <StatCard
+          delay={200}
           icon={AlertTriangle}
           label={txt(locale, { he: "באיחור", en: "Overdue", ru: "Просрочено", fr: "En retard", es: "Retrasadas" })}
           value={overdue}
@@ -131,6 +134,7 @@ export default async function LandingPage({
           tooltip={txt(locale, { he: "משימות שעברו את תאריך היעד", en: "Tasks past their due date", ru: "Задачи с истёкшим сроком", fr: "Tâches en retard", es: "Tareas vencidas" })}
         />
         <StatCard
+          delay={300}
           icon={CalendarIcon}
           label={txt(locale, { he: "השבוע", en: "Due This Week", ru: "На этой неделе", fr: "Cette semaine", es: "Esta semana" })}
           value={dueThisWeek}
@@ -260,6 +264,7 @@ function StatCard({
   bg,
   iconColor,
   tooltip,
+  delay,
 }: {
   icon: typeof CheckSquare;
   label: string;
@@ -268,20 +273,23 @@ function StatCard({
   bg: string;
   iconColor: string;
   tooltip: string;
+  delay?: number;
 }) {
   return (
-    <Card className="card-hover" title={tooltip}>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="text-sm text-muted-foreground">{label}</div>
-            <div className="text-3xl font-bold mt-2">{value}</div>
-          </div>
-          <div className={`size-11 rounded-lg ${bg} flex items-center justify-center`}>
-            <Icon className={`size-5 ${iconColor}`} />
-          </div>
+    <div
+      className={`stat-gradient bg-gradient-to-br ${color} animate-fade-up`}
+      style={delay ? { animationDelay: `${delay}ms` } : undefined}
+      title={tooltip}
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-sm text-white/80 font-medium">{label}</div>
+          <div className="text-4xl font-bold mt-2">{value}</div>
         </div>
-      </CardContent>
-    </Card>
+        <div className="size-12 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+          <Icon className="size-6 text-white" />
+        </div>
+      </div>
+    </div>
   );
 }
