@@ -577,101 +577,161 @@ export function RiskDashboard({ locale }: { locale: string }) {
         </CardContent>
       </Card>
 
-      {/* ===== SECTION 5: Risk Management Timeline ===== */}
+      {/* ===== SECTION 5: Risk Management Timeline (enriched) ===== */}
       <Card className="shadow-lg border-2 border-cyan-200 dark:border-cyan-800 bg-gradient-to-br from-cyan-50/30 to-sky-50/20 dark:from-cyan-950/10 dark:to-sky-950/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="size-5 text-cyan-600" />
             {txt(locale, { he: "ציר זמן לניהול סיכונים", en: "Risk Management Timeline" })}
           </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            {txt(locale, {
+              he: "סדר לוגי: זיהוי → הערכה (מטריצה) → תכנית גידור → מעקב → סגירה. כל סיכון מוצג לפי תאריך זיהוי עם יעד פתרון.",
+              en: "Logical order: Detection → Assessment (matrix) → Mitigation plan → Monitoring → Closure. Each risk shown by detection date with resolution target.",
+            })}
+          </p>
         </CardHeader>
         <CardContent>
           {top7Risks.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
-              {txt(locale, { he: "אין סיכונים להצגה על ציר הזמן", en: "No risks to display on the timeline" })}
+              {txt(locale, { he: "אין סיכונים להצגה", en: "No risks to display" })}
             </div>
           ) : (
-            <div className="relative">
-              {/* Horizontal line */}
-              <div className="absolute top-6 start-0 end-0 h-0.5 bg-gradient-to-l from-cyan-300 via-sky-300 to-indigo-300 dark:from-cyan-700 dark:via-sky-700 dark:to-indigo-700" />
+            <div className="space-y-4">
+              {/* Timeline legend: flow stages */}
+              <div className="flex items-center gap-2 flex-wrap text-[10px] text-muted-foreground bg-muted/30 rounded-lg p-2">
+                <span className="font-semibold">{txt(locale, { he: "שלבים:", en: "Stages:" })}</span>
+                {[
+                  { he: "🔍 זיהוי", en: "🔍 Detection" },
+                  { he: "📐 הערכה", en: "📐 Assessment" },
+                  { he: "🛡️ גידור", en: "🛡️ Mitigation" },
+                  { he: "👁️ מעקב", en: "👁️ Monitoring" },
+                  { he: "✅ סגירה", en: "✅ Closure" },
+                ].map((s, i) => (
+                  <span key={i} className="flex items-center gap-1">
+                    {i > 0 && <span className="text-muted-foreground/50">→</span>}
+                    {txt(locale, s)}
+                  </span>
+                ))}
+              </div>
 
-              <div className="relative flex overflow-x-auto gap-0 pb-4">
-                {top7Risks.map((risk, idx) => {
-                  const task = getTaskById(risk.taskId);
-                  const detectedDate = risk.detectedAt || new Date().toISOString();
-                  // Estimate mitigation target: 7 days for critical, 14 for high, 21 for medium, 30 for low
-                  const mitigationDays =
-                    risk.severity === "critical" ? 7 : risk.severity === "high" ? 14 : risk.severity === "medium" ? 21 : 30;
-                  const targetDate = new Date(new Date(detectedDate).getTime() + mitigationDays * 86400000).toISOString();
+              {/* Vertical timeline (better for mobile + rich content) */}
+              <div className="relative">
+                {/* Vertical line */}
+                <div className="absolute start-5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-red-400 via-amber-400 to-emerald-400" />
 
-                  const dotColor =
-                    risk.severity === "critical"
-                      ? "bg-red-500 shadow-red-300"
+                <div className="space-y-4">
+                  {top7Risks.map((risk, idx) => {
+                    const task = getTaskById(risk.taskId);
+                    const assignee = task?.assigneeId ? getUserById(task.assigneeId) : null;
+                    const detectedDate = risk.detectedAt || new Date().toISOString();
+                    const mitigationDays = risk.severity === "critical" ? 7 : risk.severity === "high" ? 14 : risk.severity === "medium" ? 21 : 30;
+                    const targetDate = new Date(new Date(detectedDate).getTime() + mitigationDays * 86400000).toISOString();
+                    const matrixScore = risk.severity === "critical" ? "5×5=25" : risk.severity === "high" ? "4×4=16" : risk.severity === "medium" ? "3×3=9" : "2×2=4";
+
+                    const dotColor = risk.severity === "critical" ? "bg-red-500" : risk.severity === "high" ? "bg-orange-500" : risk.severity === "medium" ? "bg-amber-400" : "bg-blue-400";
+                    const borderColor = risk.severity === "critical" ? "border-red-300" : risk.severity === "high" ? "border-orange-300" : risk.severity === "medium" ? "border-amber-300" : "border-blue-300";
+
+                    // Determine current stage
+                    const now = Date.now();
+                    const detected = new Date(detectedDate).getTime();
+                    const target = new Date(targetDate).getTime();
+                    const progress = Math.min(100, Math.round(((now - detected) / (target - detected)) * 100));
+                    const stage = progress >= 100 ? "closing" : progress > 60 ? "monitoring" : progress > 30 ? "mitigating" : "assessing";
+
+                    const mitigationAction = risk.suggestion || (risk.severity === "critical"
+                      ? txt(locale, { he: "הסלמה מיידית למנהל בכיר + תגבור משאבים", en: "Immediate escalation + resource reinforcement" })
                       : risk.severity === "high"
-                        ? "bg-orange-500 shadow-orange-300"
-                        : risk.severity === "medium"
-                          ? "bg-amber-400 shadow-amber-300"
-                          : "bg-blue-400 shadow-blue-300";
+                        ? txt(locale, { he: "שיבוץ מחדש + סקירת תלויות", en: "Reassignment + dependency review" })
+                        : txt(locale, { he: "מעקב שבועי + התאמת לו\"ז", en: "Weekly monitoring + schedule adjustment" }));
 
-                  const mitigationAction =
-                    risk.suggestion ||
-                    (risk.severity === "critical"
-                      ? txt(locale, { he: "הסלמה מיידית", en: "Immediate escalation" })
-                      : risk.severity === "high"
-                        ? txt(locale, { he: "תגבור משאבים", en: "Resource reinforcement" })
-                        : txt(locale, { he: "מעקב ובקרה", en: "Monitor and control" }));
+                    return (
+                      <div key={`tl-${risk.taskId}-${risk.type}-${idx}`} className="relative flex gap-4 ps-12">
+                        {/* Dot on vertical line */}
+                        <div className={cn("absolute start-3.5 size-4 rounded-full border-2 border-white dark:border-gray-800 shadow-lg z-10", dotColor)} />
+                        {/* Step number */}
+                        <div className="absolute start-1 top-5 text-[9px] font-bold text-muted-foreground">{idx + 1}</div>
 
-                  return (
-                    <div
-                      key={`tl-${risk.taskId}-${risk.type}-${idx}`}
-                      className="flex flex-col items-center min-w-[140px] flex-1 px-2"
-                    >
-                      {/* Dot on timeline */}
-                      <div className={cn("size-4 rounded-full shadow-lg z-10 border-2 border-white dark:border-gray-800", dotColor)} />
-
-                      {/* Content below */}
-                      <div className="mt-3 w-full rounded-xl border bg-background/80 backdrop-blur-sm p-3 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Badge
-                            className={cn(
-                              "text-[9px] uppercase border",
-                              risk.severity === "critical"
-                                ? "bg-red-100 text-red-700 border-red-300 dark:bg-red-900/40 dark:text-red-300"
-                                : risk.severity === "high"
-                                  ? "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/40 dark:text-orange-300"
-                                  : risk.severity === "medium"
-                                    ? "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/40 dark:text-amber-300"
-                                    : "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300"
-                            )}
-                          >
-                            {risk.severity}
-                          </Badge>
-                        </div>
-
-                        <p className="text-xs font-semibold leading-tight mt-1 line-clamp-2">
-                          {task?.title ?? risk.type}
-                        </p>
-
-                        <p className="text-[10px] text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-                          {mitigationAction}
-                        </p>
-
-                        <div className="mt-2 pt-2 border-t space-y-1">
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                            <Calendar className="size-3" />
-                            <span>{txt(locale, { he: "זוהה:", en: "Detected:" })}</span>
-                            <span className="font-medium">{fmt(detectedDate)}</span>
+                        {/* Risk card */}
+                        <div className={cn("flex-1 rounded-xl border-2 bg-background/80 backdrop-blur-sm p-4 shadow-sm hover:shadow-md transition-shadow", borderColor)}>
+                          {/* Header row */}
+                          <div className="flex items-start justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge className={cn("text-[9px] uppercase", risk.severity === "critical" ? "bg-red-100 text-red-700" : risk.severity === "high" ? "bg-orange-100 text-orange-700" : risk.severity === "medium" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700")}>
+                                {risk.severity}
+                              </Badge>
+                              <span className="text-[10px] font-mono text-muted-foreground">{risk.type}</span>
+                              <Badge variant="outline" className="text-[9px]">
+                                {txt(locale, { he: "מטריצה:", en: "Matrix:" })} {matrixScore}
+                              </Badge>
+                            </div>
+                            {assignee && <Avatar src={assignee.image} fallback={assignee.name[0]} className="size-6" />}
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                            <Target className="size-3" />
-                            <span>{txt(locale, { he: "יעד:", en: "Target:" })}</span>
-                            <span className="font-medium">{fmt(targetDate)}</span>
+
+                          {/* Task title + risk message */}
+                          <h4 className="font-semibold text-sm mt-2">{task?.title ?? risk.type}</h4>
+                          <p className="text-xs text-muted-foreground mt-1">{risk.message}</p>
+
+                          {/* Timeline dates + progress */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-[10px]">
+                            <div className="bg-muted/30 rounded-md p-2">
+                              <div className="text-muted-foreground">🔍 {txt(locale, { he: "זיהוי", en: "Detected" })}</div>
+                              <div className="font-semibold">{fmt(detectedDate)}</div>
+                            </div>
+                            <div className="bg-muted/30 rounded-md p-2">
+                              <div className="text-muted-foreground">📐 {txt(locale, { he: "הערכה", en: "Assessed" })}</div>
+                              <div className="font-semibold">{matrixScore}</div>
+                            </div>
+                            <div className="bg-muted/30 rounded-md p-2">
+                              <div className="text-muted-foreground">🛡️ {txt(locale, { he: "גידור", en: "Mitigate" })}</div>
+                              <div className="font-semibold">{fmt(targetDate)}</div>
+                            </div>
+                            <div className="bg-muted/30 rounded-md p-2">
+                              <div className="text-muted-foreground">📊 {txt(locale, { he: "שלב נוכחי", en: "Current" })}</div>
+                              <div className="font-semibold capitalize">{stage}</div>
+                            </div>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="mt-2">
+                            <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                              <span>{txt(locale, { he: "התקדמות טיפול", en: "Treatment progress" })}</span>
+                              <span>{progress}%</span>
+                            </div>
+                            <Progress value={progress} className="h-1.5" />
+                          </div>
+
+                          {/* AI Mitigation Plan */}
+                          <div className="mt-3 p-3 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border border-indigo-200 dark:border-indigo-800">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <Zap className="size-3.5 text-indigo-600" />
+                              <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 uppercase">
+                                {txt(locale, { he: "תכנית AI לטיפול בסיכון", en: "AI Risk Mitigation Plan" })}
+                              </span>
+                            </div>
+                            <div className="text-xs text-indigo-900 dark:text-indigo-200 space-y-1">
+                              <p className="font-medium">{mitigationAction}</p>
+                              <div className="text-[10px] text-indigo-600 dark:text-indigo-400 space-y-0.5">
+                                <p>1️⃣ {txt(locale, {
+                                  he: risk.severity === "critical" ? "הסלמה מיידית — דיווח להנהלה בכירה תוך 24 שעות" : risk.severity === "high" ? "זימון פגישת חירום עם בעלי עניין" : "תיעוד הסיכון ועדכון רשימת סיכונים",
+                                  en: risk.severity === "critical" ? "Immediate escalation — report to senior management within 24h" : risk.severity === "high" ? "Emergency meeting with stakeholders" : "Document risk and update risk register",
+                                })}</p>
+                                <p>2️⃣ {txt(locale, {
+                                  he: risk.severity === "critical" ? "הקצאת משאבים נוספים + תגבור צוות" : risk.severity === "high" ? "שיבוץ מחדש של משימות + עדכון לו\"ז" : "מעקב שבועי + סקירת התקדמות",
+                                  en: risk.severity === "critical" ? "Allocate additional resources + team reinforcement" : risk.severity === "high" ? "Task reassignment + schedule update" : "Weekly monitoring + progress review",
+                                })}</p>
+                                <p>3️⃣ {txt(locale, {
+                                  he: `סקירת אפקטיביות תוך ${mitigationDays} ימים`,
+                                  en: `Effectiveness review within ${mitigationDays} days`,
+                                })}</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
