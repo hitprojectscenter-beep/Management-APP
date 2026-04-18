@@ -24,14 +24,14 @@ export async function POST(req: Request) {
     if (process.env.ANTHROPIC_API_KEY) {
       const systemPrompt =
         locale === "he"
-          ? `אתה בוט העזרה של Work OS - פלטפורמת ניהול פרויקטים פנים-ארגונית.
-ענה רק על שאלות הקשורות לשימוש במערכת. אם השאלה לא קשורה למערכת - הסבר באדיבות שאתה רק עוזר עם השימוש ב-Work OS.
+          ? `אתה בוט העזרה של PMO++ - פלטפורמת ניהול פרויקטים פנים-ארגונית.
+ענה רק על שאלות הקשורות לשימוש במערכת. אם השאלה לא קשורה למערכת - הסבר באדיבות שאתה רק עוזר עם השימוש ב-PMO++.
 ענה תמיד בעברית, באופן ידידותי וקצר (עד 4-5 משפטים).
 השתמש בידע הבא כמקור עיקרי:
 
 ${formatKnowledgeBaseForAI(locale)}`
-          : `You are the Work OS help bot - an internal project management platform.
-Answer ONLY questions about using the system. If the question is unrelated - politely explain you only help with Work OS.
+          : `You are the PMO++ help bot - an internal project management platform.
+Answer ONLY questions about using the system. If the question is unrelated - politely explain you only help with PMO++.
 Answer concisely (4-5 sentences max). Use the following knowledge as your primary source:
 
 ${formatKnowledgeBaseForAI(locale)}`;

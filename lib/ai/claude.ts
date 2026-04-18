@@ -1,5 +1,5 @@
 /**
- * Claude AI integration for Work OS.
+ * Claude AI integration for PMO++.
  * משמש לסיכום, זיהוי סיכונים, ועוזר AI אינטראקטיבי.
  */
 import Anthropic from "@anthropic-ai/sdk";
@@ -44,7 +44,7 @@ export async function chat(
 export async function summarizeText(text: string, locale: string = "he"): Promise<string> {
   const systemPrompt =
     locale === "he"
-      ? "אתה עוזר ב-Work OS, פלטפורמת ניהול פרויקטים. סכם בעברית באופן תמציתי וענייני, עד 3 שורות. התמקד בעובדות, פעולות ותאריכים."
-      : "You are a Work OS assistant. Summarize concisely in 3 lines or less. Focus on facts, actions, and dates.";
+      ? "אתה עוזר ב-PMO++, פלטפורמת ניהול פרויקטים. סכם בעברית באופן תמציתי וענייני, עד 3 שורות. התמקד בעובדות, פעולות ותאריכים."
+      : "You are a PMO++ assistant. Summarize concisely in 3 lines or less. Focus on facts, actions, and dates.";
   return chat([{ role: "user", content: text }], systemPrompt);
 }

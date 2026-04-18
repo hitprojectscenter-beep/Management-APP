@@ -12,8 +12,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swa
 const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-hebrew", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "Work OS", template: "%s · Work OS" },
-  description: "פלטפורמת ניהול פרויקטים פנים-ארגונית | Internal Work OS",
+  title: { default: "PMO++", template: "%s · PMO++" },
+  description: "פלטפורמת ניהול פרויקטים פנים-ארגונית | Internal PMO++",
 };
 
 export function generateStaticParams() {

@@ -22,7 +22,7 @@ import { findHelpByKeywords } from "../help/help-content";
 // Claude system prompts (used when ANTHROPIC_API_KEY is set)
 // ============================================================
 
-export const ASSISTANT_SYSTEM_PROMPT_HE = `אתה עוזר אישי חכם של Work OS - פלטפורמת ניהול פרויקטים של המרכז למיפוי ישראל.
+export const ASSISTANT_SYSTEM_PROMPT_HE = `אתה עוזר אישי חכם של PMO++ - פלטפורמת ניהול פרויקטים של המרכז למיפוי ישראל.
 
 תפקידך: לנתח פקודה של משתמש ולהחזיר JSON מובנה שמתאר את הפעולה המבוקשת.
 
@@ -51,7 +51,7 @@ export const ASSISTANT_SYSTEM_PROMPT_HE = `אתה עוזר אישי חכם של 
 
 החזר אך ורק JSON תקין.`;
 
-export const ASSISTANT_SYSTEM_PROMPT_EN = `You are the Personal Assistant for Work OS - the Israel Mapping Center's project management platform.
+export const ASSISTANT_SYSTEM_PROMPT_EN = `You are the Personal Assistant for PMO++ - the Israel Mapping Center's project management platform.
 
 Analyze user commands and return structured JSON. You don't execute actions - only identify intent and extract entities.
 

@@ -18,12 +18,12 @@ export const TOUR_STEPS: TourStep[] = [
     selector: "body",
     placement: "center",
     title: {
-      he: "ברוכים הבאים ל-Work OS של המרכז למיפוי ישראל 👋",
-      en: "Welcome to Work OS - Israel Mapping Center 👋",
+      he: "ברוכים הבאים ל-PMO++ של המרכז למיפוי ישראל 👋",
+      en: "Welcome to PMO++ - Israel Mapping Center 👋",
     },
     content: {
-      he: "Work OS היא פלטפורמת ניהול הפרויקטים הפנים-ארגונית של המרכז למיפוי ישראל. היא מאגדת במקום אחד את כל הפרוגרמות, הפרויקטים, המשימות והמשתתפים שלך - עם תמיכה מלאה בעברית, תובנות AI, עוזר אישי קולי, וניהול סיכונים פרואקטיבי.\n\nהסיור הקצר הזה (כ-2 דקות) יציג לך את הפונקציונליות העיקרית. בכל שלב תוכל לדלג או לסגור - אפשר להפעיל את הסיור מחדש בכל עת מכפתור העזרה (?) בראש הדף.",
-      en: "Work OS is the Israel Mapping Center's internal project management platform. It unifies all your programs, projects, tasks and team members in one place - with full Hebrew support, AI insights, a voice-enabled personal assistant, and proactive risk management.\n\nThis quick tour (~2 minutes) will walk you through the main features. You can skip or close at any step - the tour can be restarted anytime from the help button (?) at the top.",
+      he: "PMO++ היא פלטפורמת ניהול הפרויקטים הפנים-ארגונית של המרכז למיפוי ישראל. היא מאגדת במקום אחד את כל הפרוגרמות, הפרויקטים, המשימות והמשתתפים שלך - עם תמיכה מלאה בעברית, תובנות AI, עוזר אישי קולי, וניהול סיכונים פרואקטיבי.\n\nהסיור הקצר הזה (כ-2 דקות) יציג לך את הפונקציונליות העיקרית. בכל שלב תוכל לדלג או לסגור - אפשר להפעיל את הסיור מחדש בכל עת מכפתור העזרה (?) בראש הדף.",
+      en: "PMO++ is the Israel Mapping Center's internal project management platform. It unifies all your programs, projects, tasks and team members in one place - with full Hebrew support, AI insights, a voice-enabled personal assistant, and proactive risk management.\n\nThis quick tour (~2 minutes) will walk you through the main features. You can skip or close at any step - the tour can be restarted anytime from the help button (?) at the top.",
     },
   },
   {

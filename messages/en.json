@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Work OS",
+    "name": "PMO++",
     "tagline": "Internal Project Management Platform",
     "description": "Strategy and execution in one place"
   },
@@ -60,7 +60,7 @@
     "email": "Email",
     "password": "Password",
     "welcomeBack": "Welcome Back",
-    "loginPrompt": "Sign in to continue to Work OS",
+    "loginPrompt": "Sign in to continue to PMO++",
     "demoMode": "Demo mode - click to enter"
   },
   "landing": {
@@ -262,7 +262,7 @@
     "noPermission": "You don't have permission to perform this action"
   },
   "footer": {
-    "copyright": "© 2026 Work OS. All rights reserved.",
+    "copyright": "© 2026 PMO++. All rights reserved.",
     "privacy": "Privacy",
     "terms": "Terms"
   }

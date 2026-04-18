@@ -31,8 +31,8 @@ export function AiSidekick({ locale }: { locale: string }) {
     {
       role: "assistant",
       content: isRTL
-        ? "שלום! אני Claude, העוזר החכם של Work OS. אוכל לעזור לך לנתח פרויקטים, לזהות סיכונים, לסכם פגישות ולענות על שאלות על המשימות שלך. במה אוכל לעזור?"
-        : "Hello! I'm Claude, your Work OS assistant. I can help analyze projects, detect risks, summarize meetings, and answer questions about your tasks. How can I help?",
+        ? "שלום! אני Claude, העוזר החכם של PMO++. אוכל לעזור לך לנתח פרויקטים, לזהות סיכונים, לסכם פגישות ולענות על שאלות על המשימות שלך. במה אוכל לעזור?"
+        : "Hello! I'm Claude, your PMO++ assistant. I can help analyze projects, detect risks, summarize meetings, and answer questions about your tasks. How can I help?",
       ts: Date.now(),
     },
   ]);

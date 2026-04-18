@@ -71,11 +71,11 @@ const TTS_LANG: Record<string, string> = {
 
 // Welcome messages per language
 const WELCOME_MESSAGES: Record<string, string> = {
-  he: "שלום! 👋 אני העוזר האישי שלך ב-Work OS.\n\nאפשר לדבר איתי או לכתוב. דוגמאות:\n• \"הסבר לי על לוח גאנט\"\n• \"פתח משימה חדשה\"\n• \"מה הסיכונים?\"\n• \"מי הכי עמוס?\"\n• \"איך מגדירים KPI?\"\n\n🎤 אפשר גם להקליט!",
-  en: "Hi! 👋 I'm your Work OS Personal Assistant.\n\nYou can speak or type. Examples:\n• \"Explain the Gantt chart\"\n• \"Create a new task\"\n• \"What are the risks?\"\n• \"Who is most loaded?\"\n\n🎤 Voice recording available!",
-  ru: "Привет! 👋 Я ваш личный помощник Work OS.\n\nМожно говорить или писать. Примеры:\n• \"Объясни диаграмму Ганта\"\n• \"Создай новую задачу\"\n• \"Какие риски?\"\n• \"Кто больше всех загружен?\"\n\n🎤 Запись голоса доступна!",
-  fr: "Bonjour ! 👋 Je suis votre assistant personnel Work OS.\n\nParlez ou tapez. Exemples :\n• \"Explique le diagramme de Gantt\"\n• \"Crée une nouvelle tâche\"\n• \"Quels sont les risques ?\"\n• \"Qui est le plus chargé ?\"\n\n🎤 Enregistrement vocal disponible !",
-  es: "¡Hola! 👋 Soy tu asistente personal de Work OS.\n\nHabla o escribe. Ejemplos:\n• \"Explica el diagrama de Gantt\"\n• \"Crea una nueva tarea\"\n• \"¿Cuáles son los riesgos?\"\n• \"¿Quién está más cargado?\"\n\n🎤 ¡Grabación de voz disponible!",
+  he: "שלום! 👋 אני העוזר האישי שלך ב-PMO++.\n\nאפשר לדבר איתי או לכתוב. דוגמאות:\n• \"הסבר לי על לוח גאנט\"\n• \"פתח משימה חדשה\"\n• \"מה הסיכונים?\"\n• \"מי הכי עמוס?\"\n• \"איך מגדירים KPI?\"\n\n🎤 אפשר גם להקליט!",
+  en: "Hi! 👋 I'm your PMO++ Personal Assistant.\n\nYou can speak or type. Examples:\n• \"Explain the Gantt chart\"\n• \"Create a new task\"\n• \"What are the risks?\"\n• \"Who is most loaded?\"\n\n🎤 Voice recording available!",
+  ru: "Привет! 👋 Я ваш личный помощник PMO++.\n\nМожно говорить или писать. Примеры:\n• \"Объясни диаграмму Ганта\"\n• \"Создай новую задачу\"\n• \"Какие риски?\"\n• \"Кто больше всех загружен?\"\n\n🎤 Запись голоса доступна!",
+  fr: "Bonjour ! 👋 Je suis votre assistant personnel PMO++.\n\nParlez ou tapez. Exemples :\n• \"Explique le diagramme de Gantt\"\n• \"Crée une nouvelle tâche\"\n• \"Quels sont les risques ?\"\n• \"Qui est le plus chargé ?\"\n\n🎤 Enregistrement vocal disponible !",
+  es: "¡Hola! 👋 Soy tu asistente personal de PMO++.\n\nHabla o escribe. Ejemplos:\n• \"Explica el diagrama de Gantt\"\n• \"Crea una nueva tarea\"\n• \"¿Cuáles son los riesgos?\"\n• \"¿Quién está más cargado?\"\n\n🎤 ¡Grabación de voz disponible!",
 };
 
 // Fallback messages per language

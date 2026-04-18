@@ -3,17 +3,17 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Work OS - המרכז למיפוי ישראל",
-    template: "%s · Work OS",
+    default: "PMO++ - המרכז למיפוי ישראל",
+    template: "%s · PMO++",
   },
   description: "פלטפורמת ניהול פרויקטים פנים-ארגונית | Internal Project Management Platform",
-  applicationName: "Work OS",
-  keywords: ["PMO", "Project Management", "Work OS", "מפ״י", "ניהול פרויקטים"],
+  applicationName: "PMO++",
+  keywords: ["PMO", "Project Management", "PMO++", "מפ״י", "ניהול פרויקטים"],
   authors: [{ name: "המרכז למיפוי ישראל" }],
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    title: "Work OS",
+    title: "PMO++",
     statusBarStyle: "black-translucent",
     startupImage: "/mapi-logo.png",
   },
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "Work OS",
-    title: "Work OS - המרכז למיפוי ישראל",
+    siteName: "PMO++",
+    title: "PMO++ - המרכז למיפוי ישראל",
     description: "פלטפורמת ניהול פרויקטים פנים-ארגונית",
     images: [{ url: "/mapi-logo.png" }],
   },

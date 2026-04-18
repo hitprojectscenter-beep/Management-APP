@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Work OS",
+    "name": "PMO++",
     "tagline": "פלטפורמת ניהול פרויקטים פנים-ארגונית",
     "description": "ניהול אסטרטגיה וביצוע במקום אחד"
   },
@@ -60,7 +60,7 @@
     "email": "אימייל",
     "password": "סיסמה",
     "welcomeBack": "ברוך הבא חזרה",
-    "loginPrompt": "התחבר כדי להמשיך ל-Work OS",
+    "loginPrompt": "התחבר כדי להמשיך ל-PMO++",
     "demoMode": "מצב הדגמה - לחץ כדי להיכנס"
   },
   "landing": {
@@ -262,7 +262,7 @@
     "noPermission": "אין לך הרשאה לבצע פעולה זו"
   },
   "footer": {
-    "copyright": "© 2026 Work OS. כל הזכויות שמורות.",
+    "copyright": "© 2026 PMO++. כל הזכויות שמורות.",
     "privacy": "פרטיות",
     "terms": "תנאי שימוש"
   }

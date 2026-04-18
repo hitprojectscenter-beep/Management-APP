@@ -1,6 +1,6 @@
 /**
  * Comprehensive Knowledge Base for the Help Bot.
- * Covers ALL features and objects in Work OS.
+ * Covers ALL features and objects in PMO++.
  *
  * Categories: navigation, tasks, projects, gantt, wbs, risks, ai,
  *             assistant, team, admin, automations, settings, general
@@ -22,10 +22,10 @@ export const HELP_ENTRIES: HelpEntry[] = [
     id: "what-is-workos",
     category: "general",
     keywords: { he: ["מה זה", "work os", "וורק", "מערכת", "אפליקציה", "יישום", "למה"], en: ["what is", "work os", "system", "about", "why"] },
-    question: { he: "מה זה Work OS?", en: "What is Work OS?" },
+    question: { he: "מה זה PMO++?", en: "What is PMO++?" },
     answer: {
-      he: "Work OS היא פלטפורמת ניהול פרויקטים פנים-ארגונית של המרכז למיפוי ישראל. היא מגשרת בין אסטרטגיה לביצוע - עם תמיכה מלאה בעברית RTL, עוזר אישי קולי מבוסס AI, ניהול סיכונים פרואקטיבי, לוח גאנט, WBS, קנבן, דשבורדים ותמיכה ב-5 שפות.",
-      en: "Work OS is the Israel Mapping Center's internal project management platform, bridging strategy and execution with full Hebrew RTL, AI voice assistant, proactive risk management, Gantt, WBS, Kanban, dashboards, and 5 languages.",
+      he: "PMO++ היא פלטפורמת ניהול פרויקטים פנים-ארגונית של המרכז למיפוי ישראל. היא מגשרת בין אסטרטגיה לביצוע - עם תמיכה מלאה בעברית RTL, עוזר אישי קולי מבוסס AI, ניהול סיכונים פרואקטיבי, לוח גאנט, WBS, קנבן, דשבורדים ותמיכה ב-5 שפות.",
+      en: "PMO++ is the Israel Mapping Center's internal project management platform, bridging strategy and execution with full Hebrew RTL, AI voice assistant, proactive risk management, Gantt, WBS, Kanban, dashboards, and 5 languages.",
     },
   },
   {

@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Work OS",
+    "name": "PMO++",
     "tagline": "Plateforme de gestion de projets",
     "description": "Stratégie et exécution en un seul lieu"
   },
@@ -139,5 +139,5 @@
     "roles": { "admin": "Administrateur", "manager": "Gestionnaire", "member": "Membre", "viewer": "Observateur", "guest": "Invité" },
     "noPermission": "Vous n'avez pas les droits pour cette action"
   },
-  "footer": { "copyright": "© 2026 Work OS. Tous droits réservés.", "privacy": "Confidentialité", "terms": "Conditions" }
+  "footer": { "copyright": "© 2026 PMO++. Tous droits réservés.", "privacy": "Confidentialité", "terms": "Conditions" }
 }

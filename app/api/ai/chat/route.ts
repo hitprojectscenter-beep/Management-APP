@@ -111,7 +111,7 @@ export async function POST(req: Request) {
 
     const systemPrompt =
       locale === "he"
-        ? `אתה Claude, העוזר החכם של Work OS - פלטפורמת ניהול פרויקטים פנים-ארגונית.
+        ? `אתה Claude, העוזר החכם של PMO++ - פלטפורמת ניהול פרויקטים פנים-ארגונית.
 
 ענה תמיד בעברית, באופן ענייני, ידידותי וקצר (עד 5-6 משפטים).
 אתה רואה את כל הנתונים של הארגון, כולל ניתוחי AI מתקדמים: צווארי בקבוק במשאבים, חיזוי תאריכי סיום, ניתוח אפקט שרשרת, והמלצות פעולה אקטיביות.
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
 
 הנה תמונת מצב נוכחית של הארגון:
 ${buildContextSnapshot()}`
-        : `You are Claude, the intelligent assistant for Work OS - an internal project management platform.
+        : `You are Claude, the intelligent assistant for PMO++ - an internal project management platform.
 
 Answer concisely (5-6 sentences max). You see all organization data including AI analyses: resource bottlenecks, end-date forecasts, cascade impact analysis, and active recommendations.
 
