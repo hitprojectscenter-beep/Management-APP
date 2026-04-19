@@ -31,6 +31,10 @@ import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 import type { MockTask, MockUser, MockWbsNode } from "@/lib/db/mock-data";
 import { mockProjectMembers } from "@/lib/db/mock-data";
+import {
+  calculateCPI, calculateSPI, calculateReworkRate, calculateDecisionLatency,
+  calculateNPS, calculateBurnoutRisk, calculateAiAdoptionRate,
+} from "@/lib/kpis/advanced-kpis";
 
 type Role = "pm" | "pmo";
 
@@ -590,6 +594,300 @@ function ProjectManagerView({
           </CardContent>
         </Card>
       </div>
+
+      {/* ===== ADVANCED KPIs — EVM + Quality Metrics ===== */}
+      <AdvancedKpisPanel tasks={tasks} users={users} locale={locale} context="pm" />
+    </div>
+  );
+}
+
+// ============================================
+// ADVANCED KPIs PANEL — shared between PM and PMO views
+// ============================================
+function AdvancedKpisPanel({
+  tasks, users, locale, context,
+}: {
+  tasks: MockTask[];
+  users: MockUser[];
+  locale: string;
+  context: "pm" | "pmo";
+}) {
+  const cpi = calculateCPI(tasks);
+  const spi = calculateSPI(tasks);
+  const rework = calculateReworkRate(tasks);
+  const decisionLatency = calculateDecisionLatency();
+  const nps = calculateNPS();
+  const burnout = calculateBurnoutRisk(users, tasks, mockProjectMembers);
+  const aiAdoption = calculateAiAdoptionRate();
+
+  const statusColor = (s: "good" | "warning" | "critical") =>
+    s === "good" ? "emerald" : s === "warning" ? "amber" : "red";
+  const borderColor = (s: "good" | "warning" | "critical") =>
+    s === "good" ? "border-emerald-300" : s === "warning" ? "border-amber-300" : "border-red-300";
+  const textColor = (s: "good" | "warning" | "critical") =>
+    s === "good" ? "text-emerald-600" : s === "warning" ? "text-amber-600" : "text-red-600";
+
+  // PM sees: CPI, SPI, Rework. PMO sees: Decision Latency, NPS, Burnout, AI Adoption.
+  const pmMetrics = (
+    <>
+      {/* CPI */}
+      <ClickableKpiCard
+        borderColor={borderColor(cpi.status)}
+        popupTitle={txt(locale, { he: "CPI — Cost Performance Index", en: "CPI — Cost Performance Index" })}
+        popupContent={
+          <div className="space-y-2 text-xs">
+            <p><strong>{txt(locale, { he: "מקור:", en: "Source:" })}</strong> PMBOK® Guide — EVM Standard</p>
+            <p><strong>{txt(locale, { he: "נוסחה:", en: "Formula:" })}</strong> EV / AC</p>
+            <p className="pt-2">{txt(locale, {
+              he: "מדד יעילות עלות: יחס בין הערך שהושג (שעות מתוכננות של משימות שהושלמו) לעלות בפועל. מעל 1.0 = מתחת לתקציב. מתחת ל-1.0 = חריגה.",
+              en: "Cost efficiency: ratio of Earned Value (planned hours of done tasks) to Actual Cost. >1.0 = under budget. <1.0 = over budget.",
+            })}</p>
+            <div className="bg-muted/30 rounded-md p-2 mt-2">
+              <div className="flex justify-between"><span>{txt(locale, { he: "ערך נוכחי", en: "Current value" })}</span><strong>{cpi.value}</strong></div>
+              <div className="flex justify-between"><span>{txt(locale, { he: "יעד תעשייתי", en: "Industry target" })}</span><strong>≥ 0.95</strong></div>
+            </div>
+          </div>
+        }
+      >
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-muted-foreground uppercase">CPI</div>
+            <DollarSign className={cn("size-4", textColor(cpi.status))} />
+          </div>
+          <div className={cn("text-3xl font-bold", textColor(cpi.status))}>{cpi.value}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {txt(locale, { he: "יעילות עלות · יעד ≥ 0.95", en: "Cost efficiency · target ≥ 0.95" })}
+          </div>
+        </CardContent>
+      </ClickableKpiCard>
+
+      {/* SPI */}
+      <ClickableKpiCard
+        borderColor={borderColor(spi.status)}
+        popupTitle={txt(locale, { he: "SPI — Schedule Performance Index", en: "SPI — Schedule Performance Index" })}
+        popupContent={
+          <div className="space-y-2 text-xs">
+            <p><strong>{txt(locale, { he: "מקור:", en: "Source:" })}</strong> PMBOK® Guide — EVM</p>
+            <p><strong>{txt(locale, { he: "נוסחה:", en: "Formula:" })}</strong> EV / PV</p>
+            <p className="pt-2">{txt(locale, {
+              he: "מדד ביצוע לוח זמנים: יחס בין עבודה שהושגה לעבודה שהייתה מתוכננת עד כה. מעל 1.0 = לפני הזמן. מתחת = פיגור.",
+              en: "Schedule efficiency: ratio of Earned Value to Planned Value. >1.0 = ahead. <1.0 = behind schedule.",
+            })}</p>
+            <div className="bg-muted/30 rounded-md p-2 mt-2">
+              <div className="flex justify-between"><span>{txt(locale, { he: "ערך נוכחי", en: "Current" })}</span><strong>{spi.value}</strong></div>
+              <div className="flex justify-between"><span>{txt(locale, { he: "יעד", en: "Target" })}</span><strong>≥ 0.95</strong></div>
+            </div>
+          </div>
+        }
+      >
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-muted-foreground uppercase">SPI</div>
+            <Clock className={cn("size-4", textColor(spi.status))} />
+          </div>
+          <div className={cn("text-3xl font-bold", textColor(spi.status))}>{spi.value}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {txt(locale, { he: "יעילות לו\"ז · יעד ≥ 0.95", en: "Schedule efficiency · target ≥ 0.95" })}
+          </div>
+        </CardContent>
+      </ClickableKpiCard>
+
+      {/* Rework Rate */}
+      <ClickableKpiCard
+        borderColor={borderColor(rework.status)}
+        popupTitle={txt(locale, { he: "Rework Rate — אחוז עבודה חוזרת", en: "Rework Rate" })}
+        popupContent={
+          <div className="space-y-2 text-xs">
+            <p><strong>{txt(locale, { he: "מקור:", en: "Source:" })}</strong> ISO 9001, Six Sigma</p>
+            <p className="pt-2">{txt(locale, {
+              he: "אחוז משימות שנזקקו לעבודה מחדש (שעות בפועל מעל 150% מההערכה). Rework גבוה = הגדרות דרישות לקויות, לחץ זמן, חוסר תקשורת.",
+              en: "% of tasks needing rework (actual > 150% of estimate). High rework = poor requirements, time pressure, miscommunication.",
+            })}</p>
+            <div className="bg-muted/30 rounded-md p-2 mt-2">
+              <div className="flex justify-between"><span>{txt(locale, { he: "משימות עם rework", en: "Reworked tasks" })}</span><strong>{rework.reworked}</strong></div>
+              <div className="flex justify-between"><span>{txt(locale, { he: "יעד בריא", en: "Healthy target" })}</span><strong>&lt; 15%</strong></div>
+            </div>
+          </div>
+        }
+      >
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-muted-foreground uppercase">{txt(locale, { he: "Rework Rate", en: "Rework Rate" })}</div>
+            <TrendingDown className={cn("size-4", textColor(rework.status))} />
+          </div>
+          <div className={cn("text-3xl font-bold", textColor(rework.status))}>{rework.value}%</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {txt(locale, { he: `${rework.reworked} משימות · יעד < 15%`, en: `${rework.reworked} tasks · target < 15%` })}
+          </div>
+        </CardContent>
+      </ClickableKpiCard>
+    </>
+  );
+
+  const pmoMetrics = (
+    <>
+      {/* Decision Latency */}
+      <ClickableKpiCard
+        borderColor={borderColor(decisionLatency.status)}
+        popupTitle={txt(locale, { he: "Decision Latency — זמן קבלת החלטות", en: "Decision Latency" })}
+        popupContent={
+          <div className="space-y-2 text-xs">
+            <p><strong>{txt(locale, { he: "מקור:", en: "Source:" })}</strong> McKinsey Organizational Health Index 2023</p>
+            <p className="pt-2">{txt(locale, {
+              he: "זמן ממוצע מהעלאת נושא/סיכון ועד החלטה סופית. ארגונים זריזים: < 48 שעות. איטיים: > 72 שעות — פוגע בתחרותיות.",
+              en: "Avg hours from issue raised to decision made. Agile orgs: < 48h. Slow: > 72h — hurts competitiveness.",
+            })}</p>
+            <div className="bg-muted/30 rounded-md p-2 mt-2">
+              <div className="flex justify-between"><span>{txt(locale, { he: "החלטות ממתינות", en: "Pending decisions" })}</span><strong>{decisionLatency.pending}</strong></div>
+              <div className="flex justify-between"><span>{txt(locale, { he: "יעד", en: "Target" })}</span><strong>&lt; 48h</strong></div>
+            </div>
+            <p className="text-[10px] text-muted-foreground pt-1">
+              📚 McKinsey: ארגונים זריזים צומחים ב-30% יותר (2023)
+            </p>
+          </div>
+        }
+      >
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-muted-foreground uppercase">{txt(locale, { he: "Decision Latency", en: "Decision Latency" })}</div>
+            <Clock className={cn("size-4", textColor(decisionLatency.status))} />
+          </div>
+          <div className={cn("text-3xl font-bold", textColor(decisionLatency.status))}>{decisionLatency.avgHours}h</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {txt(locale, { he: `זמן קבלת החלטה · ${decisionLatency.pending} ממתינות`, en: `avg decision time · ${decisionLatency.pending} pending` })}
+          </div>
+        </CardContent>
+      </ClickableKpiCard>
+
+      {/* Stakeholder NPS */}
+      <ClickableKpiCard
+        borderColor={borderColor(nps.status)}
+        popupTitle={txt(locale, { he: "Stakeholder NPS — שביעות רצון", en: "Stakeholder NPS" })}
+        popupContent={
+          <div className="space-y-2 text-xs">
+            <p><strong>{txt(locale, { he: "מקור:", en: "Source:" })}</strong> Bain & Company NPS Methodology</p>
+            <p><strong>{txt(locale, { he: "נוסחה:", en: "Formula:" })}</strong> %Promoters (9-10) − %Detractors (0-6)</p>
+            <p className="pt-2">{txt(locale, {
+              he: "מדד נטו של שביעות רצון בעלי עניין. מעל +50 = מצוין. בין 0 ל-30 = דורש שיפור. שלילי = בעיה קריטית.",
+              en: "Net satisfaction of stakeholders. >+50 = excellent. 0-30 = needs improvement. Negative = critical.",
+            })}</p>
+            <div className="grid grid-cols-3 gap-1 mt-2 text-[10px]">
+              <div className="bg-emerald-100 dark:bg-emerald-950/30 p-2 rounded text-center">
+                <div className="font-bold text-emerald-700">{nps.promoters}</div>
+                <div>{txt(locale, { he: "מקדמים", en: "Promoters" })}</div>
+              </div>
+              <div className="bg-amber-100 dark:bg-amber-950/30 p-2 rounded text-center">
+                <div className="font-bold text-amber-700">{nps.passives}</div>
+                <div>{txt(locale, { he: "פסיביים", en: "Passives" })}</div>
+              </div>
+              <div className="bg-red-100 dark:bg-red-950/30 p-2 rounded text-center">
+                <div className="font-bold text-red-700">{nps.detractors}</div>
+                <div>{txt(locale, { he: "מתנגדים", en: "Detractors" })}</div>
+              </div>
+            </div>
+          </div>
+        }
+      >
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-muted-foreground uppercase">NPS</div>
+            <Sparkles className={cn("size-4", textColor(nps.status))} />
+          </div>
+          <div className={cn("text-3xl font-bold", textColor(nps.status))}>{nps.value > 0 ? "+" : ""}{nps.value}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {txt(locale, { he: `${nps.total} תגובות · יעד > +30`, en: `${nps.total} responses · target > +30` })}
+          </div>
+        </CardContent>
+      </ClickableKpiCard>
+
+      {/* Burnout Risk */}
+      <ClickableKpiCard
+        borderColor={borderColor(burnout.status)}
+        popupTitle={txt(locale, { he: "Burnout Risk — סיכון שחיקה", en: "Burnout Risk Index" })}
+        popupContent={
+          <div className="space-y-2 text-xs">
+            <p><strong>{txt(locale, { he: "מקור:", en: "Source:" })}</strong> Maslach Burnout Inventory (MBI)</p>
+            <p className="pt-2">{txt(locale, {
+              he: "מדד סיכון שחיקה מבוסס FTE, משימות באיחור, וסיכונים קריטיים. ארגונים שלא עוקבים מאבדים 5-10% כוח אדם שנתי.",
+              en: "Burnout risk based on FTE, overdue tasks, and critical items. Companies that don't track lose 5-10% staff/year.",
+            })}</p>
+            {burnout.atRiskUsers.length > 0 && (
+              <div className="bg-red-50 dark:bg-red-950/20 rounded-md p-2 mt-2">
+                <div className="font-semibold text-red-700 mb-1">⚠️ {txt(locale, { he: "בסיכון גבוה:", en: "High risk:" })}</div>
+                {burnout.atRiskUsers.map((u) => (
+                  <div key={u.userId} className="flex justify-between">
+                    <span>{u.userName}</span>
+                    <strong>{u.score}/100</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        }
+      >
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-muted-foreground uppercase">{txt(locale, { he: "Burnout Risk", en: "Burnout Risk" })}</div>
+            <AlertTriangle className={cn("size-4", textColor(burnout.status))} />
+          </div>
+          <div className={cn("text-3xl font-bold", textColor(burnout.status))}>{burnout.avgScore}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {txt(locale, { he: `ממוצע · ${burnout.atRiskUsers.length} בסיכון`, en: `avg · ${burnout.atRiskUsers.length} at risk` })}
+          </div>
+        </CardContent>
+      </ClickableKpiCard>
+
+      {/* AI Adoption */}
+      <ClickableKpiCard
+        borderColor={borderColor(aiAdoption.status)}
+        popupTitle={txt(locale, { he: "AI Adoption Rate", en: "AI Recommendation Adoption Rate" })}
+        popupContent={
+          <div className="space-y-2 text-xs">
+            <p><strong>{txt(locale, { he: "מקור:", en: "Source:" })}</strong> Gartner AI in Project Management 2024</p>
+            <p className="pt-2">{txt(locale, {
+              he: "אחוז המלצות AI שאומצו ויושמו. יישום גבוה (>60%) = תרבות אימוץ טכנולוגי בריאה. נמוך = התנגדות או חוסר אמון.",
+              en: "% of AI recommendations adopted by PMs. High (>60%) = healthy tech adoption culture. Low = resistance or mistrust.",
+            })}</p>
+            <div className="bg-muted/30 rounded-md p-2 mt-2">
+              <div className="flex justify-between"><span>{txt(locale, { he: "אומצו", en: "Adopted" })}</span><strong>{aiAdoption.adopted}</strong></div>
+              <div className="flex justify-between"><span>{txt(locale, { he: "סה\"כ המלצות", en: "Total recs" })}</span><strong>{aiAdoption.total}</strong></div>
+              <div className="flex justify-between"><span>{txt(locale, { he: "יעד", en: "Target" })}</span><strong>&gt; 60%</strong></div>
+            </div>
+          </div>
+        }
+      >
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs text-muted-foreground uppercase">{txt(locale, { he: "AI Adoption", en: "AI Adoption" })}</div>
+            <Sparkles className={cn("size-4", textColor(aiAdoption.status))} />
+          </div>
+          <div className={cn("text-3xl font-bold", textColor(aiAdoption.status))}>{aiAdoption.value}%</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {txt(locale, { he: `${aiAdoption.adopted}/${aiAdoption.total} המלצות · יעד > 60%`, en: `${aiAdoption.adopted}/${aiAdoption.total} recs · target > 60%` })}
+          </div>
+        </CardContent>
+      </ClickableKpiCard>
+    </>
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 pt-2">
+        <BarChart3 className="size-5 text-primary" />
+        <h3 className="font-bold text-lg">
+          {txt(locale, { he: "⭐ מדדי KPI מתקדמים", en: "⭐ Advanced KPIs" })}
+        </h3>
+        <Badge variant="outline" className="text-[10px]">PMBOK · EVM · McKinsey · Bain · MBI · Gartner</Badge>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {txt(locale, {
+          he: "מדדים מבוססי תקנים בינלאומיים. לחץ על כל כרטיס לפרטים ומקורות.",
+          en: "Industry-standard metrics. Click any card for details and sources.",
+        })}
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {context === "pm" ? pmMetrics : pmoMetrics}
+      </div>
     </div>
   );
 }
@@ -966,6 +1264,9 @@ function PmoManagerView({
           </CardContent>
         </Card>
       </div>
+
+      {/* ===== ADVANCED KPIs — McKinsey + Bain + MBI + Gartner ===== */}
+      <AdvancedKpisPanel tasks={tasks} users={users} locale={locale} context="pmo" />
     </div>
   );
 }

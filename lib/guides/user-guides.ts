@@ -369,6 +369,101 @@ export const USER_GUIDES: UserGuide[] = [
   },
 
   // ============================================================
+  // ADVANCED KPIs (NEW)
+  // ============================================================
+  {
+    id: "advanced-kpis",
+    icon: "⭐",
+    category: "projects",
+    title: {
+      he: "מדדי KPI מתקדמים",
+      en: "Advanced KPIs",
+      ru: "Расширенные KPI",
+      fr: "KPIs Avancés",
+      es: "KPIs Avanzados",
+    },
+    summary: {
+      he: "7 מדדים מקצועיים מבוססי PMBOK, EVM, McKinsey, Bain ו-Gartner",
+      en: "7 industry-standard metrics (PMBOK, EVM, McKinsey, Bain, Gartner)",
+      ru: "7 профессиональных метрик (PMBOK, EVM, McKinsey)",
+      fr: "7 métriques professionnelles (PMBOK, EVM, McKinsey)",
+      es: "7 métricas profesionales (PMBOK, EVM, McKinsey)",
+    },
+    steps: [
+      {
+        title: { he: "CPI — יעילות עלות", en: "CPI — Cost Performance Index", ru: "CPI — Индекс эффективности затрат", fr: "CPI — Indice de performance des coûts", es: "CPI — Índice de desempeño del costo" },
+        body: {
+          he: "מקור: PMBOK® Guide, EVM Standard.\nנוסחה: EV/AC (ערך שהושג ÷ עלות בפועל).\nערך מעל 1.0 = מתחת לתקציב (טוב). מתחת ל-1.0 = חריגת תקציב.\nיעד ארגוני: ≥ 0.95.\nמיקום: דשבורד KPI → תצוגת מנהל פרויקט → אזור 'מדדי KPI מתקדמים'.",
+          en: "Source: PMBOK® Guide, EVM Standard.\nFormula: EV/AC (Earned Value ÷ Actual Cost).\nValue >1.0 = under budget (good). <1.0 = over budget.\nTarget: ≥ 0.95.\nLocation: Dashboard → PM view → 'Advanced KPIs' section.",
+          ru: "PMBOK/EVM. EV/AC. >1.0 = под бюджетом. Цель: ≥ 0.95.",
+          fr: "PMBOK/EVM. EV/AC. >1.0 = sous budget. Cible : ≥ 0.95.",
+          es: "PMBOK/EVM. EV/AC. >1.0 = bajo presupuesto. Meta: ≥ 0.95.",
+        },
+      },
+      {
+        title: { he: "SPI — יעילות לו\"ז", en: "SPI — Schedule Performance Index", ru: "SPI — Индекс производительности графика", fr: "SPI — Indice de performance du calendrier", es: "SPI — Índice de desempeño del cronograma" },
+        body: {
+          he: "מקור: PMBOK/EVM.\nנוסחה: EV/PV (ערך שהושג ÷ ערך מתוכנן).\nמעל 1.0 = לפני הלו\"ז, מתחת ל-1.0 = מפגרים.\nיעד: ≥ 0.95.\nיחד עם CPI, SPI נותן תמונה מלאה של בריאות הפרויקט.",
+          en: "Source: PMBOK/EVM.\nFormula: EV/PV.\n>1.0 = ahead of schedule. <1.0 = behind.\nTarget: ≥ 0.95.\nTogether with CPI, gives a complete project health picture.",
+          ru: "PMBOK/EVM. EV/PV. >1.0 = впереди графика. Цель: ≥ 0.95.",
+          fr: "PMBOK/EVM. EV/PV. >1.0 = en avance. Cible : ≥ 0.95.",
+          es: "PMBOK/EVM. EV/PV. >1.0 = adelantado. Meta: ≥ 0.95.",
+        },
+      },
+      {
+        title: { he: "Rework Rate — עבודה חוזרת", en: "Rework Rate", ru: "Rework Rate", fr: "Taux de retravail", es: "Tasa de retrabajo" },
+        body: {
+          he: "מקור: ISO 9001, Six Sigma.\nמחושב: אחוז משימות עם שעות בפועל > 150% מההערכה.\nRework גבוה מעיד על: הגדרות דרישות לקויות, לחץ זמן, חוסר תקשורת.\nיעד בריא: < 15%. מעל 30% = בעיה מערכתית שדורשת התערבות ניהולית.",
+          en: "Source: ISO 9001, Six Sigma.\nCalculated: % of tasks with actual hours > 150% of estimate.\nHigh rework = poor requirements, time pressure, miscommunication.\nHealthy: < 15%. > 30% = systemic issue.",
+          ru: "ISO 9001. % задач с часами > 150% оценки. Цель < 15%.",
+          fr: "ISO 9001. % tâches avec heures > 150% de l'estimation. Cible < 15%.",
+          es: "ISO 9001. % tareas con horas > 150% del estimado. Meta < 15%.",
+        },
+      },
+      {
+        title: { he: "Decision Latency — זמן החלטות", en: "Decision Latency", ru: "Decision Latency", fr: "Latence décisionnelle", es: "Latencia de decisión" },
+        body: {
+          he: "מקור: McKinsey Organizational Health Index 2023.\nמחושב: זמן ממוצע מהעלאת סיכון/נושא ועד החלטה סופית.\nארגונים זריזים: < 48 שעות. איטיים: > 72 שעות.\nמחקר McKinsey: ארגונים עם זמן החלטה קצר צומחים ב-30% יותר.",
+          en: "Source: McKinsey OHI 2023.\nAvg hours from issue raised to decision made.\nAgile orgs: < 48h. Slow: > 72h.\nMcKinsey research: fast-decision orgs grow 30% more.",
+          ru: "McKinsey. Среднее время от проблемы до решения. Цель < 48ч.",
+          fr: "McKinsey. Temps moyen problème → décision. Cible < 48h.",
+          es: "McKinsey. Tiempo promedio problema → decisión. Meta < 48h.",
+        },
+      },
+      {
+        title: { he: "Stakeholder NPS — שביעות רצון", en: "Stakeholder NPS", ru: "Stakeholder NPS", fr: "NPS parties prenantes", es: "NPS partes interesadas" },
+        body: {
+          he: "מקור: Bain & Company NPS Methodology.\nנוסחה: %מקדמים (9-10) − %מתנגדים (0-6).\nטווח: -100 עד +100. יעד: > +30. מעל +50 = מצוין.\nמדד ישיר של ערך הנתפס של PMO++ בקרב משתמשים — הלקוחות הפנימיים.",
+          en: "Source: Bain & Company NPS.\nFormula: %Promoters (9-10) − %Detractors (0-6).\nRange: -100 to +100. Target: > +30. >+50 = excellent.\nDirect measure of PMO++'s perceived value by internal customers.",
+          ru: "Bain. %Продвигающих − %Критиков. Цель > +30.",
+          fr: "Bain. %Promoteurs − %Détracteurs. Cible > +30.",
+          es: "Bain. %Promotores − %Detractores. Meta > +30.",
+        },
+      },
+      {
+        title: { he: "Burnout Risk — סיכון שחיקה", en: "Burnout Risk Index", ru: "Burnout Risk", fr: "Risque d'épuisement", es: "Riesgo de burnout" },
+        body: {
+          he: "מקור: Maslach Burnout Inventory (MBI).\nמחושב לפי: FTE > 90% (+40 נק'), משימות באיחור (+15-30), משימות חסומות (+10-20), משימות קריטיות (+10).\n0-30 = בריא, 30-60 = אזהרה, >60 = קריטי.\nשחיקה גורמת לאובדן 5-10% כוח אדם שנתי — מעקב פרואקטיבי מונע זאת.",
+          en: "Source: Maslach Burnout Inventory.\nBased on: FTE > 90% (+40), overdue (+15-30), blocked (+10-20), critical (+10).\n0-30 = healthy, >60 = critical.\nBurnout causes 5-10% annual staff loss — proactive monitoring prevents it.",
+          ru: "MBI. FTE + просрочки + блокировки + критичные = оценка.",
+          fr: "MBI. FTE + retards + bloquées + critiques = score.",
+          es: "MBI. FTE + retrasos + bloqueadas + críticas = puntuación.",
+        },
+      },
+      {
+        title: { he: "AI Adoption Rate", en: "AI Recommendation Adoption", ru: "AI Adoption Rate", fr: "Taux d'adoption IA", es: "Tasa de adopción de IA" },
+        body: {
+          he: "מקור: Gartner AI in Project Management 2024.\nמחושב: אחוז המלצות AI שאומצו ויושמו על ידי מנהלי הפרויקטים.\nיישום גבוה (>60%) = תרבות אימוץ טכנולוגי בריאה.\nנמוך = התנגדות או חוסר אמון ב-AI — דורש הדרכה.\nמדד קריטי בעידן הדיגיטלי.",
+          en: "Source: Gartner 2024.\n% of AI recommendations adopted by PMs.\nHigh (>60%) = healthy tech adoption culture.\nLow = resistance or mistrust — needs training.\nCritical in digital era.",
+          ru: "Gartner 2024. % принятых рекомендаций ИИ. Цель > 60%.",
+          fr: "Gartner 2024. % recommandations IA adoptées. Cible > 60%.",
+          es: "Gartner 2024. % recomendaciones IA adoptadas. Meta > 60%.",
+        },
+      },
+    ],
+  },
+
+  // ============================================================
   // ADMIN
   // ============================================================
   {

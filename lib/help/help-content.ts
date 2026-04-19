@@ -549,6 +549,89 @@ export const HELP_ENTRIES: HelpEntry[] = [
       en: "In Gantt toolbar → 'Export Excel'. CSV includes: WBS numbering, task name, planned/actual dates, progress, critical path. Opens directly in Excel with full Hebrew support.",
     },
   },
+  // ============================================================
+  // ADVANCED KPIs (NEW — EVM, McKinsey, Bain, MBI, Gartner)
+  // ============================================================
+  {
+    id: "kpi-cpi",
+    category: "navigation",
+    keywords: { he: ["cpi", "ניצול תקציב", "cost performance", "evm", "earned value", "ev/ac"], en: ["cpi", "cost performance", "evm", "earned value", "ev/ac"] },
+    question: { he: "מה זה CPI?", en: "What is CPI?" },
+    answer: {
+      he: "CPI = Cost Performance Index — מדד יעילות עלות מתקן PMBOK/EVM. נוסחה: EV/AC (ערך שהושג חלקי עלות בפועל). ערך מעל 1.0 = מתחת לתקציב (טוב), מתחת ל-1.0 = חריגה. יעד ארגוני: ≥ 0.95. נראה בדשבורד KPI → תצוגת מנהל פרויקט.",
+      en: "CPI = Cost Performance Index — EVM cost efficiency metric (PMBOK standard). Formula: EV/AC. Value >1.0 = under budget (good), <1.0 = over budget. Target: ≥ 0.95. Found in Dashboards → PM view.",
+    },
+  },
+  {
+    id: "kpi-spi",
+    category: "navigation",
+    keywords: { he: ["spi", "schedule performance", "evm", "ביצוע לו\"ז", "ev/pv"], en: ["spi", "schedule performance", "evm", "ev/pv"] },
+    question: { he: "מה זה SPI?", en: "What is SPI?" },
+    answer: {
+      he: "SPI = Schedule Performance Index — מדד ביצוע לוח זמנים מתקן PMBOK/EVM. נוסחה: EV/PV. מעל 1.0 = מקדימים את הלו\"ז, מתחת = בפיגור. יעד: ≥ 0.95. נראה בדשבורד KPI תחת 'מדדי KPI מתקדמים'.",
+      en: "SPI = Schedule Performance Index — EVM schedule metric (PMBOK). Formula: EV/PV. >1.0 = ahead of schedule, <1.0 = behind. Target: ≥ 0.95. Found in Dashboard → Advanced KPIs section.",
+    },
+  },
+  {
+    id: "kpi-rework",
+    category: "navigation",
+    keywords: { he: ["rework", "עבודה חוזרת", "iso 9001", "איכות", "six sigma"], en: ["rework", "quality", "iso 9001", "six sigma"] },
+    question: { he: "מה זה Rework Rate?", en: "What is Rework Rate?" },
+    answer: {
+      he: "Rework Rate = אחוז משימות שנזקקו לעבודה מחדש (שעות בפועל > 150% מההערכה). מקור: ISO 9001, Six Sigma. Rework גבוה = הגדרות דרישות לקויות או לחץ זמן. יעד בריא: < 15%. מעל 30% = בעיה מערכתית.",
+      en: "Rework Rate = % of tasks needing rework (actual > 150% of estimate). Source: ISO 9001, Six Sigma. High rework = poor requirements or time pressure. Healthy: < 15%. > 30% = systemic issue.",
+    },
+  },
+  {
+    id: "kpi-decision-latency",
+    category: "navigation",
+    keywords: { he: ["decision latency", "זמן החלטה", "mckinsey", "זריזות", "קבלת החלטות"], en: ["decision latency", "decision time", "mckinsey", "agility"] },
+    question: { he: "מה זה Decision Latency?", en: "What is Decision Latency?" },
+    answer: {
+      he: "Decision Latency = זמן ממוצע מהעלאת נושא/סיכון ועד החלטה סופית. מקור: McKinsey Organizational Health Index 2023. ארגונים זריזים: < 48 שעות. איטיים: > 72 שעות — פוגע בתחרותיות. ארגונים עם זמן החלטה קצר צומחים ב-30% יותר.",
+      en: "Decision Latency = avg hours from issue raised to decision made. Source: McKinsey OHI 2023. Agile orgs: < 48h. Slow: > 72h — hurts competitiveness. Fast-decision orgs grow 30% more.",
+    },
+  },
+  {
+    id: "kpi-nps",
+    category: "navigation",
+    keywords: { he: ["nps", "net promoter", "שביעות רצון", "bain", "בעלי עניין"], en: ["nps", "net promoter", "satisfaction", "bain", "stakeholder"] },
+    question: { he: "מה זה NPS?", en: "What is NPS?" },
+    answer: {
+      he: "NPS = Net Promoter Score — מדד שביעות רצון בעלי עניין. מקור: Bain & Company. נוסחה: %מקדמים (9-10) − %מתנגדים (0-6). טווח: -100 עד +100. יעד: > +30. מעל +50 = מצוין. מדד ישיר של ערך הנתפס של ה-PMO.",
+      en: "NPS = Net Promoter Score — stakeholder satisfaction metric. Source: Bain & Company. Formula: %Promoters (9-10) − %Detractors (0-6). Range: -100 to +100. Target: > +30. >+50 = excellent.",
+    },
+  },
+  {
+    id: "kpi-burnout",
+    category: "navigation",
+    keywords: { he: ["burnout", "שחיקה", "maslach", "mbi", "עומס", "fte"], en: ["burnout", "maslach", "mbi", "overload", "fte"] },
+    question: { he: "מה זה Burnout Risk Index?", en: "What is Burnout Risk?" },
+    answer: {
+      he: "Burnout Risk Index = מדד סיכון שחיקה בהשראת Maslach Burnout Inventory (MBI). מחושב לפי: FTE > 90% (+40), משימות באיחור (+15-30), משימות חסומות (+10-20), משימות קריטיות (+10). 0-30 = בריא, 30-60 = אזהרה, >60 = קריטי. שחיקה גורמת לאובדן 5-10% כוח אדם שנתי.",
+      en: "Burnout Risk Index = risk score inspired by Maslach Burnout Inventory. Based on: FTE > 90% (+40), overdue tasks (+15-30), blocked (+10-20), critical tasks (+10). 0-30 = healthy, >60 = critical. Burnout causes 5-10% annual staff loss.",
+    },
+  },
+  {
+    id: "kpi-ai-adoption",
+    category: "navigation",
+    keywords: { he: ["ai adoption", "אימוץ ai", "gartner", "המלצות ai"], en: ["ai adoption", "gartner", "recommendations"] },
+    question: { he: "מה זה AI Adoption Rate?", en: "What is AI Adoption Rate?" },
+    answer: {
+      he: "AI Adoption Rate = אחוז המלצות AI שאומצו ויושמו. מקור: Gartner AI in Project Management 2024. יישום גבוה (>60%) = תרבות אימוץ טכנולוגי בריאה. נמוך = התנגדות או חוסר אמון ב-AI. מדד קריטי בעידן הדיגיטלי.",
+      en: "AI Adoption Rate = % of AI recommendations adopted by PMs. Source: Gartner 2024. High (>60%) = healthy tech adoption culture. Low = resistance or mistrust. Critical metric in digital era.",
+    },
+  },
+  {
+    id: "advanced-kpis-overview",
+    category: "navigation",
+    keywords: { he: ["מדדים מתקדמים", "advanced kpi", "pmbok", "evm", "kpis חדשים"], en: ["advanced kpis", "new metrics", "pmbok", "evm"] },
+    question: { he: "אילו מדדי KPI מתקדמים יש?", en: "What advanced KPIs exist?" },
+    answer: {
+      he: "ב-PMO++ יש 17 מדדי KPI — 10 בסיסיים + 7 מתקדמים:\n\n📊 **מנהל פרויקט:**\n• CPI (יעילות עלות)\n• SPI (יעילות לו\"ז)\n• Rework Rate (עבודה חוזרת)\n\n🎯 **מנהל PMO:**\n• Decision Latency (זמן החלטות)\n• NPS (שביעות רצון)\n• Burnout Risk (סיכון שחיקה)\n• AI Adoption Rate (אימוץ AI)\n\nכל המדדים מבוססי תקנים בינלאומיים: PMBOK, EVM, McKinsey, Bain, MBI, Gartner. לחץ על כל כרטיס לפרטים ומקורות.",
+      en: "PMO++ has 17 KPIs — 10 core + 7 advanced:\n\n📊 **PM View:** CPI, SPI, Rework Rate\n🎯 **PMO View:** Decision Latency, NPS, Burnout Risk, AI Adoption\n\nAll based on international standards: PMBOK, EVM, McKinsey, Bain, MBI, Gartner. Click any card for details and sources.",
+    },
+  },
 ];
 
 /**
