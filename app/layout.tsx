@@ -3,8 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "PMO++ - המרכז למיפוי ישראל",
-    template: "%s · PMO++",
+    default: "PMO++",
+    template: "%s | PMO++",
   },
   description: "פלטפורמת ניהול פרויקטים פנים-ארגונית | Internal Project Management Platform",
   applicationName: "PMO++",

@@ -11,9 +11,10 @@ import "../globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-hebrew", display: "swap" });
 
+// Metadata inherited from root layout (app/layout.tsx) — no title override here
+// to avoid "PMO++ · PMO++" duplication when no page-level title is set
 export const metadata: Metadata = {
-  title: { default: "PMO++", template: "%s · PMO++" },
-  description: "פלטפורמת ניהול פרויקטים פנים-ארגונית | Internal PMO++",
+  description: "פלטפורמת ניהול פרויקטים פנים-ארגונית | Internal PMO",
 };
 
 export function generateStaticParams() {

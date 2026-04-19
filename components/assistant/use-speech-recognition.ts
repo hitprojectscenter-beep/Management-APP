@@ -344,22 +344,102 @@ function cleanTextForSpeech(text: string): string {
 }
 
 /**
- * Text-to-speech helper — cleans text before speaking
+ * Load voices asynchronously — voices may not be ready on first call.
+ * Chrome loads voices asynchronously and fires "voiceschanged" event.
  */
-export function speak(text: string, lang: string = "he-IL"): void {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
+function loadVoices(): Promise<SpeechSynthesisVoice[]> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      resolve([]);
+      return;
+    }
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      resolve(voices);
+      return;
+    }
+    // Wait for voices to load
+    const timeout = setTimeout(() => {
+      resolve(window.speechSynthesis.getVoices());
+    }, 1000);
+    window.speechSynthesis.onvoiceschanged = () => {
+      clearTimeout(timeout);
+      resolve(window.speechSynthesis.getVoices());
+    };
+  });
+}
+
+/**
+ * Pick the best voice for the given language code.
+ * Falls back: exact match → prefix match → any voice.
+ */
+function pickVoice(voices: SpeechSynthesisVoice[], lang: string): SpeechSynthesisVoice | null {
+  if (!voices.length) return null;
+  const exact = voices.find((v) => v.lang === lang);
+  if (exact) return exact;
+  const prefix = lang.split("-")[0];
+  const byPrefix = voices.find((v) => v.lang.startsWith(prefix));
+  if (byPrefix) return byPrefix;
+  // For Hebrew, also check common alternative codes
+  if (prefix === "he") {
+    const iw = voices.find((v) => v.lang.startsWith("iw")); // older Hebrew code
+    if (iw) return iw;
+  }
+  return null;
+}
+
+/**
+ * Text-to-speech helper — cleans text, waits for voices, picks best voice.
+ */
+export async function speak(text: string, lang: string = "he-IL"): Promise<void> {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    console.warn("[speak] SpeechSynthesis not supported");
+    return;
+  }
   try {
+    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
+    // Some browsers need a brief pause after cancel
+    await new Promise((r) => setTimeout(r, 50));
+
     const clean = cleanTextForSpeech(text);
-    if (!clean) return; // Nothing to speak
+    if (!clean) return;
+
+    // Load voices (async in Chrome)
+    const voices = await loadVoices();
+    const voice = pickVoice(voices, lang);
+
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = lang;
-    utterance.rate = 0.95; // Slightly slower for clarity
-    // Try to find a voice matching the language
-    const voices = window.speechSynthesis.getVoices();
-    const langPrefix = lang.split("-")[0]; // "he" from "he-IL"
-    const matchingVoice = voices.find((v) => v.lang.startsWith(langPrefix));
-    if (matchingVoice) utterance.voice = matchingVoice;
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    if (voice) {
+      utterance.voice = voice;
+      console.log(`[speak] Using voice: ${voice.name} (${voice.lang}) for lang=${lang}`);
+    } else {
+      console.warn(`[speak] No voice found for ${lang}. Using browser default.`);
+    }
+
+    // Handle errors silently but log them
+    utterance.onerror = (e) => {
+      console.warn("[speak] TTS error:", (e as any).error || e);
+    };
+    utterance.onstart = () => console.log("[speak] TTS started");
+    utterance.onend = () => console.log("[speak] TTS ended");
+
     window.speechSynthesis.speak(utterance);
-  } catch {}
+
+    // Chrome bug: speechSynthesis stops after ~15 seconds — ping to keep it alive
+    const keepAlive = setInterval(() => {
+      if (!window.speechSynthesis.speaking) {
+        clearInterval(keepAlive);
+        return;
+      }
+      window.speechSynthesis.pause();
+      window.speechSynthesis.resume();
+    }, 10000);
+  } catch (err) {
+    console.error("[speak] Exception:", err);
+  }
 }
