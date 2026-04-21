@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
-import { useSpeechRecognition, speak } from "./use-speech-recognition";
+import { useSpeechRecognition, speak, cancelSpeech, hasVoiceFor } from "./use-speech-recognition";
 import { toast } from "sonner";
 import { CURRENT_USER_ID, getUserById } from "@/lib/db/mock-data";
 
@@ -98,9 +98,14 @@ export function PersonalAssistant() {
   const [carryoverAction, setCarryoverAction] = useState<string | null>(null);
   const [currentResponse, setCurrentResponse] = useState<ServerResponse | null>(null);
   const [ttsEnabled, setTtsEnabled] = useState(true); // TTS ON by default - assistant speaks back
+  const [conversationMode, setConversationMode] = useState(false); // auto-resume mic after TTS
+  const [isSpeaking, setIsSpeaking] = useState(false); // TTS currently speaking
+  const [lastInputWasVoice, setLastInputWasVoice] = useState(false);
+  const [voiceWarning, setVoiceWarning] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const submitTextRef = useRef<(text: string) => void>(() => {});
+  const startListeningRef = useRef<() => void>(() => {});
 
   const {
     supported: speechSupported,
@@ -112,13 +117,16 @@ export function PersonalAssistant() {
     stop: stopListening,
     reset: resetSpeech,
   } = useSpeechRecognition({
-    lang: locale === "he" ? "he-IL" : "en-US",
+    // Use the correct BCP-47 code for the current locale so STT understands
+    // the user's spoken language (not just Hebrew vs English).
+    lang: TTS_LANG[locale] || "he-IL",
     continuous: false,
     // When speech recognition returns final text → AUTO-SUBMIT immediately.
     // No need for the user to press Send manually after speaking.
     onFinalResult: (text) => {
       if (text && text.trim() && !text.startsWith("[")) {
         // Real transcribed text → submit automatically
+        setLastInputWasVoice(true);
         submitTextRef.current(text.trim());
       } else if (text) {
         // MediaRecorder placeholder → put in input for user to type over
@@ -140,6 +148,31 @@ export function PersonalAssistant() {
   useEffect(() => {
     submitTextRef.current = submitText;
   });
+
+  // Keep startListeningRef up-to-date so TTS onEnd callback can trigger it
+  useEffect(() => {
+    startListeningRef.current = startListening;
+  });
+
+  // Voice availability check per locale — warn if no voice installed
+  useEffect(() => {
+    if (!isOpen) return;
+    const langCode = TTS_LANG[locale] || "he-IL";
+    hasVoiceFor(langCode).then((ok) => {
+      if (!ok) {
+        const warnings: Record<string, string> = {
+          he: "⚠️ לא נמצא קול עברי מותקן במערכת. התשובה תוצג רק בטקסט. להתקנה: הגדרות Windows → שעה ושפה → שפה → הוסף חבילת דיבור לעברית.",
+          en: "⚠️ No English voice installed. Replies will show as text only.",
+          ru: "⚠️ Русский голос не установлен. Ответы будут только в тексте. Для установки: Настройки Windows → Время и язык → Язык → Добавить пакет речи.",
+          fr: "⚠️ Aucune voix française installée. Réponses en texte uniquement. Installation : Paramètres Windows → Heure et langue → Langue → Ajouter un pack vocal.",
+          es: "⚠️ No hay voz española instalada. Las respuestas se mostrarán solo como texto. Instalación: Configuración de Windows → Hora e idioma → Idioma → Agregar paquete de voz.",
+        };
+        setVoiceWarning(warnings[locale] || warnings.he);
+      } else {
+        setVoiceWarning(null);
+      }
+    });
+  }, [isOpen, locale]);
 
   // Focus input on open
   useEffect(() => {
@@ -232,7 +265,31 @@ export function PersonalAssistant() {
       setTurns((prev) => [...prev, assistantTurn]);
       // TTS: detect language from reply text for correct speech
       const ttsLang = hasHebrewChars(reply) ? "he" : hasCyrillicChars(reply) ? "ru" : lang;
-      if (ttsEnabled) speak(reply, TTS_LANG[ttsLang] || "he-IL");
+      if (ttsEnabled) {
+        const spokenLangCode = TTS_LANG[ttsLang] || "he-IL";
+        setIsSpeaking(true);
+        speak(reply, spokenLangCode, {
+          onStart: () => setIsSpeaking(true),
+          onEnd: () => {
+            setIsSpeaking(false);
+            // Conversation mode: if user spoke (not typed) and nothing is blocking,
+            // automatically re-open the mic for the next question.
+            const shouldResume =
+              conversationMode &&
+              lastInputWasVoice &&
+              data.stage !== "confirmation" &&
+              data.stage !== "blocked";
+            if (shouldResume) {
+              setTimeout(() => {
+                try {
+                  startListeningRef.current();
+                } catch {}
+              }, 400);
+            }
+          },
+          onError: () => setIsSpeaking(false),
+        });
+      }
     } catch (err) {
       setStage("idle");
       const errLang = detectLang(text, locale);
@@ -314,8 +371,21 @@ export function PersonalAssistant() {
     if (listening) {
       stopListening();
     } else {
+      // If assistant is currently speaking, stop it so the user can be heard
+      if (isSpeaking) {
+        cancelSpeech();
+        setIsSpeaking(false);
+      }
+      setLastInputWasVoice(true);
       startListening();
     }
+  };
+
+  // Mark typed input as "not voice" so conversation mode doesn't auto-resume mic after typed turn
+  const handleTextSubmit = () => {
+    if (!inputText.trim()) return;
+    setLastInputWasVoice(false);
+    submitText(inputText);
   };
 
   // ============================================
@@ -368,28 +438,88 @@ export function PersonalAssistant() {
                       : "bg-emerald-400"
                 )}
               />
-              {stage === "listening" && txt(locale, { he: "מקשיב...", en: "Listening..." })}
-              {stage === "processing" && txt(locale, { he: "מעבד...", en: "Processing..." })}
-              {stage === "clarification" && txt(locale, { he: "ממתין למידע נוסף", en: "Awaiting info" })}
-              {stage === "confirmation" && txt(locale, { he: "ממתין לאישור", en: "Awaiting confirmation" })}
-              {stage === "blocked" && txt(locale, { he: "חסום", en: "Blocked" })}
-              {(stage === "idle" || stage === "done") && txt(locale, { he: "מוכן", en: "Ready" })}
+              {isSpeaking
+                ? txt(locale, {
+                    he: "🔊 מדבר...",
+                    en: "🔊 Speaking...",
+                    ru: "🔊 Говорю...",
+                    fr: "🔊 Parle...",
+                    es: "🔊 Hablando...",
+                  })
+                : listening
+                ? txt(locale, {
+                    he: "🎤 מקשיב...",
+                    en: "🎤 Listening...",
+                    ru: "🎤 Слушаю...",
+                    fr: "🎤 Écoute...",
+                    es: "🎤 Escuchando...",
+                  })
+                : stage === "processing"
+                ? txt(locale, { he: "מעבד...", en: "Processing...", ru: "Обработка...", fr: "Traitement...", es: "Procesando..." })
+                : stage === "clarification"
+                ? txt(locale, { he: "ממתין למידע נוסף", en: "Awaiting info", ru: "Ожидание информации", fr: "En attente d'infos", es: "Esperando información" })
+                : stage === "confirmation"
+                ? txt(locale, { he: "ממתין לאישור", en: "Awaiting confirmation", ru: "Ожидание подтверждения", fr: "Attente de confirmation", es: "Esperando confirmación" })
+                : stage === "blocked"
+                ? txt(locale, { he: "חסום", en: "Blocked", ru: "Заблокировано", fr: "Bloqué", es: "Bloqueado" })
+                : txt(locale, { he: "מוכן", en: "Ready", ru: "Готов", fr: "Prêt", es: "Listo" })}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setTtsEnabled(!ttsEnabled)}
+            onClick={() => {
+              const next = !conversationMode;
+              setConversationMode(next);
+              if (!next) {
+                cancelSpeech();
+                setIsSpeaking(false);
+              }
+            }}
             className={cn(
-              "size-8 rounded-full flex items-center justify-center text-[10px] font-bold",
-              ttsEnabled ? "bg-white/30" : "bg-white/10 hover:bg-white/20"
+              "size-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all",
+              conversationMode ? "bg-emerald-400/40 ring-2 ring-white/50" : "bg-white/10 hover:bg-white/20"
             )}
-            title={txt(locale, { he: "הפעל/כבה דיבור", en: "Toggle TTS" })}
+            title={txt(locale, {
+              he: "מצב שיחה — האזנה אוטומטית אחרי כל תשובה",
+              en: "Conversation mode — auto-listen after each answer",
+              ru: "Режим разговора — автослушание после каждого ответа",
+              fr: "Mode conversation — écoute auto après chaque réponse",
+              es: "Modo conversación — escucha automática después de cada respuesta",
+            })}
+          >
+            💬
+          </button>
+          <button
+            onClick={() => {
+              const next = !ttsEnabled;
+              setTtsEnabled(next);
+              if (!next) {
+                cancelSpeech();
+                setIsSpeaking(false);
+              }
+            }}
+            className={cn(
+              "size-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all",
+              ttsEnabled ? "bg-white/30" : "bg-white/10 hover:bg-white/20",
+              isSpeaking && "ring-2 ring-amber-300 animate-pulse"
+            )}
+            title={txt(locale, {
+              he: "הפעל/כבה דיבור",
+              en: "Toggle TTS",
+              ru: "Вкл/выкл озвучку",
+              fr: "Activer/désactiver la synthèse vocale",
+              es: "Activar/desactivar voz",
+            })}
           >
             TTS
           </button>
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              cancelSpeech();
+              setIsSpeaking(false);
+              setIsOpen(false);
+            }}
             className="size-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center"
             aria-label="Close"
           >
@@ -397,6 +527,12 @@ export function PersonalAssistant() {
           </button>
         </div>
       </div>
+
+      {voiceWarning && (
+        <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-100">
+          {voiceWarning}
+        </div>
+      )}
 
       {/* Messages - dialog format: "מארק:" / "עוזר:" */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/20">
@@ -532,7 +668,7 @@ export function PersonalAssistant() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          submitText(inputText);
+          handleTextSubmit();
         }}
         className="p-3 border-t bg-card flex gap-2 items-center"
       >
@@ -590,7 +726,7 @@ export function PersonalAssistant() {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               if (inputText.trim() && stage !== "processing" && stage !== "executing") {
-                submitText(inputText);
+                handleTextSubmit();
                 // Reset textarea height after submit
                 const el = e.target as HTMLTextAreaElement;
                 setTimeout(() => { el.style.height = "44px"; }, 50);

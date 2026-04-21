@@ -310,13 +310,15 @@ export function useSpeechRecognition(
  * Clean text for TTS — AGGRESSIVE cleaning for smooth voice output.
  * Removes: all emojis, all punctuation/symbols that TTS reads aloud,
  * markdown, bullets, code markers. Keeps only letters, numbers, and
- * sentence-ending punctuation. Also strips English words from Hebrew
- * text (and vice versa) to prevent TTS from switching voices mid-sentence.
+ * sentence-ending punctuation. Also strips words in OTHER scripts than
+ * the target language to prevent TTS from switching voices mid-sentence.
  *
  * @param text — raw assistant response
- * @param targetLang — "he" keeps Hebrew only, "en" keeps English only, "both" keeps both
+ * @param targetLang — "he" | "en" | "ru" | "fr" | "es" | "both"
  */
-function cleanTextForSpeech(text: string, targetLang: "he" | "en" | "both" = "both"): string {
+type CleanLang = "he" | "en" | "ru" | "fr" | "es" | "both";
+
+function cleanTextForSpeech(text: string, targetLang: CleanLang = "both"): string {
   let t = text;
 
   // 1) Remove ALL emoji — broad catch-all with Unicode property escapes
@@ -329,25 +331,34 @@ function cleanTextForSpeech(text: string, targetLang: "he" | "en" | "both" = "bo
   const noisyChars = /[`~!@#$%^&*_=+|\\<>{}[\]()"'•●▪◦→←↑↓⇒⇐★☆♦♥♠♣§¶†‡«»‹›"""''‚„•·…]/g;
   t = t.replace(noisyChars, " ");
 
-  // 3) Slashes between words → "או" (Hebrew) or "or" (English)
-  if (targetLang === "he") {
-    t = t.replace(/(\S)\s*\/\s*(\S)/g, "$1 או $2");
-  } else {
-    t = t.replace(/(\S)\s*\/\s*(\S)/g, "$1 or $2");
-  }
-  // Remove remaining slashes and dashes between/around Hebrew words
+  // 3) Slashes between words → localized "or" word for natural speech
+  const orWord: Record<CleanLang, string> = {
+    he: "או", en: "or", ru: "или", fr: "ou", es: "o", both: "or",
+  };
+  t = t.replace(/(\S)\s*\/\s*(\S)/g, `$1 ${orWord[targetLang]} $2`);
+
+  // Remove remaining slashes and dashes around words
   t = t.replace(/[-–—−]/g, " ");
   t = t.replace(/\//g, " ");
 
-  // 4) Strip the "other" language's Latin/Hebrew words to keep TTS consistent
-  //    (prevents voice switching mid-sentence which is the main "sounds broken" issue)
+  // 4) Strip out-of-script runs to keep TTS voice consistent.
+  //    Hebrew (he): keep \u0590-\u05FF + digits; strip Latin & Cyrillic words
+  //    English (en): keep Latin + digits; strip Hebrew & Cyrillic words
+  //    Russian (ru): keep Cyrillic + digits; strip Hebrew & Latin words
+  //    French/Spanish (fr, es): keep Latin (incl. accents) + digits; strip Hebrew & Cyrillic
   if (targetLang === "he") {
-    // Hebrew mode: remove Latin alphabetic runs of 2+ letters (keep single letters, abbreviations)
-    // but keep numbers and basic Hebrew-mixed words
-    t = t.replace(/[A-Za-z]{2,}(?:\s+[A-Za-z]{2,})*/g, "");
+    t = t.replace(/[A-Za-zÀ-ÿ]{2,}(?:\s+[A-Za-zÀ-ÿ]{2,})*/g, "");
+    t = t.replace(/[\u0400-\u04FF]+(?:\s+[\u0400-\u04FF]+)*/g, "");
   } else if (targetLang === "en") {
-    // English mode: remove Hebrew character runs
     t = t.replace(/[\u0590-\u05FF]+(?:\s+[\u0590-\u05FF]+)*/g, "");
+    t = t.replace(/[\u0400-\u04FF]+(?:\s+[\u0400-\u04FF]+)*/g, "");
+  } else if (targetLang === "ru") {
+    t = t.replace(/[\u0590-\u05FF]+(?:\s+[\u0590-\u05FF]+)*/g, "");
+    // Strip Latin runs of 2+ letters (keep acronyms / single letters mixed in)
+    t = t.replace(/[A-Za-zÀ-ÿ]{2,}(?:\s+[A-Za-zÀ-ÿ]{2,})*/g, "");
+  } else if (targetLang === "fr" || targetLang === "es") {
+    t = t.replace(/[\u0590-\u05FF]+(?:\s+[\u0590-\u05FF]+)*/g, "");
+    t = t.replace(/[\u0400-\u04FF]+(?:\s+[\u0400-\u04FF]+)*/g, "");
   }
 
   // 5) Clean up colons and semicolons that TTS reads awkwardly
@@ -364,12 +375,12 @@ function cleanTextForSpeech(text: string, targetLang: "he" | "en" | "both" = "bo
   // 7) Remove leading/trailing punctuation
   t = t.replace(/^[,.!?\s]+/, "").replace(/[,\s]+$/, "");
 
-  // 8) Cap length for TTS — speak first 400 chars max (avoid Chrome 15s cutoff)
+  // 8) Cap length for TTS — speak first 500 chars max (avoid Chrome 15s cutoff)
   //    Try to break at sentence boundary
-  if (t.length > 400) {
-    const cut = t.slice(0, 400);
+  if (t.length > 500) {
+    const cut = t.slice(0, 500);
     const lastPeriod = Math.max(cut.lastIndexOf("."), cut.lastIndexOf("!"), cut.lastIndexOf("?"));
-    t = lastPeriod > 200 ? cut.slice(0, lastPeriod + 1) : cut + "...";
+    t = lastPeriod > 250 ? cut.slice(0, lastPeriod + 1) : cut + "...";
   }
 
   return t;
@@ -402,77 +413,158 @@ function loadVoices(): Promise<SpeechSynthesisVoice[]> {
 }
 
 /**
- * Pick the best voice for the given language code.
- * Falls back: exact match → prefix match → any voice.
+ * Pick the best voice for the given language code with quality scoring.
+ * Preference order:
+ *   1) Exact lang match + high-quality provider (Google, Microsoft Neural/Online, Apple premium)
+ *   2) Exact lang match + any voice
+ *   3) Prefix match + high-quality provider
+ *   4) Prefix match + any voice
+ *   5) Hebrew alternative codes (iw-IL)
+ *   6) null
  */
+function scoreVoice(v: SpeechSynthesisVoice): number {
+  const name = v.name.toLowerCase();
+  let score = 0;
+  // Premium/neural voices score highest
+  if (name.includes("google")) score += 100;
+  if (name.includes("neural") || name.includes("premium") || name.includes("enhanced")) score += 90;
+  if (name.includes("microsoft") && name.includes("online")) score += 80;
+  if (name.includes("microsoft")) score += 50;
+  if (name.includes("apple") || name.includes("siri")) score += 70;
+  // Local voices work offline — slight preference
+  if (v.localService) score += 5;
+  // Default voices often work best on that platform
+  if (v.default) score += 10;
+  return score;
+}
+
 function pickVoice(voices: SpeechSynthesisVoice[], lang: string): SpeechSynthesisVoice | null {
   if (!voices.length) return null;
-  const exact = voices.find((v) => v.lang === lang);
-  if (exact) return exact;
-  const prefix = lang.split("-")[0];
-  const byPrefix = voices.find((v) => v.lang.startsWith(prefix));
-  if (byPrefix) return byPrefix;
-  // For Hebrew, also check common alternative codes
-  if (prefix === "he") {
-    const iw = voices.find((v) => v.lang.startsWith("iw")); // older Hebrew code
-    if (iw) return iw;
-  }
-  return null;
+
+  const prefix = lang.split("-")[0].toLowerCase();
+
+  // Collect candidates: exact lang, prefix match, Hebrew alt (iw), Russian alt handled by prefix
+  const exactMatches = voices.filter((v) => v.lang.toLowerCase() === lang.toLowerCase());
+  const prefixMatches = voices.filter((v) => v.lang.toLowerCase().startsWith(prefix));
+  const hebrewAlt = prefix === "he"
+    ? voices.filter((v) => v.lang.toLowerCase().startsWith("iw"))
+    : [];
+
+  // Best from exact → prefix → hebrew-alt (all ranked by quality score)
+  const pickBest = (list: SpeechSynthesisVoice[]) =>
+    list.length ? list.slice().sort((a, b) => scoreVoice(b) - scoreVoice(a))[0] : null;
+
+  return pickBest(exactMatches) || pickBest(prefixMatches) || pickBest(hebrewAlt) || null;
+}
+
+// Per-language TTS tuning — rate/pitch adjusted for natural pace per language
+const LANG_TUNING: Record<string, { rate: number; pitch: number }> = {
+  he: { rate: 0.95, pitch: 1.0 },
+  en: { rate: 0.98, pitch: 1.0 },
+  ru: { rate: 0.95, pitch: 1.0 },
+  fr: { rate: 0.95, pitch: 1.0 },
+  es: { rate: 1.0, pitch: 1.0 },
+};
+
+export interface SpeakOptions {
+  /** Called when TTS finishes speaking naturally (not on cancel). */
+  onEnd?: () => void;
+  /** Called if TTS errors. */
+  onError?: (error: string) => void;
+  /** Called when TTS actually begins speaking. */
+  onStart?: () => void;
+}
+
+/** Check whether a voice is available for the given language. */
+export async function hasVoiceFor(lang: string): Promise<boolean> {
+  if (typeof window === "undefined" || !window.speechSynthesis) return false;
+  const voices = await loadVoices();
+  return !!pickVoice(voices, lang);
+}
+
+/** Cancel any ongoing TTS speech. */
+export function cancelSpeech(): void {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  try {
+    window.speechSynthesis.cancel();
+  } catch {}
 }
 
 /**
- * Text-to-speech helper — cleans text, waits for voices, picks best voice.
- * Targets the specified language and strips the OTHER language from the text
- * so TTS doesn't switch voices mid-sentence.
+ * Text-to-speech helper — cleans text, picks the best voice for the language,
+ * and strips OTHER-script words to keep the voice consistent.
+ *
+ * Supports all 5 app languages: he-IL, en-US, ru-RU, fr-FR, es-ES.
+ *
+ * @param text — raw assistant response
+ * @param lang — BCP-47 language code (e.g. "he-IL", "ru-RU")
+ * @param options — optional callbacks for conversation flow
  */
-export async function speak(text: string, lang: string = "he-IL"): Promise<void> {
+export async function speak(
+  text: string,
+  lang: string = "he-IL",
+  options: SpeakOptions = {}
+): Promise<void> {
   if (typeof window === "undefined" || !window.speechSynthesis) {
     console.warn("[speak] SpeechSynthesis not supported");
+    options.onError?.("not-supported");
     return;
   }
   try {
-    // Cancel any ongoing speech
+    // Cancel any ongoing speech so we don't overlap
     window.speechSynthesis.cancel();
-    // Some browsers need a brief pause after cancel
-    await new Promise((r) => setTimeout(r, 50));
+    // Some browsers need a brief pause after cancel before starting again
+    await new Promise((r) => setTimeout(r, 80));
 
-    // Clean text — target the specified language, strip the other
-    const langCode = lang.split("-")[0] as "he" | "en" | "ru" | "fr" | "es";
-    const targetLang: "he" | "en" | "both" = langCode === "he" ? "he" : langCode === "en" ? "en" : "both";
+    // Determine target language for text cleaning
+    const langCode = lang.split("-")[0].toLowerCase() as CleanLang;
+    const validLangs: CleanLang[] = ["he", "en", "ru", "fr", "es"];
+    const targetLang: CleanLang = validLangs.includes(langCode) ? langCode : "both";
+
     const clean = cleanTextForSpeech(text, targetLang);
     if (!clean || clean.length < 2) {
       console.warn("[speak] Text became empty after cleaning, skipping");
+      options.onEnd?.();
       return;
     }
 
-    // Load voices (async in Chrome)
+    // Load voices (async in Chrome) and pick best match for language
     const voices = await loadVoices();
     const voice = pickVoice(voices, lang);
 
-    // If targeting Hebrew but no Hebrew voice — warn and skip to avoid English-accented Hebrew
-    if (lang === "he-IL" && !voice) {
-      console.warn("[speak] No Hebrew voice installed — skipping TTS to avoid bad pronunciation. Install Hebrew TTS voice in OS settings.");
-      return;
-    }
-
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = lang;
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
+    const tuning = LANG_TUNING[langCode] || { rate: 0.95, pitch: 1.0 };
+    utterance.rate = tuning.rate;
+    utterance.pitch = tuning.pitch;
     utterance.volume = 1.0;
     if (voice) {
       utterance.voice = voice;
-      console.log(`[speak] Using voice: ${voice.name} (${voice.lang}) for lang=${lang}`);
+      console.log(
+        `[speak] lang=${lang} voice="${voice.name}" (${voice.lang}) rate=${tuning.rate}`
+      );
     } else {
-      console.warn(`[speak] No voice found for ${lang}. Using browser default.`);
+      console.warn(
+        `[speak] No matching voice for ${lang} — using browser default (may sound incorrect)`
+      );
     }
 
-    // Handle errors silently but log them
-    utterance.onerror = (e) => {
-      console.warn("[speak] TTS error:", (e as any).error || e);
+    utterance.onstart = () => {
+      console.log("[speak] started");
+      options.onStart?.();
     };
-    utterance.onstart = () => console.log("[speak] TTS started");
-    utterance.onend = () => console.log("[speak] TTS ended");
+    utterance.onend = () => {
+      console.log("[speak] ended naturally");
+      options.onEnd?.();
+    };
+    utterance.onerror = (e) => {
+      const err = (e as any).error || "unknown";
+      // "interrupted" / "canceled" are normal when user starts a new message
+      if (err !== "interrupted" && err !== "canceled") {
+        console.warn("[speak] TTS error:", err);
+        options.onError?.(err);
+      }
+    };
 
     window.speechSynthesis.speak(utterance);
 
@@ -487,5 +579,6 @@ export async function speak(text: string, lang: string = "he-IL"): Promise<void>
     }, 10000);
   } catch (err) {
     console.error("[speak] Exception:", err);
+    options.onError?.(err instanceof Error ? err.message : "unknown");
   }
 }
