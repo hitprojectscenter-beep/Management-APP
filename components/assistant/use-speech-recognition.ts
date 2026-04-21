@@ -307,40 +307,72 @@ export function useSpeechRecognition(
 }
 
 /**
- * Clean text for TTS — remove emojis, markdown formatting, special chars
- * that speech engines read aloud as "asterisk", "bullet", etc.
+ * Clean text for TTS — AGGRESSIVE cleaning for smooth voice output.
+ * Removes: all emojis, all punctuation/symbols that TTS reads aloud,
+ * markdown, bullets, code markers. Keeps only letters, numbers, and
+ * sentence-ending punctuation. Also strips English words from Hebrew
+ * text (and vice versa) to prevent TTS from switching voices mid-sentence.
+ *
+ * @param text — raw assistant response
+ * @param targetLang — "he" keeps Hebrew only, "en" keeps English only, "both" keeps both
  */
-function cleanTextForSpeech(text: string): string {
-  return text
-    // Remove emoji (Unicode emoji ranges)
-    .replace(/[\u{1F600}-\u{1F64F}]/gu, "") // emoticons
-    .replace(/[\u{1F300}-\u{1F5FF}]/gu, "") // symbols & pictographs
-    .replace(/[\u{1F680}-\u{1F6FF}]/gu, "") // transport & map
-    .replace(/[\u{1F700}-\u{1F77F}]/gu, "") // alchemical
-    .replace(/[\u{1F780}-\u{1F7FF}]/gu, "") // geometric
-    .replace(/[\u{1F800}-\u{1F8FF}]/gu, "") // supplemental arrows
-    .replace(/[\u{1F900}-\u{1F9FF}]/gu, "") // supplemental symbols
-    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, "") // chess symbols
-    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, "") // symbols extended
-    .replace(/[\u{2600}-\u{26FF}]/gu, "")   // misc symbols
-    .replace(/[\u{2700}-\u{27BF}]/gu, "")   // dingbats
-    .replace(/[\u{FE00}-\u{FE0F}]/gu, "")   // variation selectors
-    .replace(/[\u{200D}]/gu, "")             // zero width joiner
-    // Remove markdown formatting
-    .replace(/\*\*/g, "")        // bold markers
-    .replace(/\*/g, "")          // italic markers
-    .replace(/^[•●▪◦-]\s*/gm, "") // bullet points
-    .replace(/^→\s*/gm, "")     // arrow bullets
-    .replace(/^❓\s*/gm, "")    // question mark bullets
-    .replace(/^⛔\s*/gm, "")    // block markers
-    .replace(/^💡\s*/gm, "")    // idea markers
-    .replace(/^📖\s*/gm, "")    // book markers
-    .replace(/\[.*?\]/g, "")     // [bracketed text]
-    // Clean up whitespace
-    .replace(/\n{3,}/g, "\n")   // multiple newlines → one
-    .replace(/\n/g, ". ")       // newlines → pauses
-    .replace(/\s{2,}/g, " ")    // multiple spaces → one
-    .trim();
+function cleanTextForSpeech(text: string, targetLang: "he" | "en" | "both" = "both"): string {
+  let t = text;
+
+  // 1) Remove ALL emoji — broad catch-all with Unicode property escapes
+  t = t.replace(/\p{Extended_Pictographic}/gu, " ");
+  // Also zero-width joiners + variation selectors
+  t = t.replace(/[\u{200D}\u{FE00}-\u{FE0F}]/gu, "");
+
+  // 2) Remove code/markdown/structural symbols that TTS reads aloud
+  //    (keep periods, commas, question marks, exclamation for sentence flow)
+  const noisyChars = /[`~!@#$%^&*_=+|\\<>{}[\]()"'•●▪◦→←↑↓⇒⇐★☆♦♥♠♣§¶†‡«»‹›"""''‚„•·…]/g;
+  t = t.replace(noisyChars, " ");
+
+  // 3) Slashes between words → "או" (Hebrew) or "or" (English)
+  if (targetLang === "he") {
+    t = t.replace(/(\S)\s*\/\s*(\S)/g, "$1 או $2");
+  } else {
+    t = t.replace(/(\S)\s*\/\s*(\S)/g, "$1 or $2");
+  }
+  // Remove remaining slashes and dashes between/around Hebrew words
+  t = t.replace(/[-–—−]/g, " ");
+  t = t.replace(/\//g, " ");
+
+  // 4) Strip the "other" language's Latin/Hebrew words to keep TTS consistent
+  //    (prevents voice switching mid-sentence which is the main "sounds broken" issue)
+  if (targetLang === "he") {
+    // Hebrew mode: remove Latin alphabetic runs of 2+ letters (keep single letters, abbreviations)
+    // but keep numbers and basic Hebrew-mixed words
+    t = t.replace(/[A-Za-z]{2,}(?:\s+[A-Za-z]{2,})*/g, "");
+  } else if (targetLang === "en") {
+    // English mode: remove Hebrew character runs
+    t = t.replace(/[\u0590-\u05FF]+(?:\s+[\u0590-\u05FF]+)*/g, "");
+  }
+
+  // 5) Clean up colons and semicolons that TTS reads awkwardly
+  t = t.replace(/[:;]/g, ". ");
+
+  // 6) Normalize whitespace and newlines
+  t = t.replace(/\n{2,}/g, ". ");   // paragraph breaks → pause
+  t = t.replace(/\n/g, ", ");        // line breaks → short pause
+  t = t.replace(/\s{2,}/g, " ");     // collapse multiple spaces
+  t = t.replace(/\s*([,.!?])\s*/g, "$1 "); // normalize punctuation spacing
+  t = t.replace(/([,.!?])\1+/g, "$1"); // "..." → "."
+  t = t.replace(/\s+/g, " ").trim();
+
+  // 7) Remove leading/trailing punctuation
+  t = t.replace(/^[,.!?\s]+/, "").replace(/[,\s]+$/, "");
+
+  // 8) Cap length for TTS — speak first 400 chars max (avoid Chrome 15s cutoff)
+  //    Try to break at sentence boundary
+  if (t.length > 400) {
+    const cut = t.slice(0, 400);
+    const lastPeriod = Math.max(cut.lastIndexOf("."), cut.lastIndexOf("!"), cut.lastIndexOf("?"));
+    t = lastPeriod > 200 ? cut.slice(0, lastPeriod + 1) : cut + "...";
+  }
+
+  return t;
 }
 
 /**
@@ -390,6 +422,8 @@ function pickVoice(voices: SpeechSynthesisVoice[], lang: string): SpeechSynthesi
 
 /**
  * Text-to-speech helper — cleans text, waits for voices, picks best voice.
+ * Targets the specified language and strips the OTHER language from the text
+ * so TTS doesn't switch voices mid-sentence.
  */
 export async function speak(text: string, lang: string = "he-IL"): Promise<void> {
   if (typeof window === "undefined" || !window.speechSynthesis) {
@@ -402,12 +436,24 @@ export async function speak(text: string, lang: string = "he-IL"): Promise<void>
     // Some browsers need a brief pause after cancel
     await new Promise((r) => setTimeout(r, 50));
 
-    const clean = cleanTextForSpeech(text);
-    if (!clean) return;
+    // Clean text — target the specified language, strip the other
+    const langCode = lang.split("-")[0] as "he" | "en" | "ru" | "fr" | "es";
+    const targetLang: "he" | "en" | "both" = langCode === "he" ? "he" : langCode === "en" ? "en" : "both";
+    const clean = cleanTextForSpeech(text, targetLang);
+    if (!clean || clean.length < 2) {
+      console.warn("[speak] Text became empty after cleaning, skipping");
+      return;
+    }
 
     // Load voices (async in Chrome)
     const voices = await loadVoices();
     const voice = pickVoice(voices, lang);
+
+    // If targeting Hebrew but no Hebrew voice — warn and skip to avoid English-accented Hebrew
+    if (lang === "he-IL" && !voice) {
+      console.warn("[speak] No Hebrew voice installed — skipping TTS to avoid bad pronunciation. Install Hebrew TTS voice in OS settings.");
+      return;
+    }
 
     const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = lang;
