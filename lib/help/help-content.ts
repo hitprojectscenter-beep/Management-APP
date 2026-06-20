@@ -638,7 +638,15 @@ export const HELP_ENTRIES: HelpEntry[] = [
  * Find matching help entries by keywords.
  */
 export function findHelpByKeywords(query: string, locale: string): HelpEntry[] {
-  const q = query.toLowerCase().trim();
+  if (!query) return [];
+  // Strip ALL punctuation (including ? . , : ; ! and quotes) so "מה זה גאנט?"
+  // splits into ["מה","זה","גאנט"] instead of ["מה","זה","גאנט?"] — otherwise
+  // the trailing "?" prevents exact-keyword matches like "גאנט".
+  const q = query
+    .toLowerCase()
+    .replace(/[?？!,.;:"'״׳`«»‹›""''‚„•·…()\[\]{}]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!q) return [];
   // Help entries only have "he" and "en" keys — map other locales
   const kbLocale = locale === "he" ? "he" : "en";

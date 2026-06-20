@@ -1,14 +1,25 @@
 import { NextResponse } from "next/server";
 import { findHelpByKeywords, formatKnowledgeBaseForAI, HELP_ENTRIES } from "@/lib/help/help-content";
 import { chat } from "@/lib/ai/claude";
+import { askGemini, isGeminiAvailable } from "@/lib/ai/gemini";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const { query, locale: rawLocale } = (await req.json()) as { query: string; locale: string };
-    // Normalize locale — help content only has "he" and "en" keys
+    const body = (await req.json().catch(() => ({}))) as { query?: string; q?: string; locale?: string };
+    // Accept either "query" or "q" as the input field
+    const query = (body.query || body.q || "").trim();
+    const rawLocale = body.locale;
+    if (!query) {
+      return NextResponse.json({ answer: "", error: "Empty query" }, { status: 400 });
+    }
+    // Normalize locale — help content only has "he" and "en" keys for KB lookup
     const locale = rawLocale === "he" ? "he" : "en";
+    // Detect the actual response language from text, fallback to locale
+    const hasHebrewChars = /[֐-׿]/.test(query);
+    const hasCyrillicChars = /[Ѐ-ӿ]/.test(query);
+    const responseLang = hasHebrewChars ? "he" : hasCyrillicChars ? "ru" : (rawLocale && ["en", "fr", "es"].includes(rawLocale) ? rawLocale : "he");
 
     // 1. Try keyword match first - fast and free
     const matched = findHelpByKeywords(query, locale);
@@ -20,7 +31,21 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Fallback to Claude with knowledge base context (if API key set)
+    // 2a. Fallback to Gemini (preferred — supports 5 languages, grounded with full app facts)
+    if (isGeminiAvailable()) {
+      try {
+        const kbContext = formatKnowledgeBaseForAI(locale);
+        const answer = await askGemini(query, kbContext, responseLang);
+        return NextResponse.json({
+          answer,
+          source: "ai-gemini",
+        });
+      } catch (err) {
+        console.warn("[help] Gemini failed, trying Claude:", err);
+      }
+    }
+
+    // 2b. Fallback to Claude with knowledge base context (if API key set)
     if (process.env.ANTHROPIC_API_KEY) {
       const systemPrompt =
         locale === "he"

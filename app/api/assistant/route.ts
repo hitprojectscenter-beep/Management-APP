@@ -108,10 +108,12 @@ export async function POST(req: Request) {
     const hasCyrillicInText = /[\u0400-\u04FF]/.test(text);
     // Determine response language: script detection → locale → Hebrew default
     const responseLang = hasHebrewInText ? "he" : hasCyrillicInText ? "ru" : (["en", "fr", "es"].includes(locale) ? locale : "he");
-    const isQuestionLike = /[?？]|איך|מה|כיצד|למה|הסבר|ספר|how|what|why|explain|tell|describe|как|что|почему|объясни|расскажи|comment|qu[eé]|expliqu|cómo|qué|por qué|explica/i.test(text);
-    const shouldTryGemini =
-      isGeminiAvailable() &&
-      (parsed.action === "unknown" || (isQuestionLike && parsed.action !== "create_task" && parsed.action !== "create_project"));
+    // Trigger Gemini broadly: for ANY informational query that isn't a clear
+    // mutation action. The grounded system prompt (app facts + live snapshot)
+    // makes Gemini a reliable fallback even for free-form questions the
+    // heuristic doesn't explicitly route.
+    const isMutation = ["create_task", "create_project", "assign_task", "update_task_status"].includes(parsed.action);
+    const shouldTryGemini = isGeminiAvailable() && !isMutation;
 
     if (shouldTryGemini) {
       try {

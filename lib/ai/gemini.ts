@@ -120,12 +120,25 @@ Reglas: Responde solo en español, de forma amable y concisa (3-6 oraciones). Us
 export async function askGemini(question: string, context: string, lang: string): Promise<string> {
   const cfg = GEMINI_LANG_CONFIG[lang] || GEMINI_LANG_CONFIG.he;
 
+  // Pull in comprehensive app facts + live snapshot so Gemini has grounded
+  // information about EVERY page, KPI, role, risk type, and current state.
+  // Imported lazily to avoid circular imports.
+  const { buildFullContext } = await import("./app-context");
+  const fullContext = buildFullContext(lang, context);
+
   const systemInstruction = `${cfg.instruction}
 
 ${cfg.directive}
 
+Reply guidelines:
+- Be SPECIFIC: cite page names, KPI codes, role names, numbers from the live snapshot when relevant.
+- If the user asks "how to X" — give a step-by-step walkthrough using the actual UI labels.
+- If asked about state ("how many", "who is", "what's the status") — quote the LIVE snapshot numbers.
+- If a question is outside the PMO++ scope, briefly redirect: explain what the assistant CAN help with.
+- Length: 3-8 sentences for explanations, longer if the user asks for details. Use bullet points for lists.
+
 PMO++ system info:
-${context}`;
+${fullContext}`;
 
   const userMessage = `${cfg.prefix} ${question}`;
 

@@ -318,8 +318,53 @@ export function useSpeechRecognition(
  */
 type CleanLang = "he" | "en" | "ru" | "fr" | "es" | "both";
 
+// Common Hebrew abbreviations — expand multi-word ones to their full form
+// so TTS reads them naturally instead of as letter-by-letter spellings.
+const HEBREW_ABBREVIATIONS: Record<string, string> = {
+  'ת"א': 'תל אביב',
+  'י"ם': 'ירושלים',
+  'ב"ש': 'באר שבע',
+  'ר"ת': 'ראשי תיבות',
+  'יו"ר': 'יושב ראש',
+  'מ"מ': 'ממלא מקום',
+  'בע"מ': 'בערבון מוגבל',
+  'אש"ל': 'אכילה שתייה לינה',
+  'יח"צ': 'יחסי ציבור',
+  "וכו'": 'וכולי',
+  "וכד'": 'וכדומה',
+  "דר'": 'דוקטור',
+  "גב'": 'גברת',
+  "פרופ'": 'פרופסור',
+};
+
+function expandHebrewAbbreviations(text: string): string {
+  let t = text;
+  // Multi-word expansions first (longest match wins so prefixes don't shadow longer keys)
+  const sortedKeys = Object.keys(HEBREW_ABBREVIATIONS).sort((a, b) => b.length - a.length);
+  for (const abbr of sortedKeys) {
+    const escaped = abbr.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    t = t.replace(new RegExp(escaped, "g"), HEBREW_ABBREVIATIONS[abbr]);
+  }
+  // For ANY remaining Hebrew abbreviation (e.g. לו"ז, מנכ"ל, סמנכ"ל, צה"ל),
+  // strip the quote/gershayim BETWEEN Hebrew letters WITHOUT inserting a space,
+  // so it's pronounced as a single word (luz, mankal, samankal, tzahal)
+  // instead of two separate words ("lo zayin").
+  t = t.replace(
+    /([֐-׿])["'`׳״‘’“”‟]+([֐-׿])/g,
+    "$1$2"
+  );
+  // Trailing geresh/apostrophe right after a Hebrew letter (e.g. "וכו'" if not in dict).
+  t = t.replace(/([֐-׿])['׳’]/g, "$1");
+  return t;
+}
+
 function cleanTextForSpeech(text: string, targetLang: CleanLang = "both"): string {
   let t = text;
+
+  // 0) Expand Hebrew abbreviations FIRST so the noisy-char strip in step 2
+  //    doesn't turn "לו\"ז" into "לו ז" (which TTS reads as "lo zayin"
+  //    instead of "luz"). Same fix applies to מנכ"ל, סמנכ"ל, צה"ל וכו'.
+  t = expandHebrewAbbreviations(t);
 
   // 1) Remove ALL emoji — broad catch-all with Unicode property escapes
   t = t.replace(/\p{Extended_Pictographic}/gu, " ");
@@ -375,13 +420,9 @@ function cleanTextForSpeech(text: string, targetLang: CleanLang = "both"): strin
   // 7) Remove leading/trailing punctuation
   t = t.replace(/^[,.!?\s]+/, "").replace(/[,\s]+$/, "");
 
-  // 8) Cap length for TTS — speak first 500 chars max (avoid Chrome 15s cutoff)
-  //    Try to break at sentence boundary
-  if (t.length > 500) {
-    const cut = t.slice(0, 500);
-    const lastPeriod = Math.max(cut.lastIndexOf("."), cut.lastIndexOf("!"), cut.lastIndexOf("?"));
-    t = lastPeriod > 250 ? cut.slice(0, lastPeriod + 1) : cut + "...";
-  }
+  // NOTE: No length cap here — speak() splits long text into chunks and
+  // queues them back-to-back so the WHOLE reply gets read out, not just
+  // the first 500 chars (Chrome's ~15s cutoff is handled per-chunk + keep-alive).
 
   return t;
 }
@@ -482,8 +523,15 @@ export async function hasVoiceFor(lang: string): Promise<boolean> {
   return !!pickVoice(voices, lang);
 }
 
+// Token used to detect cancellation / supersession of in-flight TTS chunks.
+// Each speak() captures the current value; cancelSpeech() or a new speak()
+// bumps it, so the queued onend → speakNextChunk() callback knows to stop
+// instead of pushing the next chunk into a queue the user just cleared.
+let SPEAK_TOKEN = 0;
+
 /** Cancel any ongoing TTS speech. */
 export function cancelSpeech(): void {
+  SPEAK_TOKEN++;
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   try {
     window.speechSynthesis.cancel();
@@ -491,8 +539,57 @@ export function cancelSpeech(): void {
 }
 
 /**
+ * Split text into ~350-char chunks for TTS, breaking at sentence boundaries
+ * when possible. Lets long replies finish without Chrome's ~15s cutoff
+ * truncating them, and produces smoother prosody than a single huge utterance.
+ */
+function chunkTextForSpeech(text: string, maxLen: number = 350): string[] {
+  const trimmed = text.trim();
+  if (trimmed.length <= maxLen) return trimmed ? [trimmed] : [];
+
+  const chunks: string[] = [];
+  let remaining = trimmed;
+
+  while (remaining.length > maxLen) {
+    const slice = remaining.slice(0, maxLen);
+    let cutAt = -1;
+
+    // Prefer sentence-end punctuation (latest occurrence inside the slice)
+    for (const punct of [".", "!", "?"]) {
+      const idx = slice.lastIndexOf(punct);
+      if (idx > cutAt) cutAt = idx;
+    }
+
+    // If sentence break is too early, fall back to comma
+    if (cutAt < maxLen * 0.5) {
+      const commaAt = slice.lastIndexOf(",");
+      if (commaAt > cutAt) cutAt = commaAt;
+    }
+
+    // Last fallback: word boundary
+    if (cutAt < maxLen * 0.5) {
+      const spaceAt = slice.lastIndexOf(" ");
+      if (spaceAt > cutAt) cutAt = spaceAt;
+    }
+
+    // Absolute last resort: hard cut at maxLen
+    if (cutAt < 0) cutAt = maxLen - 1;
+
+    const chunk = remaining.slice(0, cutAt + 1).trim();
+    if (chunk) chunks.push(chunk);
+    remaining = remaining.slice(cutAt + 1).trim();
+  }
+
+  if (remaining) chunks.push(remaining);
+  return chunks;
+}
+
+/**
  * Text-to-speech helper — cleans text, picks the best voice for the language,
  * and strips OTHER-script words to keep the voice consistent.
+ *
+ * Long replies are chunked at sentence boundaries and queued back-to-back so
+ * the entire response gets read out, not just the first ~500 chars / ~15s.
  *
  * Supports all 5 app languages: he-IL, en-US, ru-RU, fr-FR, es-ES.
  *
@@ -511,10 +608,13 @@ export async function speak(
     return;
   }
   try {
-    // Cancel any ongoing speech so we don't overlap
+    // Cancel any ongoing speech so we don't overlap, and bump the token so
+    // any in-flight chunks from a previous speak() abort instead of chaining.
+    const myToken = ++SPEAK_TOKEN;
     window.speechSynthesis.cancel();
     // Some browsers need a brief pause after cancel before starting again
     await new Promise((r) => setTimeout(r, 80));
+    if (myToken !== SPEAK_TOKEN) return; // superseded during the await
 
     // Determine target language for text cleaning
     const langCode = lang.split("-")[0].toLowerCase() as CleanLang;
@@ -530,18 +630,13 @@ export async function speak(
 
     // Load voices (async in Chrome) and pick best match for language
     const voices = await loadVoices();
+    if (myToken !== SPEAK_TOKEN) return; // superseded while loading voices
     const voice = pickVoice(voices, lang);
-
-    const utterance = new SpeechSynthesisUtterance(clean);
-    utterance.lang = lang;
     const tuning = LANG_TUNING[langCode] || { rate: 0.95, pitch: 1.0 };
-    utterance.rate = tuning.rate;
-    utterance.pitch = tuning.pitch;
-    utterance.volume = 1.0;
+
     if (voice) {
-      utterance.voice = voice;
       console.log(
-        `[speak] lang=${lang} voice="${voice.name}" (${voice.lang}) rate=${tuning.rate}`
+        `[speak] lang=${lang} voice="${voice.name}" (${voice.lang}) rate=${tuning.rate} chars=${clean.length}`
       );
     } else {
       console.warn(
@@ -549,28 +644,63 @@ export async function speak(
       );
     }
 
-    utterance.onstart = () => {
-      console.log("[speak] started");
-      options.onStart?.();
-    };
-    utterance.onend = () => {
-      console.log("[speak] ended naturally");
+    // Split into chunks so TTS reads the WHOLE reply, not just the first chunk.
+    const chunks = chunkTextForSpeech(clean, 350);
+    if (chunks.length === 0) {
       options.onEnd?.();
-    };
-    utterance.onerror = (e) => {
-      const err = (e as any).error || "unknown";
-      // "interrupted" / "canceled" are normal when user starts a new message
-      if (err !== "interrupted" && err !== "canceled") {
-        console.warn("[speak] TTS error:", err);
-        options.onError?.(err);
+      return;
+    }
+    console.log(`[speak] queued ${chunks.length} chunk(s)`);
+
+    let chunkIndex = 0;
+    let started = false;
+
+    const speakNextChunk = () => {
+      // Stop chaining if cancelSpeech() or a new speak() superseded us.
+      if (myToken !== SPEAK_TOKEN) return;
+      if (chunkIndex >= chunks.length) {
+        console.log("[speak] all chunks finished");
+        options.onEnd?.();
+        return;
       }
+      const chunk = chunks[chunkIndex++];
+      const utterance = new SpeechSynthesisUtterance(chunk);
+      utterance.lang = lang;
+      utterance.rate = tuning.rate;
+      utterance.pitch = tuning.pitch;
+      utterance.volume = 1.0;
+      if (voice) utterance.voice = voice;
+
+      utterance.onstart = () => {
+        if (!started && myToken === SPEAK_TOKEN) {
+          started = true;
+          console.log("[speak] started");
+          options.onStart?.();
+        }
+      };
+      utterance.onend = () => {
+        // Chain into the next chunk (checks token internally)
+        speakNextChunk();
+      };
+      utterance.onerror = (e) => {
+        const err = (e as any).error || "unknown";
+        // "interrupted" / "canceled" are normal when user starts a new message
+        if (err === "interrupted" || err === "canceled") return;
+        console.warn("[speak] TTS error:", err);
+        // Skip the broken chunk and try the next so one bad utterance doesn't
+        // kill the whole reply.
+        speakNextChunk();
+        options.onError?.(err);
+      };
+
+      window.speechSynthesis.speak(utterance);
     };
 
-    window.speechSynthesis.speak(utterance);
+    speakNextChunk();
 
     // Chrome bug: speechSynthesis stops after ~15 seconds — ping to keep it alive
     const keepAlive = setInterval(() => {
-      if (!window.speechSynthesis.speaking) {
+      if (myToken !== SPEAK_TOKEN || !window.speechSynthesis.speaking) {
         clearInterval(keepAlive);
         return;
       }
