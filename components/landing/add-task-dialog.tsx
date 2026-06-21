@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -54,37 +54,98 @@ interface AddTaskFormData {
   attachments: File[];
 }
 
+/**
+ * Optional pre-fill payload — used by the intake center to open this dialog
+ * with the data the AI extracted from a meeting/document/audio source.
+ * Every field is optional; the dialog still works with no pre-fill.
+ */
+export interface AddTaskInitialValues {
+  title?: string;
+  description?: string;
+  /** Work-type label like "מצגת" / "מסמך אפיון" — mapped to taskType id by emoji/keyword */
+  workTypeLabel?: string;
+  /** Free-text assignee hint from the source — resolved to a user id by fuzzy match */
+  assigneeHint?: string;
+  /** Specific user id — wins over assigneeHint */
+  assigneeUserId?: string;
+  plannedStart?: string;
+  plannedEnd?: string;
+  estimateHours?: number;
+  /** When provided, displayed as a small chip in the dialog so the user
+   *  knows where the pre-fill came from (filename, "סיכום פגישה" etc.). */
+  sourceLabel?: string;
+}
+
 export function AddTaskDialog({
   projects,
   users,
   locale,
   children,
+  initialValues,
+  /** Controlled-open mode (intake table opens externally) — optional. */
+  open: openProp,
+  onOpenChange,
 }: {
   projects: MockWbsNode[];
   users: MockUser[];
   locale: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  initialValues?: AddTaskInitialValues;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = (v: boolean) => {
+    setInternalOpen(v);
+    onOpenChange?.(v);
+  };
 
   const programs = projects.filter((p) => p.level === "program");
   const projectsOnly = projects.filter((p) => p.level === "project");
   const taskTypes = mockItemTypes.filter((t) => t.scope === "task");
 
+  // Try to map a workTypeLabel ("מצגת" / "מסמך אפיון") to one of the catalog
+  // taskType ids so the chip picker shows the right selection on open.
+  const resolveTaskTypeId = (label?: string): string => {
+    if (!label) return "";
+    const l = label.toLowerCase();
+    const match = taskTypes.find(
+      (t) => t.nameHe.toLowerCase().includes(l) || l.includes(t.nameHe.toLowerCase()) || (t.nameEn && l.includes(t.nameEn.toLowerCase()))
+    );
+    return match?.id || "";
+  };
+
+  // Fuzzy-resolve an assignee hint to a user id
+  const resolveAssigneeId = (hint?: string): string => {
+    if (!hint) return "";
+    const h = hint.toLowerCase().trim();
+    const exact = users.find((u) => u.name.toLowerCase() === h);
+    if (exact) return exact.id;
+    const partial = users.find(
+      (u) => u.name.toLowerCase().includes(h) || h.includes(u.name.toLowerCase().split(" ")[0])
+    );
+    return partial?.id || "";
+  };
+
+  const initialAssigneeId =
+    initialValues?.assigneeUserId || resolveAssigneeId(initialValues?.assigneeHint);
+
   // Per user spec: every selectable field starts empty so the user must
   // pick consciously instead of submitting whatever the form happened to
-  // pre-fill. Title, dates, type, parent, source, priority — all blank.
+  // pre-fill. EXCEPT when initialValues are passed in from the intake
+  // center — then the pre-fill comes from real source data, not a default.
   const [form, setForm] = useState<AddTaskFormData>({
-    title: "",
-    taskType: "",
+    title: initialValues?.title || "",
+    taskType: resolveTaskTypeId(initialValues?.workTypeLabel),
     taskTypeOther: "",
     parentType: "project",
     parentId: "",
     methodology: "" as any,
-    description: "",
-    teamMembers: [],
-    plannedStart: "",
-    plannedEnd: "",
+    description: initialValues?.description || "",
+    teamMembers: initialAssigneeId ? [initialAssigneeId] : [],
+    plannedStart: initialValues?.plannedStart || "",
+    plannedEnd: initialValues?.plannedEnd || "",
     source: "" as any,
     sourceOther: "",
     priority: "" as any,
@@ -92,6 +153,24 @@ export function AddTaskDialog({
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof AddTaskFormData, string>>>({});
+
+  // Re-apply initialValues whenever the dialog re-opens with new pre-fill data,
+  // so the intake center can open the dialog for several different extracted
+  // tasks in a row without showing stale data from the previous one.
+  useEffect(() => {
+    if (!open || !initialValues) return;
+    setForm((prev) => ({
+      ...prev,
+      title: initialValues.title ?? prev.title,
+      taskType: resolveTaskTypeId(initialValues.workTypeLabel) || prev.taskType,
+      description: initialValues.description ?? prev.description,
+      teamMembers: initialAssigneeId ? [initialAssigneeId] : prev.teamMembers,
+      plannedStart: initialValues.plannedStart ?? prev.plannedStart,
+      plannedEnd: initialValues.plannedEnd ?? prev.plannedEnd,
+    }));
+    setErrors({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialValues]);
 
   const validate = (): boolean => {
     const errs: typeof errors = {};
@@ -201,7 +280,7 @@ export function AddTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children && <DialogTrigger asChild>{children}</DialogTrigger>}
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto w-[95vw] sm:w-full p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{txt(locale, { he: "הוספת משימה חדשה", en: "Add New Task" })}</DialogTitle>

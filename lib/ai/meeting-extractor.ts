@@ -165,6 +165,28 @@ ${text.slice(0, 4000)}`;
     extracted = extractTasksHeuristic(text);
   }
 
+  // De-duplicate: every task must have a unique title. Identical titles
+  // (case-insensitive, after whitespace collapse) are merged. If Gemini
+  // returned the same title for several action lines, we keep the first
+  // occurrence and discard the rest. Titles that differ only by a trailing
+  // period or whitespace count as the same.
+  const seen = new Map<string, ExtractedTask>();
+  for (const task of extracted) {
+    const norm = task.title.toLowerCase().replace(/\s+/g, " ").replace(/[.!?]+$/, "").trim();
+    if (!norm) continue;
+    if (!seen.has(norm)) {
+      seen.set(norm, task);
+    } else {
+      // Merge missing fields into the kept task so we don't lose context
+      const kept = seen.get(norm)!;
+      if (!kept.assigneeHint && task.assigneeHint) kept.assigneeHint = task.assigneeHint;
+      if (!kept.dueDate && task.dueDate) kept.dueDate = task.dueDate;
+      if (!kept.description && task.description) kept.description = task.description;
+      if (!kept.workTypeLabel && task.workTypeLabel) kept.workTypeLabel = task.workTypeLabel;
+    }
+  }
+  extracted = Array.from(seen.values());
+
   // Enrich each task with an effort estimate (uses catalog — instant, no API call)
   for (const task of extracted) {
     const est = await estimateEffort({ title: task.title, description: task.description, lang });

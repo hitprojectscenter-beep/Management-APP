@@ -19,11 +19,13 @@ import {
   Volume2,
   ArrowRight,
   Plus,
+  Pencil,
 } from "lucide-react";
 import { txt } from "@/lib/utils/locale-text";
 import { cn } from "@/lib/utils";
 import { mockUsers, mockWbsNodes } from "@/lib/db/mock-data";
 import { pickResponsible } from "@/lib/ai/role-hierarchy";
+import { AddTaskDialog, type AddTaskInitialValues } from "@/components/landing/add-task-dialog";
 
 interface ExtractedTask {
   title: string;
@@ -462,6 +464,25 @@ function ExtractedTasksTable({
   // Compute the org-wide auto-pick: most senior non-CEO from mockUsers, as fallback
   const autoFallback = pickResponsible(mockUsers, { excludeCEO: true });
 
+  // Controlled-open dialog that gets pre-filled when the user clicks a row.
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorInit, setEditorInit] = useState<AddTaskInitialValues | null>(null);
+
+  const openEditor = (task: ExtractedTask) => {
+    const resolved = resolveAssignee(task.assigneeHint) || autoFallback?.user;
+    setEditorInit({
+      title: task.title,
+      description: task.description,
+      workTypeLabel: task.workTypeLabel,
+      assigneeHint: task.assigneeHint,
+      assigneeUserId: resolved?.id,
+      plannedEnd: task.dueDate,
+      estimateHours: task.estimateHours,
+      sourceLabel: result.meta.filename,
+    });
+    setEditorOpen(true);
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -500,12 +521,13 @@ function ExtractedTasksTable({
               <div
                 key={i}
                 className={cn(
-                  "border rounded-lg p-3 transition-all cursor-pointer",
+                  "border rounded-lg p-3 transition-all cursor-pointer hover:border-violet-300",
                   isSel
                     ? "border-violet-400 bg-violet-50/40 dark:bg-violet-950/20"
                     : "border-border bg-muted/10"
                 )}
-                onClick={() => toggleSelect(i)}
+                onClick={() => openEditor(task)}
+                title={txt(locale, { he: "לחץ לפתיחת טופס משימה עם הפרטים מהמקור", en: "Click to open the task form prefilled from source" }) as string}
               >
                 <div className="flex items-start gap-3">
                   <input
@@ -555,22 +577,45 @@ function ExtractedTasksTable({
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeTask(i);
-                    }}
-                    className="text-muted-foreground hover:text-red-500 p-1"
-                    title={txt(locale, { he: "הסר", en: "Remove" }) as string}
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditor(task);
+                      }}
+                      className="text-muted-foreground hover:text-violet-600 p-1"
+                      title={txt(locale, { he: "פתח טופס מלא", en: "Open full form" }) as string}
+                    >
+                      <Pencil className="size-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTask(i);
+                      }}
+                      className="text-muted-foreground hover:text-red-500 p-1"
+                      title={txt(locale, { he: "הסר", en: "Remove" }) as string}
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
           })
         )}
       </CardContent>
+
+      {/* Hidden controlled-open AddTaskDialog used for "click row → pre-filled form".
+          It has no children (no trigger button) — opens/closes purely via state. */}
+      <AddTaskDialog
+        projects={mockWbsNodes}
+        users={mockUsers}
+        locale={locale}
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        initialValues={editorInit ?? undefined}
+      />
     </Card>
   );
 }
