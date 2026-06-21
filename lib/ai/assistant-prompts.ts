@@ -119,15 +119,40 @@ export function heuristicParse(
     const projMatch = text.match(/(?:לפרויקט|בפרויקט|פרויקט)\s+[""]?(.+?)[""]?(?:\s|$|,|\.)/i);
     if (projMatch) entities.projectNameHint = projMatch[1].trim();
 
-    // Extract assignee hint
-    const assignMatch = text.match(/(?:הקצה\s+ל|להקצות\s+ל|אחראי|ל)\s*[-:]?\s*[""]?(\S+(?:\s+\S+)?)[""]?(?:\s|$|,|\.)/i);
-    if (assignMatch && !/פרויקט|משימה|יום|מחר/.test(assignMatch[1])) {
-      entities.assigneeNameHint = assignMatch[1].trim();
+    // ============================================================
+    // Explicit responsible-person override
+    // Recognized: "אחראי על המשימה הוא X", "אחריות לביצוע היא על X",
+    //             "הקצה ל-X", "responsible is X", "assign to X", "owner: X"
+    // ============================================================
+    const { parseResponsibleOverride } = require("./role-hierarchy");
+    const overrideName = parseResponsibleOverride(text);
+    if (overrideName) {
+      entities.assigneeNameHint = overrideName;
+      entities.assigneeExplicit = true; // signal: do NOT auto-assign by seniority
+    } else {
+      // Legacy hint extractor (kept as a softer fallback)
+      const assignMatch = text.match(/(?:הקצה\s+ל|להקצות\s+ל|ל)\s*[-:]?\s*[""]?(\S+(?:\s+\S+)?)[""]?(?:\s|$|,|\.)/i);
+      if (assignMatch && !/פרויקט|משימה|יום|מחר/.test(assignMatch[1])) {
+        entities.assigneeNameHint = assignMatch[1].trim();
+      }
+    }
+
+    // ============================================================
+    // Auto-estimate effort. Use the title if it's substantive, otherwise
+    // run the catalog against the full user text — the heuristic is just
+    // pattern matching, so giving it more context doesn't hurt.
+    // ============================================================
+    const { estimateEffortHeuristic } = require("./effort-estimator");
+    const estTarget = entities.title && entities.title.length >= 5 ? entities.title : text;
+    const est = estimateEffortHeuristic({ title: estTarget, description: text });
+    if (est) {
+      entities.estimateHours = est.hours;
+      entities.workTypeLabel = est.matchedLabel?.he;
     }
 
     responseText = isHe
-      ? `הבנתי שאתה רוצה לפתוח משימה חדשה${entities.title ? `: "${entities.title}"` : ""}. אבדוק אילו פרטים עוד חסרים.`
-      : `Got it - creating a new task${entities.title ? `: "${entities.title}"` : ""}. Let me check what info is still needed.`;
+      ? `הבנתי שאתה רוצה לפתוח משימה חדשה${entities.title ? `: "${entities.title}"` : ""}.${est ? ` הערכה: ${est.hours} שעות (${est.matchedLabel?.he}).` : ""} אבדוק אילו פרטים עוד חסרים.`
+      : `Got it - creating a new task${entities.title ? `: "${entities.title}"` : ""}.${est ? ` Estimated: ${est.hours}h (${est.matchedLabel?.en}).` : ""} Let me check what info is still needed.`;
   }
   // CREATE PROJECT
   else if (/פתח|צור|create/.test(lower) && /פרויקט|project/.test(lower)) {

@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/routing";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS } from "./nav-items";
+import { NAV_ITEMS, NAV_GROUPS, NAV_GROUP_OF, type NavGroupKey } from "./nav-items";
 import { txt, ORG_NAME } from "@/lib/utils/locale-text";
 import { useRole } from "@/lib/auth/role-context";
 
@@ -62,31 +62,47 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {visibleNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : item.href === "/dashboard"
-                ? pathname === "/dashboard"
-                : pathname.startsWith(item.href);
+        {NAV_GROUPS.map((group) => {
+          // Items belonging to this group that survived the RBAC filter
+          const items = visibleNavItems.filter(
+            (item) => NAV_GROUP_OF[item.key] === group.key
+          );
+          if (items.length === 0) return null;
           return (
-            <Link
-              key={item.key}
-              href={item.href}
-              onClick={onNavigate}
-              data-tour={item.key === "ai" ? "ai-link" : undefined}
-              title={item.tooltips?.[locale] || item.tooltips?.en || ""}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px]",
-                isActive
-                  ? "bg-white/15 text-white shadow-lg nav-glow backdrop-blur-sm"
-                  : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-white active:bg-white/15 transition-all duration-200"
-              )}
-            >
-              <Icon className="size-4 shrink-0" />
-              <span>{item.labels[locale] || item.labels.en}</span>
-            </Link>
+            <div key={group.key} className="pt-3 first:pt-0">
+              <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/50">
+                {group.labels[locale] || group.labels.en}
+              </div>
+              <div className="space-y-1">
+                {items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    item.href === "/"
+                      ? pathname === "/"
+                      : item.href === "/dashboard"
+                        ? pathname === "/dashboard"
+                        : pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.key}
+                      href={item.href}
+                      onClick={onNavigate}
+                      data-tour={item.key === "ai" ? "ai-link" : undefined}
+                      title={item.tooltips?.[locale] || item.tooltips?.en || ""}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px]",
+                        isActive
+                          ? "bg-white/15 text-white shadow-lg nav-glow backdrop-blur-sm"
+                          : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-white active:bg-white/15 transition-all duration-200"
+                      )}
+                    >
+                      <Icon className="size-4 shrink-0" />
+                      <span>{item.labels[locale] || item.labels.en}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </nav>

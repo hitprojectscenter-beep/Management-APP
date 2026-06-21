@@ -28,6 +28,26 @@ export interface NavItem {
   tooltips: Record<string, string>;
 }
 
+/** 5 thematic groups for the sidebar, in display order */
+export type NavGroupKey = "tasks" | "projects" | "management" | "pmo" | "settings";
+
+export const NAV_GROUPS: { key: NavGroupKey; labels: Record<string, string> }[] = [
+  { key: "tasks",      labels: { he: "ניהול משימות",         en: "Task Management",     ru: "Управление задачами",   fr: "Gestion des tâches",   es: "Gestión de tareas"      } },
+  { key: "projects",   labels: { he: "ניהול פרויקטים",        en: "Project Management",  ru: "Управление проектами",  fr: "Gestion des projets",  es: "Gestión de proyectos"   } },
+  { key: "management", labels: { he: "מבט ניהולי",             en: "Management View",     ru: "Управленческий обзор",  fr: "Vue de direction",     es: "Vista directiva"        } },
+  { key: "pmo",        labels: { he: "PMO וניהול סיכונים",     en: "PMO & Risk",          ru: "PMO и риски",            fr: "PMO et risques",       es: "PMO y riesgos"          } },
+  { key: "settings",   labels: { he: "ניהול יישום והגדרות",    en: "App Admin & Settings", ru: "Администрирование",    fr: "Administration",       es: "Administración"         } },
+];
+
+/** Map every nav key to its parent group. Used by the sidebar to render headers. */
+export const NAV_GROUP_OF: Record<string, NavGroupKey> = {
+  home: "tasks", tasks: "tasks", calendar: "tasks",
+  portfolios: "projects", projects: "projects", wbs: "projects", gantt: "projects",
+  dashboard: "management", reports: "management", team: "management",
+  risks: "pmo", ai: "pmo", automations: "pmo",
+  admin: "settings", guides: "settings", settings: "settings",
+};
+
 export const NAV_ITEMS: NavItem[] = [
   { key: "home",        icon: Home,               href: "/",              labels: { he: "המשימות שלי",        en: "My Tasks",          ru: "Мои задачи",        fr: "Mes tâches",           es: "Mis tareas"        }, tooltips: { he: "כל המשימות הפתוחות שלך מסודרות לפי דחיפות", en: "All your open tasks sorted by urgency" } },
   { key: "dashboard",   icon: LayoutDashboard,     href: "/dashboard",     labels: { he: "דשבורדים ו-KPI",     en: "Dashboards & KPI",  ru: "Панель управления",  fr: "Tableaux de bord",     es: "Paneles y KPI"     }, tooltips: { he: "מדדי ביצוע ארגוניים עם בורר PM/PMO", en: "Organizational KPIs with PM/PMO role switcher" } },
