@@ -71,10 +71,10 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   });
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-slate-900 via-indigo-950 to-purple-950 text-sidebar-foreground">
+    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       <div className="px-5 py-5 border-b border-sidebar-border">
         <Link href="/" onClick={onNavigate} className="flex items-center gap-3 group">
-          <div className="size-12 rounded-lg bg-white shadow-lg shadow-indigo-500/30 ring-2 ring-white/20 flex items-center justify-center shrink-0 p-1">
+          <div className="size-12 rounded-lg bg-white shadow-lg shadow-primary/30 ring-2 ring-white/20 flex items-center justify-center shrink-0 p-1">
             <Image
               src="/mapi-logo.png"
               alt="המרכז למיפוי ישראל"

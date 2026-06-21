@@ -3,82 +3,90 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Survey of Israel (המרכז למיפוי ישראל) brand palette.
+   * Primary navy sampled from the official מפ"י globe logo (#2050a0 ≈ HSL 218 67% 38%).
+   * Surfaces, borders and the sidebar are tinted with the same hue so the
+   * whole UI reads as one brand — not just the buttons.
+   */
   :root {
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 218 45% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 218 45% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 218 45% 12%;
 
-    --primary: 217 91% 60%;
+    --primary: 218 67% 38%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 25% 95%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 218 30% 95%;
+    --secondary-foreground: 218 45% 12%;
 
-    --muted: 215 25% 95%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 218 30% 95%;
+    --muted-foreground: 218 16% 42%;
 
-    --accent: 215 25% 95%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 218 35% 93%;
+    --accent-foreground: 218 45% 12%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 78% 56%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 88%;
-    --input: 215 20% 88%;
-    --ring: 217 91% 60%;
+    --border: 218 25% 87%;
+    --input: 218 25% 87%;
+    --ring: 218 67% 38%;
 
     --radius: 0.625rem;
 
-    --sidebar: 222 47% 11%;
-    --sidebar-foreground: 215 20% 80%;
-    --sidebar-accent: 217 91% 60%;
-    --sidebar-border: 222 30% 20%;
+    /* Sidebar — deep brand navy so the chrome reads as Survey-of-Israel */
+    --sidebar: 218 60% 14%;
+    --sidebar-foreground: 218 25% 82%;
+    --sidebar-accent: 218 75% 52%;
+    --sidebar-border: 218 45% 22%;
 
-    --status-not-started: 220 13% 70%;
-    --status-in-progress: 217 91% 60%;
-    --status-done: 142 71% 45%;
-    --status-blocked: 0 84% 60%;
-    --status-at-risk: 35 92% 56%;
+    --status-not-started: 218 12% 70%;
+    --status-in-progress: 218 67% 48%;
+    --status-done: 152 64% 42%;
+    --status-blocked: 0 78% 56%;
+    --status-at-risk: 35 92% 52%;
   }
 
   .dark {
-    --background: 222 47% 6%;
+    --background: 218 45% 7%;
     --foreground: 0 0% 98%;
 
-    --card: 222 47% 9%;
+    --card: 218 45% 10%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 222 47% 9%;
+    --popover: 218 45% 10%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 217 91% 60%;
+    /* Brand navy lifted a notch so it stays legible on dark surfaces */
+    --primary: 218 75% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 30% 15%;
+    --secondary: 218 35% 16%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 222 30% 15%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 218 35% 16%;
+    --muted-foreground: 218 20% 68%;
 
-    --accent: 222 30% 15%;
+    --accent: 218 35% 16%;
     --accent-foreground: 0 0% 98%;
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 222 30% 18%;
-    --input: 222 30% 18%;
-    --ring: 217 91% 60%;
+    --border: 218 30% 18%;
+    --input: 218 30% 18%;
+    --ring: 218 75% 58%;
 
-    --sidebar: 222 47% 4%;
-    --sidebar-foreground: 215 20% 75%;
-    --sidebar-accent: 217 91% 60%;
-    --sidebar-border: 222 30% 14%;
+    --sidebar: 218 60% 6%;
+    --sidebar-foreground: 218 25% 78%;
+    --sidebar-accent: 218 75% 58%;
+    --sidebar-border: 218 45% 14%;
   }
 
   * {
@@ -161,7 +169,10 @@
   }
 
   .gradient-text {
-    @apply bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 bg-clip-text text-transparent;
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(218 75% 55%), hsl(195 75% 45%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
   .card-hover {
@@ -199,7 +210,7 @@
   .premium-card:hover {
     border-color: transparent;
     background: linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
-                linear-gradient(135deg, hsl(217 91% 60% / 0.5), hsl(271 91% 65% / 0.5)) border-box;
+                linear-gradient(135deg, hsl(var(--primary) / 0.5), hsl(218 75% 65% / 0.5)) border-box;
     border: 1px solid transparent;
   }
 
@@ -216,7 +227,7 @@
 
   /* Glow on active sidebar item */
   .nav-glow {
-    box-shadow: 0 0 20px -5px hsl(217 91% 60% / 0.3), inset 0 0 0 1px hsl(217 91% 60% / 0.15);
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.3), inset 0 0 0 1px hsl(var(--primary) / 0.15);
   }
 
   /* Animated entrance classes */
