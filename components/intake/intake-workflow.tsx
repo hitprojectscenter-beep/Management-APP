@@ -98,8 +98,8 @@ export function IntakeWorkflow() {
 
   const handleFile = async (file: File) => {
     if (!file) return;
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error(txt(locale, { he: "קובץ גדול מ-20MB", en: "File over 20 MB" }));
+    if (file.size > 300 * 1024 * 1024) {
+      toast.error(txt(locale, { he: "קובץ גדול מ-300MB", en: "File over 300 MB" }));
       return;
     }
     setLoading(true);
@@ -248,7 +248,7 @@ export function IntakeWorkflow() {
                   {txt(locale, { he: "קובץ (PDF / Word / PowerPoint / תמונה)", en: "Document (PDF / Word / PowerPoint / Image)" })}
                 </span>
                 <span className="text-[11px] text-muted-foreground text-center">
-                  {txt(locale, { he: "סיכום פגישה, מסמך אפיון, מצגת — עד 20MB", en: "Meeting summary, spec, slide deck — up to 20 MB" })}
+                  {txt(locale, { he: "סיכום פגישה, מסמך אפיון, מצגת — עד 300MB", en: "Meeting summary, spec, slide deck — up to 300 MB" })}
                 </span>
               </button>
               <button
@@ -284,7 +284,7 @@ export function IntakeWorkflow() {
                   {txt(locale, { he: "הקלטת שמע", en: "Audio recording" })}
                 </span>
                 <span className="text-[11px] text-muted-foreground text-center">
-                  {txt(locale, { he: "הקלטות Zoom / Google Meet — MP3/WAV/M4A/MP4/WebM/OGG/FLAC", en: "Zoom / Google Meet recordings — MP3/WAV/M4A/MP4/WebM/OGG/FLAC" })}
+                  {txt(locale, { he: "הקלטות Zoom / Google Meet — MP3/WAV/M4A/MP4/WebM/OGG/FLAC · עד 300MB", en: "Zoom / Google Meet recordings — MP3/WAV/M4A/MP4/WebM/OGG/FLAC · up to 300 MB" })}
                 </span>
               </button>
             </div>

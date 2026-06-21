@@ -3,8 +3,14 @@ import { ingest } from "@/lib/ai/source-ingest";
 import { extractTasksFromText } from "@/lib/ai/meeting-extractor";
 
 export const runtime = "nodejs";
-// Allow uploads up to 20 MB
-export const maxDuration = 60;
+// Allow uploads up to 300 MB (meeting recordings can be long — Zoom/Meet
+// recordings of an hour-plus regularly land in the 100-250 MB range).
+// maxDuration is bumped to 300 s — the max for Vercel Pro serverless —
+// because base64-encoding + Gemini transcription of a long recording can
+// take several minutes.
+export const maxDuration = 300;
+
+const MAX_UPLOAD_BYTES = 300 * 1024 * 1024; // 300 MB
 
 interface BodyTextOnly {
   text?: string;
@@ -45,8 +51,8 @@ export async function POST(req: Request) {
       if (file.size === 0) {
         return NextResponse.json({ error: "Empty file" }, { status: 400 });
       }
-      if (file.size > 20 * 1024 * 1024) {
-        return NextResponse.json({ error: "File too large (max 20 MB)" }, { status: 413 });
+      if (file.size > MAX_UPLOAD_BYTES) {
+        return NextResponse.json({ error: "File too large (max 300 MB)" }, { status: 413 });
       }
       const buf = Buffer.from(await file.arrayBuffer());
       const result = await ingest(buf, file.type, file.name);
