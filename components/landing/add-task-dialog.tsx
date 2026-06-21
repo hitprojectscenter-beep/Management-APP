@@ -139,7 +139,33 @@ export function AddTaskDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      // Tell the user WHY nothing happened, and scroll the first missing field
+      // into view. Without this the dialog was scrolled to the bottom (next to
+      // the submit button) and the error messages — sitting far above — were
+      // invisible, so users assumed the button was broken.
+      toast.error(
+        txt(locale, {
+          he: "נא להשלים את כל שדות החובה המסומנים ב-*",
+          en: "Please complete all required fields marked with *",
+          ru: "Заполните все обязательные поля, помеченные *",
+          fr: "Veuillez compléter tous les champs obligatoires marqués *",
+          es: "Complete todos los campos obligatorios marcados con *",
+        })
+      );
+      requestAnimationFrame(() => {
+        // Existing error styling uses .border-red-500 on the failing input;
+        // fall back to aria-invalid / data-error if a future field opts in.
+        const firstErrorEl = document.querySelector(
+          '[role="dialog"] [aria-invalid="true"], [role="dialog"] [data-error="true"], [role="dialog"] .border-red-500'
+        ) as HTMLElement | null;
+        if (firstErrorEl) {
+          firstErrorEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          firstErrorEl.focus?.();
+        }
+      });
+      return;
+    }
 
     // In demo mode - show success toast
     const taskType = taskTypes.find((t) => t.id === form.taskType);
