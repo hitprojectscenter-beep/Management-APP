@@ -13,6 +13,7 @@
  */
 
 import mammoth from "mammoth";
+import JSZip from "jszip";
 
 const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash"];
 
@@ -26,16 +27,21 @@ function getApiKey(): string | null {
 }
 
 /** Categorize a mime type into one of the source-handling buckets. */
-export type SourceKind = "text" | "docx" | "pdf" | "image" | "audio" | "unknown";
+export type SourceKind = "text" | "docx" | "pptx" | "pdf" | "image" | "audio" | "unknown";
 
 export function classifyMime(mime: string, filename = ""): SourceKind {
   const m = (mime || "").toLowerCase();
   const ext = filename.toLowerCase().split(".").pop() || "";
   if (m.startsWith("text/") || m === "application/json" || ext === "txt" || ext === "md") return "text";
   if (m === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || ext === "docx") return "docx";
+  if (m === "application/vnd.openxmlformats-officedocument.presentationml.presentation" || ext === "pptx") return "pptx";
   if (m === "application/pdf" || ext === "pdf") return "pdf";
   if (m.startsWith("image/") || ["png", "jpg", "jpeg", "webp", "gif"].includes(ext)) return "image";
-  if (m.startsWith("audio/") || ["mp3", "wav", "m4a", "webm", "ogg", "flac", "aac"].includes(ext)) return "audio";
+  if (
+    m.startsWith("audio/") ||
+    m.startsWith("video/") || // Zoom + Google Meet recordings are video MIMEs even when meant for audio
+    ["mp3", "wav", "m4a", "webm", "ogg", "flac", "aac", "mp4", "mov"].includes(ext)
+  ) return "audio";
   return "unknown";
 }
 
@@ -109,6 +115,55 @@ export async function ingestDocx(buf: Buffer, filename = ""): Promise<IngestResu
   };
 }
 
+/**
+ * Read a PPTX buffer → plain text by walking the ZIP, finding every
+ * `ppt/slides/slideN.xml`, and pulling text inside `<a:t>` tags.
+ * Slides are separated by `\n--- Slide N ---\n`.
+ */
+export async function ingestPptx(buf: Buffer, filename = ""): Promise<IngestResult> {
+  const zip = await JSZip.loadAsync(buf);
+  // Sort slide files numerically (slide1.xml, slide2.xml, ... slide10.xml)
+  const slidePaths = Object.keys(zip.files)
+    .filter((p) => /^ppt\/slides\/slide\d+\.xml$/.test(p))
+    .sort((a, b) => {
+      const ai = parseInt(a.match(/slide(\d+)\.xml$/)?.[1] || "0", 10);
+      const bi = parseInt(b.match(/slide(\d+)\.xml$/)?.[1] || "0", 10);
+      return ai - bi;
+    });
+  const slideTexts: string[] = [];
+  for (let i = 0; i < slidePaths.length; i++) {
+    const xml = await zip.files[slidePaths[i]].async("string");
+    // Pull every <a:t>…</a:t> text run (handles attributes and self-closing namespaces)
+    const matches = xml.match(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g) || [];
+    const cleaned = matches
+      .map((m) =>
+        m
+          .replace(/<a:t[^>]*>/, "")
+          .replace(/<\/a:t>/, "")
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, "\"")
+          .replace(/&apos;/g, "'")
+      )
+      .filter((s) => s.trim().length > 0)
+      .join(" ");
+    if (cleaned.trim()) {
+      slideTexts.push(`--- Slide ${i + 1} ---\n${cleaned}`);
+    }
+  }
+  return {
+    kind: "pptx",
+    text: slideTexts.join("\n\n").trim(),
+    meta: {
+      bytes: buf.length,
+      filename,
+      mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      estimatedPages: slidePaths.length,
+    },
+  };
+}
+
 /** Read PDF / image via Gemini's vision capabilities. */
 export async function ingestVisual(buf: Buffer, mime: string, filename = ""): Promise<IngestResult> {
   const kind = mime === "application/pdf" ? "pdf" : "image";
@@ -166,6 +221,8 @@ export async function ingest(buf: Buffer, mime: string, filename = ""): Promise<
       };
     case "docx":
       return ingestDocx(buf, filename);
+    case "pptx":
+      return ingestPptx(buf, filename);
     case "pdf":
     case "image":
       return ingestVisual(buf, mime, filename);

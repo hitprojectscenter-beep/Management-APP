@@ -102,15 +102,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             (item) => NAV_GROUP_OF[item.key] === group.key
           );
           if (items.length === 0) return null;
-          const isCollapsed = collapsed.has(group.key);
-          const hasActiveInside = items.some((item) => {
-            if (item.href === "/") return pathname === "/";
-            if (item.href === "/dashboard") return pathname === "/dashboard";
-            return pathname.startsWith(item.href);
-          });
-          // If the user is inside this group, force-expand it so they see the
-          // active item even after a navigation.
-          const effectivelyCollapsed = isCollapsed && !hasActiveInside;
+          const effectivelyCollapsed = collapsed.has(group.key);
           return (
             <div key={group.key} className="pt-3 first:pt-0">
               <button

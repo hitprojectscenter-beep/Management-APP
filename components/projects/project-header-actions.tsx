@@ -1,7 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { GitBranch, Plus } from "lucide-react";
-import { AddTaskDialog } from "@/components/landing/add-task-dialog";
+import { GitBranch } from "lucide-react";
 import { toast } from "sonner";
 import { txt } from "@/lib/utils/locale-text";
 import type { MockUser, MockWbsNode } from "@/lib/db/mock-data";
@@ -14,12 +13,12 @@ import type { MockUser, MockWbsNode } from "@/lib/db/mock-data";
  * the buttons reliably interactive.
  */
 export function ProjectHeaderActions({
-  projects,
-  users,
   locale,
 }: {
-  projects: MockWbsNode[];
-  users: MockUser[];
+  /** Kept for API compatibility — projects/users no longer needed since
+   *  Add-Task moved exclusively to /tasks page per user spec. */
+  projects?: MockWbsNode[];
+  users?: MockUser[];
   locale: string;
 }) {
   const handleBranchActivity = () => {
@@ -43,12 +42,6 @@ export function ProjectHeaderActions({
         <GitBranch className="size-4" />
         {txt(locale, { he: "פצל פעילות", en: "Branch activity" })}
       </Button>
-      <AddTaskDialog projects={projects} users={users} locale={locale}>
-        <Button>
-          <Plus className="size-4" />
-          {txt(locale, { he: "משימה חדשה", en: "New task" })}
-        </Button>
-      </AddTaskDialog>
     </div>
   );
 }

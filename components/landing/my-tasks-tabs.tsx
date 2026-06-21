@@ -8,10 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn, formatDate } from "@/lib/utils";
-import { AlertTriangle, Clock, Plus, Layers, Briefcase, Calendar as CalIcon, FileText } from "lucide-react";
+import { AlertTriangle, Clock, Layers, Briefcase, Calendar as CalIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
-import { AddTaskDialog } from "@/components/landing/add-task-dialog";
-import { ExtractTasksDialog } from "@/components/landing/extract-tasks-dialog";
 import { txt, STATUS_LABELS_ML, PRIORITY_LABELS_ML, TAB_LABELS_ML } from "@/lib/utils/locale-text";
 import { useRole } from "@/lib/auth/role-context";
 
@@ -135,22 +133,8 @@ export function MyTasksTabs({
             );
           })}
         </div>
-        {can("create_task") && (
-          <div className="flex gap-2 shrink-0">
-            <ExtractTasksDialog>
-              <Button variant="outline" className="shadow-md">
-                <FileText className="size-4" />
-                {txt(locale, { he: "ייבוא ממסמך", en: "Import from Text", ru: "Из текста", fr: "Depuis texte", es: "Desde texto" })}
-              </Button>
-            </ExtractTasksDialog>
-            <AddTaskDialog projects={wbsNodes} users={users} locale={locale}>
-              <Button className="shadow-md" data-tour="add-task">
-                <Plus className="size-4" />
-                {txt(locale, { he: "הוסף משימה", en: "Add Task", ru: "Добавить", fr: "Ajouter", es: "Añadir" })}
-              </Button>
-            </AddTaskDialog>
-          </div>
-        )}
+        {/* Add Task moved exclusively to /tasks page per user spec.
+            Import from document moved to /intake page under Management View. */}
       </div>
 
       {/* Tasks list */}

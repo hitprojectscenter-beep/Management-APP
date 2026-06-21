@@ -44,7 +44,7 @@ interface IntakeMeta {
 }
 
 interface IntakeResponse {
-  kind: "text" | "docx" | "pdf" | "image" | "audio";
+  kind: "text" | "docx" | "pptx" | "pdf" | "image" | "audio";
   sourceText: string;
   tasks: ExtractedTask[];
   count: number;
@@ -69,7 +69,7 @@ function fmtDuration(s: number | undefined): string {
 
 function kindIcon(kind: IntakeResponse["kind"]) {
   switch (kind) {
-    case "pdf": case "docx": return FileIcon;
+    case "pdf": case "docx": case "pptx": return FileIcon;
     case "image": return ImageIcon;
     case "audio": return Volume2;
     default: return FileText;
@@ -232,10 +232,10 @@ export function IntakeWorkflow() {
               >
                 <FileUp className="size-8 text-violet-600" />
                 <span className="font-semibold text-sm">
-                  {txt(locale, { he: "קובץ (PDF / Word / תמונה)", en: "Document (PDF / Word / Image)" })}
+                  {txt(locale, { he: "קובץ (PDF / Word / PowerPoint / תמונה)", en: "Document (PDF / Word / PowerPoint / Image)" })}
                 </span>
                 <span className="text-[11px] text-muted-foreground text-center">
-                  {txt(locale, { he: "סיכום פגישה, מסמך אפיון, צילום פגישה — עד 20MB", en: "Meeting summary, spec, photo — up to 20 MB" })}
+                  {txt(locale, { he: "סיכום פגישה, מסמך אפיון, מצגת — עד 20MB", en: "Meeting summary, spec, slide deck — up to 20 MB" })}
                 </span>
               </button>
               <button
@@ -271,7 +271,7 @@ export function IntakeWorkflow() {
                   {txt(locale, { he: "הקלטת שמע", en: "Audio recording" })}
                 </span>
                 <span className="text-[11px] text-muted-foreground text-center">
-                  {txt(locale, { he: "הקלטת פגישה — MP3/WAV/M4A/WebM/OGG", en: "Meeting recording — MP3/WAV/M4A/WebM/OGG" })}
+                  {txt(locale, { he: "הקלטות Zoom / Google Meet — MP3/WAV/M4A/MP4/WebM/OGG/FLAC", en: "Zoom / Google Meet recordings — MP3/WAV/M4A/MP4/WebM/OGG/FLAC" })}
                 </span>
               </button>
             </div>
@@ -289,7 +289,7 @@ export function IntakeWorkflow() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,image/*"
+                    accept=".pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,image/*"
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
@@ -336,7 +336,7 @@ export function IntakeWorkflow() {
                   <input
                     ref={audioInputRef}
                     type="file"
-                    accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg,.flac,.aac"
+                    accept="audio/*,video/mp4,video/webm,.mp3,.wav,.m4a,.webm,.ogg,.flac,.aac,.mp4,.mov"
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];

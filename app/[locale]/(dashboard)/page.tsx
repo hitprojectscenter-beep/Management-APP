@@ -26,6 +26,7 @@ import {
 } from "@/lib/db/mock-data";
 import { MyTasksTabs } from "@/components/landing/my-tasks-tabs";
 import { ProjectMembers } from "@/components/members/project-members";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { txt } from "@/lib/utils/locale-text";
 
 export default async function LandingPage({
@@ -144,56 +145,77 @@ export default async function LandingPage({
         />
       </div>
 
-      {/* Main content: tasks tabs + side panel */}
+      {/* Main content: tasks tabs + side panel — both collapsed by default */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         <div className="xl:col-span-3">
-          <MyTasksTabs
-            tasks={myOpenTasks}
-            users={mockUsers}
-            projects={projects}
-            wbsNodes={mockWbsNodes}
-            locale={locale}
-          />
+          <CollapsibleSection
+            id="home:open-tasks"
+            title={
+              <span className="flex items-center gap-2">
+                <CheckSquare className="size-4 text-blue-600" />
+                {txt(locale, {
+                  he: "משימות פתוחות",
+                  en: "Open Tasks",
+                  ru: "Открытые задачи",
+                  fr: "Tâches ouvertes",
+                  es: "Tareas abiertas",
+                })}
+              </span>
+            }
+            badge={<Badge variant="outline">{myOpenTasks.length}</Badge>}
+          >
+            <div className="p-4">
+              <MyTasksTabs
+                tasks={myOpenTasks}
+                users={mockUsers}
+                projects={projects}
+                wbsNodes={mockWbsNodes}
+                locale={locale}
+              />
+            </div>
+          </CollapsibleSection>
         </div>
 
         {/* Side panel */}
         <div className="space-y-4">
-          {/* My Projects */}
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-center gap-2 mb-3">
+          {/* My Projects — collapsible */}
+          <CollapsibleSection
+            id="home:my-projects"
+            title={
+              <span className="flex items-center gap-2">
                 <Briefcase className="size-4 text-blue-600" />
-                <h3 className="font-semibold text-sm">{txt(locale, { he: "הפרויקטים שלי", en: "My Projects", ru: "Мои проекты", fr: "Mes projets", es: "Mis proyectos" })}</h3>
-                <Badge variant="outline" className="ms-auto">{myProjects.length}</Badge>
-              </div>
-              <div className="space-y-2">
-                {myProjects.map((project) => {
-                  const myMembership = myMemberships.find((m) => m.wbsNodeId === project.id);
-                  return (
-                    <Link
-                      key={project.id}
-                      href={`/projects/${project.id}`}
-                      className="block p-2 rounded-md hover:bg-accent transition-colors"
-                    >
-                      <div className="text-sm font-medium line-clamp-1">
-                        {locale === "he" ? project.name : project.nameEn || project.name}
+                {txt(locale, { he: "הפרויקטים שלי", en: "My Projects", ru: "Мои проекты", fr: "Mes projets", es: "Mis proyectos" })}
+              </span>
+            }
+            badge={<Badge variant="outline">{myProjects.length}</Badge>}
+          >
+            <div className="p-4 space-y-2">
+              {myProjects.map((project) => {
+                const myMembership = myMemberships.find((m) => m.wbsNodeId === project.id);
+                return (
+                  <Link
+                    key={project.id}
+                    href={`/projects/${project.id}`}
+                    className="block p-2 rounded-md hover:bg-accent transition-colors"
+                  >
+                    <div className="text-sm font-medium line-clamp-1">
+                      {locale === "he" ? project.name : project.nameEn || project.name}
+                    </div>
+                    {myMembership && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-muted-foreground truncate">
+                          {locale === "he" ? myMembership.roleInProject : myMembership.roleInProjectEn || myMembership.roleInProject}
+                        </span>
+                        <Badge variant="outline" className="text-[9px] py-0">
+                          {myMembership.ftePercent}%
+                        </Badge>
                       </div>
-                      {myMembership && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] text-muted-foreground truncate">
-                            {locale === "he" ? myMembership.roleInProject : myMembership.roleInProjectEn || myMembership.roleInProject}
-                          </span>
-                          <Badge variant="outline" className="text-[9px] py-0">
-                            {myMembership.ftePercent}%
-                          </Badge>
-                        </div>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </CollapsibleSection>
 
           {/* My participation - all WBS nodes */}
           <Card data-tour="fte-panel">

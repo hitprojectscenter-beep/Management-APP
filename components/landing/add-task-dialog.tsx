@@ -71,20 +71,23 @@ export function AddTaskDialog({
   const projectsOnly = projects.filter((p) => p.level === "project");
   const taskTypes = mockItemTypes.filter((t) => t.scope === "task");
 
+  // Per user spec: every selectable field starts empty so the user must
+  // pick consciously instead of submitting whatever the form happened to
+  // pre-fill. Title, dates, type, parent, source, priority — all blank.
   const [form, setForm] = useState<AddTaskFormData>({
     title: "",
-    taskType: taskTypes[0]?.id || "",
+    taskType: "",
     taskTypeOther: "",
     parentType: "project",
-    parentId: projectsOnly[0]?.id || "",
-    methodology: "waterfall",
+    parentId: "",
+    methodology: "" as any,
     description: "",
     teamMembers: [],
-    plannedStart: new Date().toISOString().slice(0, 10),
-    plannedEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-    source: "manager_decision",
+    plannedStart: "",
+    plannedEnd: "",
+    source: "" as any,
     sourceOther: "",
-    priority: "medium",
+    priority: "" as any,
     attachments: [],
   });
 
@@ -93,9 +96,12 @@ export function AddTaskDialog({
   const validate = (): boolean => {
     const errs: typeof errors = {};
     if (!form.title.trim()) errs.title = txt(locale, { he: "חובה למלא כותרת", en: "Title is required" });
+    if (!form.taskType) errs.taskType = txt(locale, { he: "חובה לבחור סוג משימה", en: "Task type required" });
     if (!form.parentId) errs.parentId = txt(locale, { he: "חובה לבחור שיוך", en: "Must select assignment" });
     if (!form.plannedStart) errs.plannedStart = txt(locale, { he: "חובה", en: "Required" });
     if (!form.plannedEnd) errs.plannedEnd = txt(locale, { he: "חובה", en: "Required" });
+    if (!form.priority) errs.priority = txt(locale, { he: "חובה לבחור עדיפות", en: "Priority required" });
+    if (!form.source) errs.source = txt(locale, { he: "חובה לבחור מקור", en: "Source required" });
     if (form.plannedEnd && form.plannedStart && form.plannedEnd < form.plannedStart) {
       errs.plannedEnd = txt(locale, { he: "תאריך סיום לפני ההתחלה", en: "End before start" });
     }
@@ -266,7 +272,7 @@ export function AddTaskDialog({
             <div className="flex gap-2 mb-2">
               <button
                 type="button"
-                onClick={() => setForm({ ...form, parentType: "project", parentId: projectsOnly[0]?.id || "" })}
+                onClick={() => setForm({ ...form, parentType: "project", parentId: "" })}
                 className={cn(
                   "flex-1 px-3 py-2 rounded-md text-sm font-medium border min-h-[44px]",
                   form.parentType === "project"
@@ -278,7 +284,7 @@ export function AddTaskDialog({
               </button>
               <button
                 type="button"
-                onClick={() => setForm({ ...form, parentType: "program", parentId: programs[0]?.id || "" })}
+                onClick={() => setForm({ ...form, parentType: "program", parentId: "" })}
                 className={cn(
                   "flex-1 px-3 py-2 rounded-md text-sm font-medium border min-h-[44px]",
                   form.parentType === "program"
