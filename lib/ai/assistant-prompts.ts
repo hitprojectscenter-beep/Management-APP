@@ -106,7 +106,17 @@ export function heuristicParse(
   let responseText = "";
 
   // CREATE TASK
-  if (/פתח|צור|הוסף|יצור|תיצור|create|add|open|new/.test(lower) && /משימה|task/.test(lower)) {
+  // Recognized triggers:
+  //  - Imperative infinitive: "פתח / צור / הוסף משימה"
+  //  - Future-tense action implying a task: "יכין מצגת", "יכתוב מסמך",
+  //    "תסכם פגישה", "ישלח דוח", "תענה ללקוח" — even WITHOUT the word "משימה"
+  //  - English equivalents
+  const futureActionVerb =
+    /(?:י|ת|נ|א)(?:כין|כתוב|סכם|ייצר|שלח|עביר|ציג|בצע|פתח|בדוק|אסוף|תאם|חזיר|עדכן|אשר|פנה|דאג|טפל|הכניס|פרסם|הזמין|ענה|ענו|כתבו|סכמו|כינו|לך|לכו|דבר|רשום)/;
+  const taskTrigger =
+    (/פתח|צור|הוסף|יצור|תיצור|create|add|open|new/.test(lower) && /משימה|task/.test(lower)) ||
+    futureActionVerb.test(text);
+  if (taskTrigger) {
     action = "create_task";
 
     // Extract title - text after "משימה (חדשה)?" up to date/project markers

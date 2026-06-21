@@ -8,6 +8,7 @@ import { Link } from "@/lib/i18n/routing";
 import { mockWbsNodes, mockTasks, mockUsers, getProjects } from "@/lib/db/mock-data";
 import { calculateProjectHealth } from "@/lib/ai/risk-engine";
 import { Avatar } from "@/components/ui/avatar";
+import { AddProjectDialog } from "@/components/projects/add-project-dialog";
 
 export default async function ProjectsPage({
   params,
@@ -31,10 +32,12 @@ export default async function ProjectsPage({
             {locale === "he" ? `${projects.length} פרויקטים פעילים` : `${projects.length} active projects`}
           </p>
         </div>
-        <Button>
-          <Plus className="size-4" />
-          {t("newProject")}
-        </Button>
+        <AddProjectDialog>
+          <Button>
+            <Plus className="size-4" />
+            {t("newProject")}
+          </Button>
+        </AddProjectDialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">

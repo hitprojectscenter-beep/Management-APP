@@ -28,21 +28,25 @@ export interface NavItem {
   tooltips: Record<string, string>;
 }
 
-/** 5 thematic groups for the sidebar, in display order */
-export type NavGroupKey = "tasks" | "projects" | "management" | "pmo" | "settings";
+/** 6 thematic groups for the sidebar, in display order. Calendar lives in its
+ *  own group because it aggregates tasks, projects, milestones, and meetings
+ *  from every program/portfolio level. */
+export type NavGroupKey = "tasks" | "projects" | "calendar" | "management" | "pmo" | "settings";
 
 export const NAV_GROUPS: { key: NavGroupKey; labels: Record<string, string> }[] = [
-  { key: "tasks",      labels: { he: "ניהול משימות",         en: "Task Management",     ru: "Управление задачами",   fr: "Gestion des tâches",   es: "Gestión de tareas"      } },
-  { key: "projects",   labels: { he: "ניהול פרויקטים",        en: "Project Management",  ru: "Управление проектами",  fr: "Gestion des projets",  es: "Gestión de proyectos"   } },
-  { key: "management", labels: { he: "מבט ניהולי",             en: "Management View",     ru: "Управленческий обзор",  fr: "Vue de direction",     es: "Vista directiva"        } },
-  { key: "pmo",        labels: { he: "PMO וניהול סיכונים",     en: "PMO & Risk",          ru: "PMO и риски",            fr: "PMO et risques",       es: "PMO y riesgos"          } },
-  { key: "settings",   labels: { he: "ניהול יישום והגדרות",    en: "App Admin & Settings", ru: "Администрирование",    fr: "Administration",       es: "Administración"         } },
+  { key: "tasks",      labels: { he: "ניהול משימות",          en: "Task Management",      ru: "Управление задачами",    fr: "Gestion des tâches",    es: "Gestión de tareas"      } },
+  { key: "projects",   labels: { he: "ניהול פרויקטים",         en: "Project Management",   ru: "Управление проектами",   fr: "Gestion des projets",   es: "Gestión de proyectos"   } },
+  { key: "calendar",   labels: { he: "יומן ולוחות זמנים",      en: "Calendar & Schedules", ru: "Календарь и графики",    fr: "Calendrier et horaires", es: "Calendario y horarios" } },
+  { key: "management", labels: { he: "מבט ניהולי",              en: "Management View",      ru: "Управленческий обзор",   fr: "Vue de direction",      es: "Vista directiva"        } },
+  { key: "pmo",        labels: { he: "PMO וניהול סיכונים",      en: "PMO & Risk",           ru: "PMO и риски",             fr: "PMO et risques",        es: "PMO y riesgos"          } },
+  { key: "settings",   labels: { he: "ניהול יישום והגדרות",     en: "App Admin & Settings", ru: "Администрирование",     fr: "Administration",        es: "Administración"         } },
 ];
 
 /** Map every nav key to its parent group. Used by the sidebar to render headers. */
 export const NAV_GROUP_OF: Record<string, NavGroupKey> = {
-  home: "tasks", tasks: "tasks", calendar: "tasks",
+  home: "tasks", tasks: "tasks",
   portfolios: "projects", projects: "projects", wbs: "projects", gantt: "projects",
+  calendar: "calendar",
   dashboard: "management", reports: "management", team: "management",
   risks: "pmo", ai: "pmo", automations: "pmo",
   admin: "settings", guides: "settings", settings: "settings",

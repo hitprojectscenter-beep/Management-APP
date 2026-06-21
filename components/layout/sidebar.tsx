@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/routing";
 import Image from "next/image";
@@ -7,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { NAV_ITEMS, NAV_GROUPS, NAV_GROUP_OF, type NavGroupKey } from "./nav-items";
 import { txt, ORG_NAME } from "@/lib/utils/locale-text";
 import { useRole } from "@/lib/auth/role-context";
+
+const COLLAPSED_KEY = "pmo:sidebar:collapsed-groups";
 
 /**
  * Shared sidebar content used by both desktop aside and mobile drawer.
@@ -17,6 +21,30 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const isHe = locale === "he";
   const { role, can } = useRole();
+
+  // Collapsed group state — persisted to localStorage so the user's layout
+  // preference survives reloads. Default: everything expanded.
+  const [collapsed, setCollapsed] = useState<Set<NavGroupKey>>(new Set());
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(COLLAPSED_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) setCollapsed(new Set(arr as NavGroupKey[]));
+      }
+    } catch {}
+  }, []);
+  const toggleGroup = (key: NavGroupKey) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      try {
+        window.localStorage.setItem(COLLAPSED_KEY, JSON.stringify(Array.from(next)));
+      } catch {}
+      return next;
+    });
+  };
 
   // Filter nav items based on role permissions
   const visibleNavItems = NAV_ITEMS.filter((item) => {
@@ -68,40 +96,62 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             (item) => NAV_GROUP_OF[item.key] === group.key
           );
           if (items.length === 0) return null;
+          const isCollapsed = collapsed.has(group.key);
+          const hasActiveInside = items.some((item) => {
+            if (item.href === "/") return pathname === "/";
+            if (item.href === "/dashboard") return pathname === "/dashboard";
+            return pathname.startsWith(item.href);
+          });
+          // If the user is inside this group, force-expand it so they see the
+          // active item even after a navigation.
+          const effectivelyCollapsed = isCollapsed && !hasActiveInside;
           return (
             <div key={group.key} className="pt-3 first:pt-0">
-              <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/50">
-                {group.labels[locale] || group.labels.en}
-              </div>
-              <div className="space-y-1">
-                {items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive =
-                    item.href === "/"
-                      ? pathname === "/"
-                      : item.href === "/dashboard"
-                        ? pathname === "/dashboard"
-                        : pathname.startsWith(item.href);
-                  return (
-                    <Link
-                      key={item.key}
-                      href={item.href}
-                      onClick={onNavigate}
-                      data-tour={item.key === "ai" ? "ai-link" : undefined}
-                      title={item.tooltips?.[locale] || item.tooltips?.en || ""}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px]",
-                        isActive
-                          ? "bg-white/15 text-white shadow-lg nav-glow backdrop-blur-sm"
-                          : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-white active:bg-white/15 transition-all duration-200"
-                      )}
-                    >
-                      <Icon className="size-4 shrink-0" />
-                      <span>{item.labels[locale] || item.labels.en}</span>
-                    </Link>
-                  );
-                })}
-              </div>
+              <button
+                type="button"
+                onClick={() => toggleGroup(group.key)}
+                className="w-full flex items-center justify-between px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/60 hover:text-sidebar-foreground/90 transition-colors"
+                aria-expanded={!effectivelyCollapsed}
+              >
+                <span>{group.labels[locale] || group.labels.en}</span>
+                <ChevronDown
+                  className={cn(
+                    "size-3 shrink-0 transition-transform",
+                    effectivelyCollapsed && "-rotate-90"
+                  )}
+                />
+              </button>
+              {!effectivelyCollapsed && (
+                <div className="space-y-1">
+                  {items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      item.href === "/"
+                        ? pathname === "/"
+                        : item.href === "/dashboard"
+                          ? pathname === "/dashboard"
+                          : pathname.startsWith(item.href);
+                    return (
+                      <Link
+                        key={item.key}
+                        href={item.href}
+                        onClick={onNavigate}
+                        data-tour={item.key === "ai" ? "ai-link" : undefined}
+                        title={item.tooltips?.[locale] || item.tooltips?.en || ""}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors min-h-[44px]",
+                          isActive
+                            ? "bg-white/15 text-white shadow-lg nav-glow backdrop-blur-sm"
+                            : "text-sidebar-foreground/80 hover:bg-white/10 hover:text-white active:bg-white/15 transition-all duration-200"
+                        )}
+                      >
+                        <Icon className="size-4 shrink-0" />
+                        <span>{item.labels[locale] || item.labels.en}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
