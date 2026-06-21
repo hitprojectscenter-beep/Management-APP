@@ -105,12 +105,23 @@ export interface IngestResult {
   };
 }
 
-/** Read a DOCX buffer → plain text (paragraphs separated by newlines). */
+/** Read a DOCX buffer → Markdown (preserves headings, lists, paragraphs). */
 export async function ingestDocx(buf: Buffer, filename = ""): Promise<IngestResult> {
-  const { value } = await mammoth.extractRawText({ buffer: buf });
+  // convertToMarkdown keeps Word's structural cues (headings, bullets,
+  // numbered lists, links) so the source-preview reads like the original.
+  let text = "";
+  try {
+    const result = await (mammoth as any).convertToMarkdown({ buffer: buf });
+    text = (result.value as string).trim();
+  } catch {
+    // Fallback to plain text if convertToMarkdown isn't available on this
+    // mammoth build.
+    const { value } = await mammoth.extractRawText({ buffer: buf });
+    text = value.trim();
+  }
   return {
     kind: "docx",
-    text: value.trim(),
+    text,
     meta: { bytes: buf.length, filename, mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
   };
 }
@@ -131,26 +142,34 @@ export async function ingestPptx(buf: Buffer, filename = ""): Promise<IngestResu
       return ai - bi;
     });
   const slideTexts: string[] = [];
+  const decode = (s: string) =>
+    s
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, "\"")
+      .replace(/&apos;/g, "'");
   for (let i = 0; i < slidePaths.length; i++) {
     const xml = await zip.files[slidePaths[i]].async("string");
-    // Pull every <a:t>…</a:t> text run (handles attributes and self-closing namespaces)
-    const matches = xml.match(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g) || [];
-    const cleaned = matches
-      .map((m) =>
-        m
-          .replace(/<a:t[^>]*>/, "")
-          .replace(/<\/a:t>/, "")
-          .replace(/&amp;/g, "&")
-          .replace(/&lt;/g, "<")
-          .replace(/&gt;/g, ">")
-          .replace(/&quot;/g, "\"")
-          .replace(/&apos;/g, "'")
-      )
-      .filter((s) => s.trim().length > 0)
-      .join(" ");
-    if (cleaned.trim()) {
-      slideTexts.push(`--- Slide ${i + 1} ---\n${cleaned}`);
+    // Pull all <a:p>…</a:p> paragraphs, then within each one the <a:t> runs.
+    // Treating each paragraph as a separate line keeps the slide's bullet
+    // structure readable.
+    const paragraphs = xml.match(/<a:p\b[^>]*>[\s\S]*?<\/a:p>/g) || [];
+    const lines: string[] = [];
+    for (const p of paragraphs) {
+      const runs = p.match(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g) || [];
+      const joined = runs
+        .map((m) => decode(m.replace(/<a:t[^>]*>/, "").replace(/<\/a:t>/, "")))
+        .join("")
+        .trim();
+      if (joined) lines.push(joined);
     }
+    if (lines.length === 0) continue;
+    // First paragraph is conventionally the slide title — promote to ##
+    // heading; the rest become bullets so the structure mirrors the deck.
+    const [title, ...body] = lines;
+    const block = [`## Slide ${i + 1} — ${title}`, ...body.map((l) => `- ${l}`)].join("\n");
+    slideTexts.push(block);
   }
   return {
     kind: "pptx",
@@ -168,9 +187,19 @@ export async function ingestPptx(buf: Buffer, filename = ""): Promise<IngestResu
 export async function ingestVisual(buf: Buffer, mime: string, filename = ""): Promise<IngestResult> {
   const kind = mime === "application/pdf" ? "pdf" : "image";
   const base64 = buf.toString("base64");
+  // Per user spec: the source-text preview must be faithful to the original so
+  // the user can read it and locate the tasks themselves. Ask Gemini to keep
+  // headings, sub-headings, bullet lists, numbered lists, and paragraph
+  // breaks intact — emit Markdown so the UI can render it cleanly.
   const instruction =
-    "Extract ALL text content from this document/image, preserving line breaks and structure. " +
-    "Return only the raw text — no commentary, no markdown formatting. Preserve original language (Hebrew/English/etc).";
+    "Extract ALL text from this document or image and return it as faithful Markdown. " +
+    "Rules: " +
+    "- Use # / ## / ### headings exactly as in the source. " +
+    "- Preserve bullet lists (use '- ') and numbered lists (use '1. ', '2. '). " +
+    "- Keep paragraph breaks as blank lines. " +
+    "- Preserve tables as Markdown tables when present. " +
+    "- Do NOT add commentary, summary, or extra prose — only the text from the source. " +
+    "- Preserve the original language (Hebrew, English, mixed, etc).";
   const text = await geminiGenerate(
     [
       { text: kind === "pdf" ? "Document:" : "Image:" },

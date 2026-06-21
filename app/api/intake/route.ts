@@ -76,13 +76,15 @@ export async function POST(req: Request) {
 
     // Hand the extracted text to the existing task extractor — same code path
     // as the paste-text dialog, so behavior is consistent across sources.
-    const tasks = await extractTasksFromText(sourceText, locale);
+    const result = await extractTasksFromText(sourceText, locale);
 
     return NextResponse.json({
       kind,
       sourceText,
-      tasks,
-      count: tasks.length,
+      tasks: result.tasks,
+      count: result.tasks.length,
+      documentDate: result.documentDate,
+      documentTitle: result.documentTitle,
       meta,
     });
   } catch (err) {

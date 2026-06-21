@@ -50,6 +50,11 @@ interface IntakeResponse {
   sourceText: string;
   tasks: ExtractedTask[];
   count: number;
+  /** Date detected in the document header (ISO YYYY-MM-DD) — used as the
+   *  default plannedStart for every extracted task. */
+  documentDate?: string;
+  /** Title detected in the document — used as the source label. */
+  documentTitle?: string;
   meta: IntakeMeta;
 }
 
@@ -87,6 +92,9 @@ export function IntakeWorkflow() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<IntakeResponse | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  // Keep the original uploaded File so we can pre-attach it to every task
+  // created from this source. Cleared whenever the user resets.
+  const [sourceFile, setSourceFile] = useState<File | null>(null);
 
   const handleFile = async (file: File) => {
     if (!file) return;
@@ -96,6 +104,7 @@ export function IntakeWorkflow() {
     }
     setLoading(true);
     setResult(null);
+    setSourceFile(file);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -193,12 +202,14 @@ export function IntakeWorkflow() {
     setResult(null);
     setSelected(new Set());
     setTextInput("");
+    setSourceFile(null);
   };
 
   const reset = () => {
     setResult(null);
     setSelected(new Set());
     setTextInput("");
+    setSourceFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (audioInputRef.current) audioInputRef.current.value = "";
   };
@@ -361,6 +372,7 @@ export function IntakeWorkflow() {
           <SourceMetadataCard result={result} onReset={reset} />
           <ExtractedTasksTable
             result={result}
+            sourceFile={sourceFile}
             selected={selected}
             toggleSelect={toggleSelect}
             removeTask={removeTask}
@@ -449,12 +461,14 @@ function resolveAssignee(hint?: string) {
 
 function ExtractedTasksTable({
   result,
+  sourceFile,
   selected,
   toggleSelect,
   removeTask,
   onCreate,
 }: {
   result: IntakeResponse;
+  sourceFile: File | null;
   selected: Set<number>;
   toggleSelect: (i: number) => void;
   removeTask: (i: number) => void;
@@ -468,6 +482,15 @@ function ExtractedTasksTable({
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorInit, setEditorInit] = useState<AddTaskInitialValues | null>(null);
 
+  // Build the "source" label: document title (or filename) + document date.
+  // This is what the task's "מקור" field will be pre-filled with so the
+  // origin of each task is always traceable.
+  const docTitleForLabel = result.documentTitle || result.meta.filename || "";
+  const docDateForLabel = result.documentDate || "";
+  const sourceLabel = docTitleForLabel && docDateForLabel
+    ? `${docTitleForLabel} · ${docDateForLabel}`
+    : docTitleForLabel || docDateForLabel || undefined;
+
   const openEditor = (task: ExtractedTask) => {
     const resolved = resolveAssignee(task.assigneeHint) || autoFallback?.user;
     setEditorInit({
@@ -476,9 +499,13 @@ function ExtractedTasksTable({
       workTypeLabel: task.workTypeLabel,
       assigneeHint: task.assigneeHint,
       assigneeUserId: resolved?.id,
+      // plannedStart defaults to the document's date — that's when the
+      // decision to do the task was made.
+      plannedStart: result.documentDate,
       plannedEnd: task.dueDate,
       estimateHours: task.estimateHours,
-      sourceLabel: result.meta.filename,
+      sourceLabel,
+      sourceFile: sourceFile || undefined,
     });
     setEditorOpen(true);
   };

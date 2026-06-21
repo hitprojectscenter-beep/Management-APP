@@ -21,8 +21,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Text too long (max 20,000 chars)" }, { status: 413 });
     }
 
-    const tasks = await extractTasksFromText(text, locale);
-    return NextResponse.json({ tasks, count: tasks.length });
+    const result = await extractTasksFromText(text, locale);
+    return NextResponse.json({
+      tasks: result.tasks,
+      count: result.tasks.length,
+      documentDate: result.documentDate,
+      documentTitle: result.documentTitle,
+    });
   } catch (err) {
     console.error("[/api/extract-tasks] Fatal:", err);
     return NextResponse.json(

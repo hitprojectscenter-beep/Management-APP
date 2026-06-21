@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -71,9 +71,13 @@ export interface AddTaskInitialValues {
   plannedStart?: string;
   plannedEnd?: string;
   estimateHours?: number;
-  /** When provided, displayed as a small chip in the dialog so the user
-   *  knows where the pre-fill came from (filename, "סיכום פגישה" etc.). */
+  /** Source label rendered into the "source" / "מקור" field — typically
+   *  "<document title> · <document date>" so every extracted task carries
+   *  its provenance. */
   sourceLabel?: string;
+  /** Original uploaded file — pre-attached to the task's attachments list
+   *  so the source can always be downloaded for context. */
+  sourceFile?: File;
 }
 
 export function AddTaskDialog({
@@ -146,10 +150,15 @@ export function AddTaskDialog({
     teamMembers: initialAssigneeId ? [initialAssigneeId] : [],
     plannedStart: initialValues?.plannedStart || "",
     plannedEnd: initialValues?.plannedEnd || "",
-    source: "" as any,
-    sourceOther: "",
+    // When a source-extracted task is opened, source="other" and the source
+    // label (e.g. "סיכום פגישה Salesforce · 2026-06-27") is the free-text.
+    // For a manual New Task it stays empty so the user has to choose.
+    source: initialValues?.sourceLabel ? ("other" as any) : ("" as any),
+    sourceOther: initialValues?.sourceLabel || "",
     priority: "" as any,
-    attachments: [],
+    // Pre-attach the original source file (if any) so the task always
+    // carries provenance back to the document/audio it came from.
+    attachments: initialValues?.sourceFile ? [initialValues.sourceFile] : [],
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof AddTaskFormData, string>>>({});
@@ -167,6 +176,9 @@ export function AddTaskDialog({
       teamMembers: initialAssigneeId ? [initialAssigneeId] : prev.teamMembers,
       plannedStart: initialValues.plannedStart ?? prev.plannedStart,
       plannedEnd: initialValues.plannedEnd ?? prev.plannedEnd,
+      source: initialValues.sourceLabel ? ("other" as any) : prev.source,
+      sourceOther: initialValues.sourceLabel ?? prev.sourceOther,
+      attachments: initialValues.sourceFile ? [initialValues.sourceFile] : prev.attachments,
     }));
     setErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -443,40 +455,19 @@ export function AddTaskDialog({
             {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
           </div>
 
-          {/* Team Members (multi-select) */}
+          {/* Team Members — collapsible multi-select dropdown */}
           <div className="space-y-1.5">
             <Label>
               {txt(locale, { he: "צוות", en: "Team" })} <span className="text-red-500">*</span>{" "}
               <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "בחירה מרובה", en: "multi-select" })})</span>
             </Label>
-            <div className="flex flex-wrap gap-1.5">
-              {users
-                .filter((u) => u.role !== "guest" && u.role !== "viewer")
-                .map((user) => {
-                  const selected = form.teamMembers.includes(user.id);
-                  return (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => toggleTeamMember(user.id)}
-                      className={cn(
-                        "px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1 min-h-[36px]",
-                        selected
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background hover:bg-accent"
-                      )}
-                    >
-                      {selected && "✓ "}
-                      {user.name}
-                    </button>
-                  );
-                })}
-            </div>
-            {form.teamMembers.length > 0 && (
-              <div className="text-[10px] text-muted-foreground">
-                {form.teamMembers.length} {txt(locale, { he: "נבחרו", en: "selected" })}
-              </div>
-            )}
+            <TeamMultiSelect
+              users={users.filter((u) => u.role !== "guest" && u.role !== "viewer")}
+              selected={form.teamMembers}
+              onToggle={toggleTeamMember}
+              locale={locale}
+              error={!!errors.teamMembers}
+            />
             {errors.teamMembers && <p className="text-xs text-red-500">{errors.teamMembers}</p>}
           </div>
 
@@ -639,5 +630,123 @@ export function AddTaskDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Collapsible multi-select dropdown for picking team members. The previous
+ * row-of-chips layout grew unwieldy as more users were added; the user asked
+ * to "put all team members in a dropdown and allow multi-select".
+ *
+ * Closed state: shows the current selection as comma-separated names plus a
+ * count badge.  Open state: scrollable list with a checkbox per user.
+ * Click outside or press Escape closes it.
+ */
+function TeamMultiSelect({
+  users,
+  selected,
+  onToggle,
+  locale,
+  error,
+}: {
+  users: MockUser[];
+  selected: string[];
+  onToggle: (userId: string) => void;
+  locale: string;
+  error?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  // Close when clicking outside the picker
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const selectedNames = users.filter((u) => selected.includes(u.id)).map((u) => u.name);
+  const summary = selectedNames.length === 0
+    ? (txt(locale, { he: "בחר חברי צוות", en: "Select team members" }) as string)
+    : selectedNames.join(", ");
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className={cn(
+          "w-full flex items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm min-h-[44px] text-start",
+          error ? "border-red-500" : "border-input",
+          selectedNames.length === 0 && "text-muted-foreground"
+        )}
+      >
+        <span className="line-clamp-1 flex-1 min-w-0">{summary}</span>
+        <span className="flex items-center gap-1 shrink-0">
+          {selectedNames.length > 0 && (
+            <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
+              {selectedNames.length}
+            </span>
+          )}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={cn("transition-transform", open && "rotate-180")}
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg max-h-64 overflow-y-auto">
+          {users.length === 0 ? (
+            <div className="p-3 text-xs text-muted-foreground text-center">
+              {txt(locale, { he: "אין משתמשים זמינים", en: "No users available" })}
+            </div>
+          ) : (
+            users.map((user) => {
+              const isSel = selected.includes(user.id);
+              return (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => onToggle(user.id)}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 text-sm text-start hover:bg-accent min-h-[40px]",
+                    isSel && "bg-primary/5"
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSel}
+                    readOnly
+                    className="size-4 shrink-0 pointer-events-none"
+                  />
+                  <span className="flex-1 min-w-0 line-clamp-1">{user.name}</span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
   );
 }
