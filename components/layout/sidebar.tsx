@@ -23,8 +23,14 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { role, can } = useRole();
 
   // Collapsed group state — persisted to localStorage so the user's layout
-  // preference survives reloads. Default: everything expanded.
-  const [collapsed, setCollapsed] = useState<Set<NavGroupKey>>(new Set());
+  // preference survives reloads.
+  // Default: ALL groups collapsed except the one containing the active route,
+  // so the sidebar starts as a clean list of 6 main category headers with
+  // the user's current location auto-expanded for context.
+  const allGroupKeys = NAV_GROUPS.map((g) => g.key);
+  const [collapsed, setCollapsed] = useState<Set<NavGroupKey>>(
+    () => new Set(allGroupKeys)
+  );
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(COLLAPSED_KEY);
