@@ -83,6 +83,64 @@ function kindIcon(kind: IntakeResponse["kind"]) {
   }
 }
 
+/**
+ * Read /api/intake's response robustly.
+ *
+ * The previous code did `await res.json()` blindly — but a large upload
+ * never reaches our handler. The hosting platform (Vercel) and Next.js's
+ * dev server both reject oversized request bodies at the proxy layer
+ * with a plain-text response like `"Request Entity Too Large"`. JSON.parse
+ * on that text throws `"Unexpected token 'R', \"Request En\"... is not
+ * valid JSON"`, which is what the user was seeing. This helper:
+ *
+ *   1. Reads the body as text first (always succeeds).
+ *   2. Tries JSON.parse; on success returns the typed object.
+ *   3. On JSON-parse failure, returns the raw text snippet so the user
+ *      sees the actual server/proxy message.
+ *   4. Maps HTTP 413 to a localized "file too big for the server"
+ *      message — useful even if the response did happen to be JSON.
+ */
+async function readIntakeResponse(
+  res: Response,
+  locale: string
+): Promise<{ ok: true; data: IntakeResponse } | { ok: false; message: string }> {
+  const raw = await res.text();
+  let parsed: any = null;
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch {
+    // not JSON — leave parsed null, raw still holds the text body
+  }
+
+  if (res.ok && parsed && typeof parsed === "object") {
+    return { ok: true, data: parsed as IntakeResponse };
+  }
+
+  // Build a user-facing error message that is actually informative.
+  if (res.status === 413) {
+    return {
+      ok: false,
+      message: txt(locale, {
+        he: "הקובץ גדול מדי עבור השרת. בפריסת Vercel, פונקציה ללא-שרת מקבלת גוף בקשה מוגבל. נסה קובץ קטן יותר, או הפעל פריסת Fluid Compute / העלאה ישירה ל-Vercel Blob.",
+        en: "File is too large for the server. On Vercel, serverless functions cap the request body size. Try a smaller file, or switch to Fluid Compute / direct upload to Vercel Blob.",
+      }) as string,
+    };
+  }
+
+  if (parsed && typeof parsed === "object" && typeof parsed.error === "string") {
+    return { ok: false, message: parsed.error };
+  }
+
+  // Non-JSON error body (typical for platform-level rejections). Surface
+  // a short snippet of what the server actually said so the user can
+  // recognize "Request Entity Too Large" / "Bad Gateway" / "Timeout" etc.
+  const snippet = (raw || "").trim().slice(0, 200) || `HTTP ${res.status}`;
+  return {
+    ok: false,
+    message: `HTTP ${res.status} — ${snippet}`,
+  };
+}
+
 export function IntakeWorkflow() {
   const locale = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -110,15 +168,14 @@ export function IntakeWorkflow() {
       fd.append("file", file);
       fd.append("locale", locale);
       const res = await fetch("/api/intake", { method: "POST", body: fd });
-      const data: IntakeResponse | { error: string } = await res.json();
-      if (!res.ok) throw new Error("error" in data ? data.error : "Server error");
-      const ok = data as IntakeResponse;
-      setResult(ok);
-      setSelected(new Set(ok.tasks.map((_, i) => i)));
+      const parsed = await readIntakeResponse(res, locale);
+      if (!parsed.ok) throw new Error(parsed.message);
+      setResult(parsed.data);
+      setSelected(new Set(parsed.data.tasks.map((_, i) => i)));
       toast.success(
         txt(locale, {
-          he: `זוהו ${ok.count} משימות מתוך ${file.name}`,
-          en: `Found ${ok.count} tasks in ${file.name}`,
+          he: `זוהו ${parsed.data.count} משימות מתוך ${file.name}`,
+          en: `Found ${parsed.data.count} tasks in ${file.name}`,
         })
       );
     } catch (err) {
@@ -144,15 +201,14 @@ export function IntakeWorkflow() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: textInput, locale }),
       });
-      const data: IntakeResponse | { error: string } = await res.json();
-      if (!res.ok) throw new Error("error" in data ? data.error : "Server error");
-      const ok = data as IntakeResponse;
-      setResult(ok);
-      setSelected(new Set(ok.tasks.map((_, i) => i)));
+      const parsed = await readIntakeResponse(res, locale);
+      if (!parsed.ok) throw new Error(parsed.message);
+      setResult(parsed.data);
+      setSelected(new Set(parsed.data.tasks.map((_, i) => i)));
       toast.success(
         txt(locale, {
-          he: `זוהו ${ok.count} משימות`,
-          en: `Found ${ok.count} tasks`,
+          he: `זוהו ${parsed.data.count} משימות`,
+          en: `Found ${parsed.data.count} tasks`,
         })
       );
     } catch (err) {
