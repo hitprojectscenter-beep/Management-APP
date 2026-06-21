@@ -15,6 +15,7 @@ import {
   ShieldAlert,
   Shield,
   BookOpen,
+  FileInput,
   type LucideIcon,
 } from "lucide-react";
 
@@ -47,7 +48,7 @@ export const NAV_GROUP_OF: Record<string, NavGroupKey> = {
   home: "tasks", tasks: "tasks",
   portfolios: "projects", projects: "projects", wbs: "projects", gantt: "projects",
   calendar: "calendar",
-  dashboard: "management", reports: "management", team: "management",
+  dashboard: "management", intake: "management", reports: "management", team: "management",
   risks: "pmo", ai: "pmo", automations: "pmo",
   admin: "settings", guides: "settings", settings: "settings",
 };
@@ -55,6 +56,7 @@ export const NAV_GROUP_OF: Record<string, NavGroupKey> = {
 export const NAV_ITEMS: NavItem[] = [
   { key: "home",        icon: Home,               href: "/",              labels: { he: "המשימות שלי",        en: "My Tasks",          ru: "Мои задачи",        fr: "Mes tâches",           es: "Mis tareas"        }, tooltips: { he: "כל המשימות הפתוחות שלך מסודרות לפי דחיפות", en: "All your open tasks sorted by urgency" } },
   { key: "dashboard",   icon: LayoutDashboard,     href: "/dashboard",     labels: { he: "דשבורדים ו-KPI",     en: "Dashboards & KPI",  ru: "Панель управления",  fr: "Tableaux de bord",     es: "Paneles y KPI"     }, tooltips: { he: "מדדי ביצוע ארגוניים עם בורר PM/PMO", en: "Organizational KPIs with PM/PMO role switcher" } },
+  { key: "intake",      icon: FileInput,           href: "/intake",        labels: { he: "מרכז ייבוא",         en: "Intake Center",     ru: "Центр приёма",       fr: "Centre d'admission",  es: "Centro de admisión" }, tooltips: { he: "העלאת מסמך/טקסט/שמע — AI מחלץ משימות עם כל הנתונים מהמקור", en: "Upload document/text/audio — AI extracts tasks with all source data" } },
   { key: "gantt",       icon: GanttChartSquare,    href: "/gantt",         labels: { he: "לוח גאנט",           en: "Gantt Chart",       ru: "Диаграмма Ганта",    fr: "Diagramme de Gantt",   es: "Diagrama de Gantt" }, tooltips: { he: "תצוגת ציר זמן עם תלויות, נתיב קריטי ואבני דרך", en: "Timeline view with dependencies, critical path & milestones" } },
   { key: "wbs",         icon: GitBranch,           href: "/wbs",           labels: { he: "WBS - חבילות עבודה", en: "WBS - Work Packages", ru: "WBS - Пакеты работ", fr: "WBS - Lots de travail", es: "WBS - Paquetes" }, tooltips: { he: "מבנה עבודה היררכי — 8 רמות מפורטפוליו עד תת-משימה", en: "Hierarchical work breakdown — 8 levels from portfolio to subtask" } },
   { key: "risks",       icon: ShieldAlert,         href: "/risks",         labels: { he: "ניהול סיכונים",      en: "Risk Management",   ru: "Управление рисками",  fr: "Gestion des risques",  es: "Gestión de riesgos"}, tooltips: { he: "זיהוי סיכונים, מטריצת הערכה, תכנית גידור ומעקב AI", en: "Risk detection, assessment matrix, mitigation planning & AI monitoring" } },
