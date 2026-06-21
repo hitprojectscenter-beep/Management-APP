@@ -45,7 +45,7 @@ export function AddProjectDialog({ children }: { children: React.ReactNode }) {
   const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
-  const programs = mockWbsNodes.filter((n) => n.type === "program");
+  const programs = mockWbsNodes.filter((n) => n.level === "program");
   const [form, setForm] = useState<FormState>({
     name: "",
     nameEn: "",
