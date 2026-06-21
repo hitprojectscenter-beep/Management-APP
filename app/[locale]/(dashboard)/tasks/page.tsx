@@ -1,9 +1,8 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { mockTasks, mockUsers } from "@/lib/db/mock-data";
+import { mockTasks, mockUsers, mockWbsNodes } from "@/lib/db/mock-data";
 import { TaskList } from "@/components/projects/task-list";
+import { TasksPageActions } from "@/components/landing/tasks-page-actions";
 
 export default async function TasksPage({
   params,
@@ -23,10 +22,7 @@ export default async function TasksPage({
             {locale === "he" ? `${mockTasks.length} משימות בסך הכל` : `${mockTasks.length} total tasks`}
           </p>
         </div>
-        <Button>
-          <Plus className="size-4" />
-          {t("newTask")}
-        </Button>
+        <TasksPageActions projects={mockWbsNodes} users={mockUsers} locale={locale} />
       </div>
 
       <Card>

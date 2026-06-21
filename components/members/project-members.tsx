@@ -1,10 +1,22 @@
 "use client";
+import { useState } from "react";
 import type { MockProjectMember, MockUser } from "@/lib/db/mock-data";
 import { Avatar } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Users, UserPlus, Briefcase } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Users, UserPlus, Briefcase, Percent } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 
@@ -76,10 +88,7 @@ export function ProjectMembers({
               ({members.length})
             </span>
           </CardTitle>
-          <Button size="sm" variant="outline">
-            <UserPlus className="size-3" />
-            {txt(locale, { he: "הוסף", en: "Add" })}
-          </Button>
+          <AddMemberDialog members={members} users={users} locale={locale} />
         </div>
         <div className="text-xs text-muted-foreground mt-1">
           {txt(locale, { he: "סך הקצאת משרה: ", en: "Total FTE allocation: " })}
@@ -121,5 +130,142 @@ export function ProjectMembers({
         })}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Add-member dialog that's used by the "הוסף" / "Add" button in the
+ * ProjectMembers card header. In demo mode it shows a success toast and
+ * closes — production would POST to /api/project-members and re-fetch.
+ */
+function AddMemberDialog({
+  members,
+  users,
+  locale,
+}: {
+  members: MockProjectMember[];
+  users: MockUser[];
+  locale: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [userId, setUserId] = useState("");
+  const [role, setRole] = useState("");
+  const [fte, setFte] = useState(20);
+
+  const existingIds = new Set(members.map((m) => m.userId));
+  const available = users.filter((u) => !existingIds.has(u.id));
+
+  const handleAdd = () => {
+    if (!userId) {
+      toast.error(txt(locale, { he: "בחר משתמש", en: "Select a user" }));
+      return;
+    }
+    if (!role.trim()) {
+      toast.error(txt(locale, { he: "הזן תפקיד", en: "Enter a role" }));
+      return;
+    }
+    const user = users.find((u) => u.id === userId);
+    toast.success(
+      txt(locale, {
+        he: `${user?.name} נוסף/ה בהצלחה`,
+        en: `${user?.name} added successfully`,
+      }),
+      {
+        description: txt(locale, {
+          he: `תפקיד: ${role} · משרה: ${fte}% · במצב הדגמה — בייצור יישמר ב-DB.`,
+          en: `Role: ${role} · FTE: ${fte}% · Demo mode — production would persist to DB.`,
+        }),
+      }
+    );
+    setOpen(false);
+    setUserId("");
+    setRole("");
+    setFte(20);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <UserPlus className="size-3" />
+          {txt(locale, { he: "הוסף", en: "Add" })}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md w-[95vw] p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserPlus className="size-5 text-primary" />
+            {txt(locale, { he: "הוספת חבר צוות", en: "Add Team Member" })}
+          </DialogTitle>
+          <DialogDescription>
+            {txt(locale, {
+              he: "בחר משתמש, הגדר תפקיד באחוז משרה.",
+              en: "Pick a user, set role and FTE %.",
+            })}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="add-mem-user">{txt(locale, { he: "משתמש", en: "User" })}</Label>
+            <select
+              id="add-mem-user"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[44px]"
+            >
+              <option value="">{txt(locale, { he: "-- בחר משתמש --", en: "-- Select user --" })}</option>
+              {available.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+            {available.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                {txt(locale, {
+                  he: "כל המשתמשים כבר חברים בפרויקט.",
+                  en: "All users are already members.",
+                })}
+              </p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="add-mem-role">{txt(locale, { he: "תפקיד בפרויקט", en: "Role in project" })}</Label>
+            <Input
+              id="add-mem-role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder={txt(locale, { he: "לדוגמה: מפתח, אנליסט, מנהל פרויקט", en: "e.g. Developer, Analyst, PM" })}
+              style={{ fontSize: "16px" }}
+              className="min-h-[44px]"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="add-mem-fte">{txt(locale, { he: "אחוז משרה", en: "FTE %" })}</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="add-mem-fte"
+                type="number"
+                min={1}
+                max={100}
+                value={fte}
+                onChange={(e) => setFte(Math.max(1, Math.min(100, Number(e.target.value) || 0)))}
+                className="w-32 min-h-[44px]"
+              />
+              <Percent className="size-4 text-muted-foreground" />
+            </div>
+          </div>
+        </div>
+        <DialogFooter className="gap-2 pt-2">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            {txt(locale, { he: "ביטול", en: "Cancel" })}
+          </Button>
+          <Button onClick={handleAdd} disabled={!userId || !role.trim()}>
+            <UserPlus className="size-4" />
+            {txt(locale, { he: "הוסף לפרויקט", en: "Add to project" })}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

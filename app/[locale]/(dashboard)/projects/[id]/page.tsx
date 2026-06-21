@@ -16,6 +16,7 @@ import { calculateProjectHealth } from "@/lib/ai/risk-engine";
 import { ProjectViews } from "@/components/projects/project-views";
 import { WbsTree } from "@/components/wbs/wbs-tree";
 import { ProjectMembers } from "@/components/members/project-members";
+import { ProjectHeaderActions } from "@/components/projects/project-header-actions";
 import { StaffPanel } from "@/components/projects/staff-panel";
 import { ActivitiesPanel } from "@/components/projects/activities-panel";
 
@@ -63,16 +64,7 @@ export default async function ProjectDetailPage({
             <p className="text-muted-foreground max-w-2xl">{project.description}</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline">
-            <GitBranch className="size-4" />
-            {locale === "he" ? "פצל פעילות" : "Branch activity"}
-          </Button>
-          <Button>
-            <Plus className="size-4" />
-            {locale === "he" ? "משימה חדשה" : "New task"}
-          </Button>
-        </div>
+        <ProjectHeaderActions projects={mockWbsNodes} users={mockUsers} locale={locale} />
       </div>
 
       {/* Quick stats */}
