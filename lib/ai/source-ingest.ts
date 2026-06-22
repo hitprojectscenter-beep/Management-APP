@@ -238,6 +238,116 @@ export async function ingestAudio(buf: Buffer, mime: string, filename = ""): Pro
   };
 }
 
+/**
+ * Transcribe audio that the browser uploaded directly to Gemini Files API
+ * via the resumable-upload endpoint. We reference the file by URI instead
+ * of streaming the bytes through our serverless function — bypasses the
+ * Vercel 4.5 MB inbound body cap.
+ */
+export async function ingestAudioByUri(
+  fileUri: string,
+  mime: string,
+  filename = "",
+  fileSizeBytes = 0
+): Promise<IngestResult> {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
+
+  // The file is in PROCESSING state right after upload — wait for ACTIVE
+  // before asking Gemini to transcribe.
+  await waitForFileActive(fileUri, apiKey, 30_000);
+
+  const instruction =
+    "Transcribe this audio recording word-for-word. Preserve the spoken language (Hebrew/English/Russian/etc). " +
+    "Return only the transcript — no timestamps, no speaker labels, no commentary.";
+
+  // file_data parts use a different schema from inline_data, so we hand-roll
+  // the model-fallback loop here instead of reusing geminiGenerate().
+  const body = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: "Audio recording:" },
+          { file_data: { mime_type: mime, file_uri: fileUri } },
+        ],
+      },
+    ],
+    systemInstruction: { parts: [{ text: instruction }] },
+    generationConfig: { temperature: 0.2, topP: 0.9, maxOutputTokens: 8192 },
+  };
+
+  let lastErr: Error | null = null;
+  for (const model of GEMINI_MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        lastErr = new Error(`Gemini ${model} ${res.status}: ${errText.slice(0, 200)}`);
+        console.warn(`[ingestAudioByUri] ${model} failed:`, errText.slice(0, 200));
+        continue;
+      }
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts
+        ?.map((p: any) => p.text)
+        .filter(Boolean)
+        .join("\n");
+      if (!text) {
+        lastErr = new Error(`Gemini ${model} returned no transcript text`);
+        continue;
+      }
+      // Best-effort cleanup — Gemini files auto-expire after 48h anyway.
+      void deleteGeminiFile(fileUri, apiKey).catch(() => {});
+      const estimatedDurationSec = fileSizeBytes
+        ? Math.round(fileSizeBytes / 16_000)
+        : undefined;
+      return {
+        kind: "audio",
+        text: text.trim(),
+        meta: { bytes: fileSizeBytes, filename, mime, estimatedDurationSec },
+      };
+    } catch (err) {
+      lastErr = err as Error;
+    }
+  }
+  throw lastErr ?? new Error("All Gemini models failed transcription");
+}
+
+async function waitForFileActive(fileUri: string, apiKey: string, timeoutMs: number): Promise<void> {
+  const metaUrl = `${fileUri}?key=${apiKey}`;
+  const start = Date.now();
+  let backoff = 500;
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(metaUrl);
+      if (res.ok) {
+        const meta = await res.json().catch(() => ({}));
+        const state = meta?.state || "UNKNOWN";
+        if (state === "ACTIVE") return;
+        if (state === "FAILED") throw new Error(`Gemini file processing failed: ${meta.error?.message || "unknown"}`);
+      }
+    } catch {
+      // transient
+    }
+    await new Promise((r) => setTimeout(r, backoff));
+    backoff = Math.min(backoff * 1.5, 3000);
+  }
+  // Don't throw on timeout — generateContent will surface the real error
+}
+
+async function deleteGeminiFile(fileUri: string, apiKey: string): Promise<void> {
+  try {
+    await fetch(`${fileUri}?key=${apiKey}`, { method: "DELETE" });
+  } catch {
+    // ignore — file auto-expires anyway
+  }
+}
+
 /** Dispatcher: pick the right ingest path by mime type. */
 export async function ingest(buf: Buffer, mime: string, filename = ""): Promise<IngestResult> {
   const kind = classifyMime(mime, filename);

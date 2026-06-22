@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { del as deleteBlob } from "@vercel/blob";
-import { ingest } from "@/lib/ai/source-ingest";
+import { ingest, ingestAudioByUri } from "@/lib/ai/source-ingest";
 import { extractTasksFromText } from "@/lib/ai/meeting-extractor";
 
 export const runtime = "nodejs";
@@ -39,6 +39,20 @@ interface BodyBlobRef {
  */
 interface BodyUrlRef {
   sourceUrl: string;
+  locale?: string;
+}
+
+/**
+ * JSON variant: the browser uploaded an audio file directly to Gemini's
+ * Files API via the resumable-upload endpoint, and now just hands us
+ * the resulting file URI. We never see the bytes — bypasses Vercel's
+ * 4.5 MB inbound cap entirely, no Blob store needed.
+ */
+interface BodyGeminiRef {
+  geminiFileUri: string;
+  geminiMime?: string;
+  geminiFilename?: string;
+  geminiSize?: number;
   locale?: string;
 }
 
@@ -126,10 +140,22 @@ export async function POST(req: Request) {
       sourceText = result.text;
       meta = result.meta;
     } else {
-      const body = (await req.json().catch(() => ({}))) as BodyTextOnly & BodyBlobRef & BodyUrlRef;
+      const body = (await req.json().catch(() => ({}))) as BodyTextOnly & BodyBlobRef & BodyUrlRef & BodyGeminiRef;
       if (body.locale) locale = body.locale;
 
-      if (body.sourceUrl) {
+      if (body.geminiFileUri) {
+        // Audio uploaded directly to Gemini Files API by the browser. No
+        // bytes pass through this function — we just reference the URI.
+        const result = await ingestAudioByUri(
+          body.geminiFileUri,
+          body.geminiMime || "audio/mpeg",
+          body.geminiFilename || "recording",
+          body.geminiSize || 0
+        );
+        kind = result.kind;
+        sourceText = result.text;
+        meta = result.meta;
+      } else if (body.sourceUrl) {
         // Public-URL path: server fetches the file directly. Outbound
         // fetches from a serverless function are NOT bounded by Vercel's
         // ~4.5MB inbound body cap — this is the no-config workaround for

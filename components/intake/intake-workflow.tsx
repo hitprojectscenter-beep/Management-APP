@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { upload as blobUpload } from "@vercel/blob/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -143,6 +143,68 @@ async function readIntakeResponse(
   };
 }
 
+function isAudioOrVideo(file: File): boolean {
+  const t = file.type.toLowerCase();
+  if (t.startsWith("audio/") || t.startsWith("video/")) return true;
+  // Some browsers don't set type for files dragged from finder — fall back
+  // to extension.
+  const ext = file.name.toLowerCase().split(".").pop() || "";
+  return ["mp3", "wav", "m4a", "webm", "ogg", "flac", "aac", "mp4", "mov", "mkv"].includes(ext);
+}
+
+/**
+ * Upload an audio/video file DIRECTLY to Gemini Files API from the browser.
+ * The server only mints a signed upload URL (small JSON in, small JSON out).
+ * The file bytes never traverse Vercel's serverless function — bypasses
+ * the 4.5 MB inbound body cap entirely.
+ *
+ * Flow:
+ *   1. POST {filename, mime, size} to /api/intake/gemini-upload-url
+ *   2. Server asks Google for a resumable upload session, hands us the
+ *      signed upload URL.
+ *   3. PUT the file bytes to that URL directly from the browser.
+ *   4. Google returns { file: { uri, name, ... } }.
+ *   5. Return the fileUri to the caller.
+ *
+ * Throws on any failure so the caller can fall back to multipart.
+ */
+async function uploadAudioToGemini(file: File): Promise<string> {
+  const initRes = await fetch("/api/intake/gemini-upload-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      filename: file.name,
+      mime: file.type || "audio/mpeg",
+      size: file.size,
+    }),
+  });
+  if (!initRes.ok) {
+    const errText = await initRes.text().catch(() => "");
+    throw new Error(`gemini-upload-url ${initRes.status}: ${errText.slice(0, 200)}`);
+  }
+  const { uploadUrl } = (await initRes.json()) as { uploadUrl: string };
+  if (!uploadUrl) throw new Error("No upload URL from server");
+
+  // Upload bytes directly to Google. The signed URL handles auth.
+  const putRes = await fetch(uploadUrl, {
+    method: "POST", // resumable PUT is actually a POST with the offset+finalize headers
+    headers: {
+      "Content-Length": String(file.size),
+      "X-Goog-Upload-Offset": "0",
+      "X-Goog-Upload-Command": "upload, finalize",
+    },
+    body: file,
+  });
+  if (!putRes.ok) {
+    const errText = await putRes.text().catch(() => "");
+    throw new Error(`gemini upload PUT ${putRes.status}: ${errText.slice(0, 200)}`);
+  }
+  const uploadData = await putRes.json();
+  const fileUri = uploadData?.file?.uri;
+  if (!fileUri) throw new Error("No file URI in Gemini response");
+  return fileUri;
+}
+
 export function IntakeWorkflow() {
   const locale = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -156,6 +218,41 @@ export function IntakeWorkflow() {
   // Keep the original uploaded File so we can pre-attach it to every task
   // created from this source. Cleared whenever the user resets.
   const [sourceFile, setSourceFile] = useState<File | null>(null);
+
+  // Pre-flight capability probe: ask the server which upload paths are
+  // wired up BEFORE the user picks a file. Lets us show realistic guidance
+  // instead of letting an upload fail.
+  const [capabilities, setCapabilities] = useState<{
+    audioUploadWorks: boolean;
+    largeFileWorks: boolean;
+    smallFileWorks: boolean;
+    geminiAvailable: boolean;
+    blobAvailable: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/intake/capabilities");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        setCapabilities({
+          audioUploadWorks: !!data?.summary?.audioUploadWorks,
+          largeFileWorks: !!data?.summary?.largeFileWorks,
+          smallFileWorks: !!data?.summary?.smallFileWorks,
+          geminiAvailable: !!data?.paths?.geminiDirectUpload?.available,
+          blobAvailable: !!data?.paths?.vercelBlob?.available,
+        });
+      } catch {
+        // ignore — capabilities panel just won't render
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /**
    * Upload a file via Vercel Blob direct-upload, then POST the blob URL
@@ -182,30 +279,53 @@ export function IntakeWorkflow() {
     setResult(null);
     setSourceFile(file);
     try {
-      // Try the blob-direct path FIRST for any file > 3 MB. Under 3 MB we
-      // know the multipart path will work even on Vercel Hobby, so skip
-      // the extra round-trip.
-      const USE_BLOB_THRESHOLD = 3 * 1024 * 1024;
-      const tryBlob = file.size > USE_BLOB_THRESHOLD;
+      // Three-tier upload strategy:
+      //   1. Audio/video > 3 MB → upload DIRECTLY to Gemini Files API.
+      //      Bytes never touch Vercel. Bypasses the 4.5 MB inbound cap
+      //      completely and needs zero extra config (just GEMINI_API_KEY,
+      //      which is already required for transcription anyway).
+      //   2. Non-audio files > 3 MB → try Vercel Blob direct upload.
+      //      Same bypass, but requires BLOB_READ_WRITE_TOKEN on the project.
+      //   3. Everything else → plain multipart. Works for files < 4.5 MB
+      //      on Vercel and any size in local dev.
+      const SIZE_THRESHOLD = 3 * 1024 * 1024;
+      const isMedia = isAudioOrVideo(file);
 
       let parsed:
         | { ok: true; data: IntakeResponse }
         | { ok: false; message: string }
         | null = null;
 
-      if (tryBlob) {
+      // ── Path A: audio/video via Gemini Files API ───────────────────
+      if (isMedia && file.size > SIZE_THRESHOLD) {
         try {
-          // Direct-upload to Vercel Blob. The client SDK handles the
-          // signed-token round-trip with /api/intake/upload-token.
-          // Path scopes the file under "intake/<timestamp>-<name>" so each
-          // upload has a unique key.
+          const fileUri = await uploadAudioToGemini(file);
+          const res = await fetch("/api/intake", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              geminiFileUri: fileUri,
+              geminiMime: file.type || "audio/mpeg",
+              geminiFilename: file.name,
+              geminiSize: file.size,
+              locale,
+            }),
+          });
+          parsed = await readIntakeResponse(res, locale);
+        } catch (geminiErr) {
+          console.warn("[intake] gemini direct upload failed, trying next path:", geminiErr);
+        }
+      }
+
+      // ── Path B: Vercel Blob direct upload (any large file) ─────────
+      if (!parsed && file.size > SIZE_THRESHOLD) {
+        try {
           const ts = Date.now();
           const blob = await blobUpload(`intake/${ts}-${file.name}`, file, {
             access: "public",
             handleUploadUrl: "/api/intake/upload-token",
             clientPayload: locale,
           });
-          // Hand the blob URL off for processing
           const res = await fetch("/api/intake", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -218,15 +338,12 @@ export function IntakeWorkflow() {
           });
           parsed = await readIntakeResponse(res, locale);
         } catch (blobErr) {
-          // Likely: BLOB_NOT_CONFIGURED, or the user is offline. Fall
-          // through to multipart so we still try to process the file.
-          console.warn("[intake] blob upload failed, falling back:", blobErr);
+          console.warn("[intake] blob upload failed, falling back to multipart:", blobErr);
         }
       }
 
+      // ── Path C: plain multipart (small files / local dev) ──────────
       if (!parsed) {
-        // Multipart fallback (works in local dev; on Vercel works for
-        // files under ~4.5 MB).
         const fd = new FormData();
         fd.append("file", file);
         fd.append("locale", locale);
@@ -463,6 +580,10 @@ export function IntakeWorkflow() {
 
   return (
     <div className="space-y-6">
+      {/* Capability badge — shows BEFORE the user picks a file so the
+       *  guidance matches what's actually available on this deployment. */}
+      {capabilities && !result && <CapabilityStatusBadge caps={capabilities} locale={locale} />}
+
       {/* Mode selector */}
       {!result && (
         <Card>
@@ -698,6 +819,94 @@ export function IntakeWorkflow() {
           />
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Pre-flight status badge. Shows BEFORE the user picks a file so they can
+ * see at a glance which upload paths are available on this deployment and
+ * which routes they should prefer if they have a big file.
+ */
+function CapabilityStatusBadge({
+  caps,
+  locale,
+}: {
+  caps: {
+    audioUploadWorks: boolean;
+    largeFileWorks: boolean;
+    geminiAvailable: boolean;
+    blobAvailable: boolean;
+  };
+  locale: string;
+}) {
+  const ok = caps.audioUploadWorks && caps.largeFileWorks;
+  // Build a list of route statuses
+  const rows: Array<{ label: string; status: "ok" | "warn" | "off"; note: string }> = [
+    {
+      label: txt(locale, { he: "📄 מסמך < 4MB (Word, PDF, PPT)", en: "📄 Documents < 4 MB (Word, PDF, PPT)" }) as string,
+      status: "ok",
+      note: txt(locale, { he: "תמיד פועל", en: "always works" }) as string,
+    },
+    {
+      label: txt(locale, { he: "🎙️ הקלטות שמע/וידאו (כל גודל עד 300MB)", en: "🎙️ Audio/Video recordings (up to 300 MB)" }) as string,
+      status: caps.geminiAvailable ? "ok" : "off",
+      note: caps.geminiAvailable
+        ? (txt(locale, { he: "Gemini Files API מחובר — עוקף תקרת Vercel", en: "Gemini Files API connected — bypasses Vercel cap" }) as string)
+        : (txt(locale, { he: "אין GEMINI_API_KEY — לא יעבוד", en: "GEMINI_API_KEY missing — won't work" }) as string),
+    },
+    {
+      label: txt(locale, { he: "📑 מסמך > 4MB (Word/PDF גדול)", en: "📑 Documents > 4 MB (large Word/PDF)" }) as string,
+      status: caps.blobAvailable ? "ok" : "warn",
+      note: caps.blobAvailable
+        ? (txt(locale, { he: "Vercel Blob מחובר", en: "Vercel Blob connected" }) as string)
+        : (txt(locale, { he: "השתמש במצב \"קישור\" עם Drive/Dropbox", en: 'Use the "Link" mode with Drive/Dropbox' }) as string),
+    },
+    {
+      label: txt(locale, { he: "🔗 קישור ציבורי (Drive/Dropbox)", en: "🔗 Public URL (Drive/Dropbox)" }) as string,
+      status: "ok",
+      note: txt(locale, { he: "תמיד פועל — בלי הגבלת גודל", en: "always works — no size limit" }) as string,
+    },
+  ];
+
+  return (
+    <div
+      className={
+        ok
+          ? "border rounded-xl p-4 bg-emerald-50/40 dark:bg-emerald-950/10 border-emerald-200 dark:border-emerald-900"
+          : "border rounded-xl p-4 bg-amber-50/40 dark:bg-amber-950/10 border-amber-300 dark:border-amber-900"
+      }
+    >
+      <div className="flex items-center gap-2 mb-2 font-semibold text-sm">
+        {ok ? "✅" : "⚠️"}{" "}
+        {ok
+          ? txt(locale, { he: "כל מסלולי ההעלאה פעילים", en: "All upload paths are ready" })
+          : txt(locale, {
+              he: "חלק ממסלולי ההעלאה לא מוגדרים — ראה למטה",
+              en: "Some upload paths aren't configured — see below",
+            })}
+      </div>
+      <ul className="space-y-1.5 text-xs">
+        {rows.map((r, i) => (
+          <li key={i} className="flex items-center justify-between gap-2 flex-wrap">
+            <span className="flex items-center gap-2">
+              <span
+                className={
+                  r.status === "ok"
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : r.status === "warn"
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-red-600 dark:text-red-400"
+                }
+              >
+                {r.status === "ok" ? "●" : r.status === "warn" ? "▲" : "✕"}
+              </span>
+              <span className="font-medium text-foreground">{r.label}</span>
+            </span>
+            <span className="text-muted-foreground">{r.note}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
