@@ -632,6 +632,78 @@ export const HELP_ENTRIES: HelpEntry[] = [
       en: "PMO++ has 17 KPIs — 10 core + 7 advanced:\n\n📊 **PM View:** CPI, SPI, Rework Rate\n🎯 **PMO View:** Decision Latency, NPS, Burnout Risk, AI Adoption\n\nAll based on international standards: PMBOK, EVM, McKinsey, Bain, MBI, Gartner. Click any card for details and sources.",
     },
   },
+  // ============================================================
+  // INTAKE CENTER — task extraction from documents/audio/text
+  // ============================================================
+  {
+    id: "intake-center",
+    category: "navigation",
+    keywords: { he: ["ייבוא", "אינטייק", "מרכז ייבוא", "intake", "חילוץ משימות", "סיכום פגישה", "מסמך", "הקלטה", "תמלול"], en: ["intake", "extract tasks", "import", "meeting summary", "document", "audio", "transcribe"] },
+    question: { he: "מה זה מרכז ייבוא משימות?", en: "What is the intake center?" },
+    answer: {
+      he: "📥 **מרכז ייבוא משימות** (תחת 'מבט ניהולי' → 'ייבוא משימות') מחלץ משימות ישירות מ:\n\n📄 **מסמכים** — DOCX, PDF, PPTX, תמונות עד 300MB\n🎙️ **הקלטות שמע/וידאו** — Zoom, Google Meet, MP3/WAV/M4A/MP4 — עם תמלול AI אוטומטי\n📝 **טקסט מודבק** — סיכומי פגישה, רשימות החלטות\n\nה-AI (Gemini 2.5) מזהה:\n• כותרת + תאריך המסמך (משמש לתאריך התחלת המשימה)\n• אחראי לכל משימה כפי שכתוב במקור\n• תאריכי יעד (גם יחסיים: 'עד יום חמישי')\n• סוג העבודה (מצגת/אפיון/דוח...)\n• הפסקה המקורית כתיאור\n\nכל משימה נוצרת עם **קובץ המקור מצורף** + מקור = 'שם הקובץ · תאריך'.",
+      en: "📥 **Intake Center** (Management View → Import Tasks) extracts tasks directly from:\n\n📄 Documents (DOCX/PDF/PPTX/images, up to 300MB)\n🎙️ Audio/video recordings (Zoom/Meet, MP3/WAV/M4A/MP4) — auto-transcribed by Gemini\n📝 Pasted text (meeting summaries, decision lists)\n\nThe AI detects: document date (used as task start date), assignee names as written, due dates (relative or absolute), work type, and full source paragraph as description. Every created task has the **source file attached** automatically.",
+    },
+  },
+  {
+    id: "intake-large-files",
+    category: "navigation",
+    keywords: { he: ["קובץ גדול", "300mb", "vercel blob", "העלאה", "תקרה", "413"], en: ["large file", "300mb", "vercel blob", "upload limit"] },
+    question: { he: "איך מעלים קבצים גדולים (הקלטות 100MB+)?", en: "How to upload large files?" },
+    answer: {
+      he: "המערכת תומכת בקבצים עד **300MB** (הקלטת Zoom של שעתיים = 200MB בערך).\n\n🚀 **נתיב מהיר** (קבצים > 3MB): המערכת מעלה ישירות ל-Vercel Blob storage, עוקפת את תקרת ה-4.5MB של פונקציות serverless. **דורש**: Vercel Blob store פעיל בפרויקט + `BLOB_READ_WRITE_TOKEN` ב-env vars.\n\n🐌 **נתיב fallback** (אם אין Blob token): multipart רגיל — עובד עד התקרה הפלטפורמית.\n\n💡 ב-dev מקומי שני המסלולים עובדים גם בלי הגדרה.",
+      en: "Supports files up to **300MB**. Files > 3MB upload directly to Vercel Blob (bypassing the 4.5MB serverless limit). Requires Blob store + `BLOB_READ_WRITE_TOKEN` env var. Smaller files use multipart. Both paths work in local dev without setup.",
+    },
+  },
+  {
+    id: "intake-extraction-quality",
+    category: "navigation",
+    keywords: { he: ["איכות חילוץ", "חילוץ מקיף", "gemini", "פסקאות", "כותרת מסמך", "תאריך מסמך"], en: ["extraction quality", "comprehensive extraction", "gemini", "paragraphs"] },
+    question: { he: "איך עובד החילוץ המקיף ממסמך?", en: "How does extraction work?" },
+    answer: {
+      he: "🧠 **AI-first (Gemini 2.5):** Prompt מקיף שדורש לחלץ הכל — כולל החלטות, deliverables, התחייבויות. לא מסכם — מעתיק את הפסקה המקורית מהמסמך לתיאור.\n\n📑 **Chunking:** מסמכים ארוכים נחתכים ל-chunks של 12,000 תווים עם 600 תווי חפיפה — שום פעולה לא הולכת לאיבוד.\n\n📝 **Heuristic fallback** (כשאין Gemini): חלוקה לפי **פסקאות** (לא משפטים), כיסוי 60+ צורות פיעל בעבר (תיאם, סיכם, כינס...), סינון כותרות מסמך/סעיף.\n\n🔄 **Dedup לפי כותרת** — אם אותה משימה מוזכרת בכמה מקומות היא מאוחדת לרשומה אחת.",
+      en: "🧠 **AI-first (Gemini 2.5):** Comprehensive prompt — extracts decisions, deliverables, commitments. Description = original source paragraph (not a summary).\n📑 **Chunking:** Long documents split into 12k-char chunks with 600-char overlap.\n📝 **Heuristic fallback:** Paragraph-aware split (not sentence-aware), 60+ Hebrew pi'el past forms, document-header filter.\n🔄 **Dedup by title** consolidates repeats.",
+    },
+  },
+  // ============================================================
+  // SIDEBAR & NAVIGATION (recent reorg)
+  // ============================================================
+  {
+    id: "sidebar-groups",
+    category: "navigation",
+    keywords: { he: ["סרגל צד", "תפריט", "קטגוריות", "קולפס", "פתיחה סגירה", "sidebar"], en: ["sidebar", "menu", "categories", "collapse", "groups"] },
+    question: { he: "איך מאורגן סרגל הצד?", en: "How is the sidebar organized?" },
+    answer: {
+      he: "📂 הסרגל מאורגן ב-6 קטגוריות **קולפסיביות**:\n\n1. **ניהול משימות** — המשימות שלי, רשימת משימות\n2. **ניהול פרויקטים** — פורטפוליו, פרויקטים, WBS, גאנט, צוות\n3. **יומן ולוחות זמנים** — יומן (מאגד תאריכי משימות/אבני דרך/פגישות)\n4. **מבט ניהולי** — דשבורדים ו-KPI, ייבוא משימות, דוחות\n5. **PMO וניהול סיכונים** — מרכז AI, ניהול סיכונים, אוטומציות\n6. **ניהול יישום והגדרות** — ניהול מערכת, הגדרות\n\n💡 כל קטגוריה נפתחת בלחיצה. המצב נשמר ב-localStorage. ברירת מחדל — **הכל סגור**.",
+      en: "📂 The sidebar has 6 **collapsible** groups: 1) Task Management, 2) Project Management, 3) Calendar & Timeline, 4) Management View, 5) PMO & Risk, 6) Settings. Click any group to expand. State persists in localStorage. Default: all collapsed.",
+    },
+  },
+  // ============================================================
+  // SOURCE FILE ATTACHMENT
+  // ============================================================
+  {
+    id: "source-file-attached",
+    category: "tasks",
+    keywords: { he: ["קובץ מקור", "מצורף", "צירוף קובץ", "attachment", "מצורפים"], en: ["source file", "attached", "attachment", "attachments"] },
+    question: { he: "האם הקובץ המקורי נשמר עם המשימה?", en: "Is the source file attached?" },
+    answer: {
+      he: "✅ **כן.** כל משימה שנוצרת ממרכז הייבוא נשמרת עם **הקובץ המקורי מצורף** באופן אוטומטי:\n\n• בלחיצה על שורת משימה מחולצת → AddTaskDialog נפתח עם הקובץ ב-attachments\n• ביצירה במצב 'בולק' (יצירת N משימות נבחרות) → **כל המשימות מקבלות עותק** של קובץ המקור\n• שדה 'מקור' מאוכלס ב-'שם הקובץ · תאריך המסמך' לתיעוד מלא\n\n💡 כך תמיד אפשר לחזור למסמך/הקלטה המקורית גם חודשים אחרי.",
+      en: "✅ **Yes.** Every task created from the intake center has the **original source file auto-attached**:\n\n• Click a row → AddTaskDialog opens with the file pre-attached in attachments\n• Bulk create N tasks → **all tasks receive a copy** of the source file\n• Source field = '<filename> · <document date>' for provenance\n\nYou can always trace back to the original document/recording.",
+    },
+  },
+  // ============================================================
+  // BRAND COLORS (recent rebrand to Mapi navy)
+  // ============================================================
+  {
+    id: "brand-colors",
+    category: "general",
+    keywords: { he: ["צבעים", "כחול", "מפי", "ברנד", "סרגל כהה", "navy"], en: ["colors", "blue", "mapi", "brand", "navy", "rebrand"] },
+    question: { he: "למה הצבעים השתנו לכחול כהה?", en: "Why did colors change to deep blue?" },
+    answer: {
+      he: "🎨 הצבע הראשי של היישום מותאם **לזהות המרכז למיפוי ישראל**. הצבע #2050a0 (HSL 218°, 67%, 38%) חולץ ישירות מלוגו מפ\"י המקורי, וכל הכפתורים, הסרגל, ה-progress bars, ה-borders וה-KPI accents משתמשים בו. הסרגל הצדדי בנייבי עמוק (#0E1E39) במקום הסגול הקודם.",
+      en: "🎨 The primary color matches the **Survey of Israel** brand. #2050a0 (HSL 218°, 67%, 38%) was sampled directly from the official Mapi logo. All buttons, sidebar, progress bars, borders and KPI accents use this hue. The deep sidebar navy (#0E1E39) replaces the previous purple.",
+    },
+  },
 ];
 
 /**

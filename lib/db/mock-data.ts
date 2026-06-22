@@ -10,6 +10,12 @@ export interface MockUser {
   id: string;
   name: string;
   email: string;
+  /** Israeli mobile in 0NN-NNNNNNN form. Used by the Team and Admin pages
+   *  for "click-to-call" links and by invite flows. */
+  phone?: string;
+  /** Job title used in the UI when the team page wants to show "role" next
+   *  to the personal name without losing either. */
+  title?: string;
   image: string;
   locale: "he" | "en";
   role: UserRole;
@@ -28,6 +34,27 @@ export interface MockWbsNode {
   deliverable?: string;
   methodology?: string;
   position: number;
+}
+
+/**
+ * One attached source-file on a task. Captures enough metadata that the
+ * user can see what was attached and (when blobUrl is present) download it.
+ * Populated by the intake center when a task is created from a document/
+ * audio/text source — every such task carries the original file back to
+ * the source for full provenance.
+ */
+export interface MockTaskAttachment {
+  name: string;
+  size: number;
+  type: string;
+  /** Direct download URL — set when the file was uploaded via Vercel Blob.
+   *  Optional for local-mock attachments where we only have the File object
+   *  in memory. */
+  blobUrl?: string;
+  /** Free-text label describing where this file came from, e.g.
+   *  "סיכום פגישה — Salesforce · 2026-06-27". Useful when the filename
+   *  alone isn't self-explanatory. */
+  source?: string;
 }
 
 export interface MockTask {
@@ -49,6 +76,9 @@ export interface MockTask {
   progressPercent: number;
   tags: string[];
   dependencies: string[];
+  /** Files attached when the task was created — typically the source
+   *  document/recording for tasks extracted via the intake center. */
+  attachments?: MockTaskAttachment[];
 }
 
 export interface MockRisk {
@@ -92,19 +122,29 @@ export interface MockProjectMember {
 /**
  * The currently logged-in user (for demo mode).
  * בייצור זה יגיע מה-session של Auth.js.
- * מוגדר ל-"u1" (מנהל פרוגרמת Salesforce - מנהל פרוגרמת Salesforce ומנהל פרויקטים טכני).
+ * מוגדר ל-"u1" (מארק ישראל - מנהל פרוגרמת Salesforce ומנהל פרויקטים טכני).
  */
 export const CURRENT_USER_ID = "u1";
 
 // ============================================
 // Users
 // ============================================
+/*
+ * Real team members from the מרכז למיפוי ישראל Salesforce program.
+ * Personal names + job titles + placeholder Israeli mobile numbers.
+ * NOTE on phones: the previous user-removal step lost the original phone
+ * digits — the numbers below are realistic Israeli prefixes (050/052/054)
+ * but should be updated with the actual numbers when known. Emails are
+ * the originals from the early mock-data.
+ */
 export const mockUsers: MockUser[] = [
   {
     id: "u1",
-    name: "מנהל פרוגרמת Salesforce",
+    name: "מארק ישראל",
+    title: "מנהל פרוגרמת Salesforce ומנהל פרויקטים טכני",
     email: "mark.israel@mapi.gov.il",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=SalesforceManager",
+    phone: "050-1234561",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Mark%20Israel",
     locale: "he",
     role: "admin",
     skills: ["salesforce", "pmo", "technical-pm", "architecture", "strategy", "integration"],
@@ -113,9 +153,11 @@ export const mockUsers: MockUser[] = [
   },
   {
     id: "u2",
-    name: "מנהל כלל הפעילויות",
+    name: "ניר ברלוביץ'",
+    title: "מנהל כלל הפעילויות",
     email: "nir.berlowitz@mapi.gov.il",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=Operations",
+    phone: "050-1234562",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Nir%20Berlowitz",
     locale: "he",
     role: "manager",
     skills: ["operations", "pmo", "management", "strategy", "planning"],
@@ -124,9 +166,11 @@ export const mockUsers: MockUser[] = [
   },
   {
     id: "u3",
-    name: "בעלים - שיווק ומכירות",
+    name: "אלעד אסרף",
+    title: "בעלים – Salesforce שיווק ומכירות",
     email: "elad.asraf@mapi.gov.il",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=Marketing",
+    phone: "052-1234563",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Elad%20Asraf",
     locale: "he",
     role: "manager",
     skills: ["salesforce", "marketing", "sales", "crm", "rfp", "procurement"],
@@ -135,9 +179,11 @@ export const mockUsers: MockUser[] = [
   },
   {
     id: "u4",
-    name: "בעלים - CRM",
+    name: "אפרים ג'יאן",
+    title: "בעלים – Salesforce CRM",
     email: "ephraim.gian@mapi.gov.il",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=CRM",
+    phone: "052-1234564",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Ephraim%20Gian",
     locale: "he",
     role: "manager",
     skills: ["salesforce", "crm", "apex", "lightning", "maintenance", "support"],
@@ -146,9 +192,11 @@ export const mockUsers: MockUser[] = [
   },
   {
     id: "u5",
-    name: "אחראית תכניות עבודה",
+    name: "אסתר מהרטו",
+    title: "אחראית תכניות עבודה",
     email: "esther.maharato@mapi.gov.il",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=Plans",
+    phone: "054-1234565",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Esther%20Maharato",
     locale: "he",
     role: "manager",
     skills: ["pmo", "planning", "work-plans", "compliance", "reporting", "government"],
@@ -157,9 +205,11 @@ export const mockUsers: MockUser[] = [
   },
   {
     id: "u6",
-    name: "מנכ\"ל",
+    name: "חגי רונן",
+    title: "מנכ\"ל המרכז למיפוי ישראל",
     email: "hagai.ronen@mapi.gov.il",
-    image: "https://api.dicebear.com/7.x/initials/svg?seed=CEO",
+    phone: "050-1234566",
+    image: "https://api.dicebear.com/7.x/initials/svg?seed=Hagai%20Ronen",
     locale: "he",
     role: "manager",
     skills: ["leadership", "strategy", "stakeholder-management", "executive"],

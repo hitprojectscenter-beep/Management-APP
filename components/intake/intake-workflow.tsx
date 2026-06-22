@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { txt } from "@/lib/utils/locale-text";
 import { cn } from "@/lib/utils";
-import { mockUsers, mockWbsNodes } from "@/lib/db/mock-data";
+import { mockUsers, mockWbsNodes, mockTasks, type MockTaskAttachment } from "@/lib/db/mock-data";
 import { pickResponsible } from "@/lib/ai/role-hierarchy";
 import { AddTaskDialog, type AddTaskInitialValues } from "@/components/landing/add-task-dialog";
 
@@ -306,16 +306,98 @@ export function IntakeWorkflow() {
       toast.error(txt(locale, { he: "בחר משימה אחת לפחות", en: "Select at least one task" }));
       return;
     }
+
+    // Build the source-attachment record once. Every task created in this
+    // batch gets the SAME attachment metadata so we can always trace the
+    // task back to the original document/audio/text. The blobUrl is set
+    // only if we have an in-memory File (which we wrap into an
+    // object URL just for download links).
+    let sharedAttachment: MockTaskAttachment | null = null;
+    if (sourceFile) {
+      // URL.createObjectURL gives us a same-origin URL the user can click
+      // to download the original file later in the session.
+      let blobUrl: string | undefined;
+      try {
+        blobUrl = URL.createObjectURL(sourceFile);
+      } catch {
+        // SSR or sandboxed iframes may not have URL.createObjectURL — fine
+      }
+      sharedAttachment = {
+        name: sourceFile.name,
+        size: sourceFile.size,
+        type: sourceFile.type || "application/octet-stream",
+        blobUrl,
+        source: result.documentTitle && result.documentDate
+          ? `${result.documentTitle} · ${result.documentDate}`
+          : result.documentTitle || result.meta.filename,
+      };
+    } else if (result.kind === "text" && result.documentTitle) {
+      // For pasted-text intake there's no file, but we still record the
+      // document title + date as the provenance string.
+      sharedAttachment = {
+        name: result.documentTitle.slice(0, 80),
+        size: result.sourceText.length,
+        type: "text/plain",
+        source: result.documentDate
+          ? `${result.documentTitle} · ${result.documentDate}`
+          : result.documentTitle,
+      };
+    }
+
+    // Mutate mockTasks so the new tasks show up on /tasks. In production
+    // this is where we'd POST to /api/tasks; here we keep parity with how
+    // the rest of the demo handles task creation.
+    const autoFallback = pickResponsible(mockUsers, { excludeCEO: true });
+    const wbsLeaf = mockWbsNodes.find((n) => n.level === "task")?.id
+      ?? mockWbsNodes[0]?.id
+      ?? "root";
+    const startStamp = Date.now();
+
+    let createdCount = 0;
+    Array.from(selected)
+      .sort((a, b) => a - b)
+      .forEach((idx, i) => {
+        const t = result.tasks[idx];
+        if (!t) return;
+        const resolved = resolveAssignee(t.assigneeHint) || autoFallback?.user;
+        mockTasks.push({
+          id: `intake-${startStamp}-${i}`,
+          wbsNodeId: wbsLeaf,
+          parentTaskId: null,
+          title: t.title,
+          description: t.description,
+          status: "not_started",
+          priority: "medium",
+          assigneeId: resolved?.id ?? null,
+          plannedStart: result.documentDate || new Date().toISOString().slice(0, 10),
+          plannedEnd: t.dueDate || result.documentDate || new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10),
+          actualStart: null,
+          actualEnd: null,
+          estimateHours: t.estimateHours ?? 4,
+          actualHours: 0,
+          progressPercent: 0,
+          tags: t.workTypeLabel ? [t.workTypeLabel] : [],
+          dependencies: [],
+          attachments: sharedAttachment ? [sharedAttachment] : undefined,
+        });
+        createdCount++;
+      });
+
     toast.success(
       txt(locale, {
-        he: `נוצרו ${selected.size} משימות`,
-        en: `${selected.size} tasks created`,
+        he: `נוצרו ${createdCount} משימות`,
+        en: `${createdCount} tasks created`,
       }),
       {
-        description: txt(locale, {
-          he: "במצב הדגמה — בייצור יישמרו ב-DB עם תיעוד מקור.",
-          en: "Demo mode — production would persist with source provenance.",
-        }),
+        description: sharedAttachment
+          ? (txt(locale, {
+              he: `הקובץ "${sharedAttachment.name}" מצורף לכל אחת מהמשימות.`,
+              en: `Source file "${sharedAttachment.name}" attached to each task.`,
+            }) as string)
+          : (txt(locale, {
+              he: "במצב הדגמה — נשמר ב-mockTasks בלבד עד חיבור DB.",
+              en: "Demo mode — saved to mockTasks only until DB is wired.",
+            }) as string),
       }
     );
     setResult(null);

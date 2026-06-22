@@ -234,7 +234,7 @@ export function heuristicParse(
     action = "query_tasks"; // treat as status check
     const myTasks = currentUser ? getOpenTasksForUser(currentUser.id) : [];
     responseText = isHe
-      ? `שלום ${currentUser?.name?.split(" ")[0] || ""}! 👋\nיש לך ${myTasks.length} משימות פתוחות.\n\nאיך אוכל לעזור? דוגמאות:\n• "פתח משימה חדשה..."\n• "מה הסיכונים?"\n• "מה המצב?"\n• "איך מגדירים KPI?"\n• "איך עובדות ההרשאות?"\n• "מי הכי עמוס?"`
+      ? `שלום ${currentUser?.name?.split(" ")[0] || ""}! 👋\nיש לך ${myTasks.length} משימות פתוחות.\n\nאיך אוכל לעזור? דוגמאות:\n• "פתח משימה חדשה..."\n• "מה הסיכונים?"\n• "מה המצב?"\n• "ייבא משימות מסיכום פגישה"\n• "איך מגדירים KPI?"\n• "מי הכי עמוס?"\n• "סיכום יומי"\n• "נתיב קריטי"`
       : `Hello ${currentUser?.name?.split(" ")[0] || ""}! You have ${myTasks.length} open tasks. How can I help?`;
   }
   // CRITICAL PATH EXPLANATION
@@ -300,8 +300,8 @@ export function heuristicParse(
   else if (/עזרה|help|מה אתה יכול|מה אפשר/.test(lower)) {
     action = "query_tasks";
     responseText = isHe
-      ? "🤖 אני יכול לעזור עם:\n\n📋 **משימות**: \"פתח משימה חדשה...\", \"איך סוגרים משימה?\"\n🔄 **שיוך מחדש**: \"שייך מחדש את המשימה X ל-Y\"\n📊 **סטטוס ו-KPI**: \"מה המצב?\", \"איך מגדירים KPI?\"\n⚠️ **סיכונים**: \"מה הסיכונים?\", \"הסבר נתיב קריטי\"\n🛡️ **תכנית גידור**: \"מה תכנית ניהול הסיכונים?\"\n👥 **עומסים**: \"מי הכי עמוס?\"\n📝 **פגישות**: \"סכם את הפגישה\"\n📅 **סיכום יומי**: \"תן לי סיכום יומי\"\n🔐 **הרשאות**: \"איך עובדות ההרשאות?\"\n❓ **כל שאלה על המערכת**: \"איך מייצאים לאקסל?\", \"מה זה WBS?\"\n\n🎤 אפשר לכתוב או להקליט!"
-      : "I can help with: tasks, reassignment, KPIs, status, risks, critical path, mitigation, workload, meetings, daily summary, permissions, and ANY system question! Voice or text! 🎤";
+      ? "🤖 אני יכול לעזור עם:\n\n📋 **משימות**: \"פתח משימה חדשה...\", \"איך סוגרים משימה?\"\n📥 **ייבוא משימות**: \"מה זה מרכז ייבוא?\", \"איך מחלצים משימות מהקלטה?\"\n🔄 **שיוך מחדש**: \"שייך מחדש את המשימה X ל-Y\"\n📊 **סטטוס ו-KPI**: \"מה המצב?\", \"איך מגדירים KPI?\"\n⚠️ **סיכונים**: \"מה הסיכונים?\", \"הסבר נתיב קריטי\"\n🛡️ **תכנית גידור**: \"מה תכנית ניהול הסיכונים?\"\n👥 **עומסים**: \"מי הכי עמוס?\"\n📝 **פגישות**: \"סכם את הפגישה\"\n📅 **סיכום יומי**: \"תן לי סיכום יומי\"\n🔐 **הרשאות**: \"איך עובדות ההרשאות?\"\n📂 **ניווט**: \"איך מאורגן סרגל הצד?\"\n🎨 **ברנד**: \"למה הצבעים השתנו?\"\n❓ **כל שאלה על המערכת**: \"איך מייצאים לאקסל?\", \"מה זה WBS?\"\n\n🎤 אפשר לכתוב או להקליט!"
+      : "I can help with: tasks, intake center, reassignment, KPIs, status, risks, critical path, mitigation, workload, meetings, daily summary, permissions, navigation, branding, and ANY system question! Voice or text! 🎤";
   }
   // SYSTEM KNOWLEDGE — questions, explanations, knowledge queries about the system
   // This is a broad catch-all for informational questions

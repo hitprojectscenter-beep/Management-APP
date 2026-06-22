@@ -15,8 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { X } from "lucide-react";
-import type { MockUser, MockWbsNode } from "@/lib/db/mock-data";
-import { mockItemTypes } from "@/lib/db/mock-data";
+import type { MockUser, MockWbsNode, MockTaskAttachment } from "@/lib/db/mock-data";
+import { mockItemTypes, mockTasks, mockWbsNodes } from "@/lib/db/mock-data";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 
@@ -264,15 +264,62 @@ export function AddTaskDialog({
       return;
     }
 
-    // In demo mode - show success toast
+    // Persist to mockTasks so the task actually shows up on /tasks etc.
+    // (Previously this was toast-only; the user could see "task created"
+    // but nothing was saved — and the source file attached via the intake
+    // center was being silently dropped.)
     const taskType = taskTypes.find((t) => t.id === form.taskType);
+    const attachments: MockTaskAttachment[] = form.attachments.map((file) => {
+      let blobUrl: string | undefined;
+      try {
+        blobUrl = URL.createObjectURL(file);
+      } catch {
+        // SSR / sandboxed iframe — skip
+      }
+      return {
+        name: file.name,
+        size: file.size,
+        type: file.type || "application/octet-stream",
+        blobUrl,
+        source: form.source === "other" ? form.sourceOther || undefined : undefined,
+      };
+    });
+    const wbsLeaf = mockWbsNodes.find((n) => n.level === "task")?.id
+      ?? mockWbsNodes[0]?.id
+      ?? "root";
+    mockTasks.push({
+      id: `task-${Date.now()}`,
+      wbsNodeId: wbsLeaf,
+      parentTaskId: null,
+      title: form.title.trim(),
+      description: form.description.trim() || undefined,
+      status: "not_started",
+      priority: (form.priority as any) || "medium",
+      assigneeId: form.teamMembers[0] || null,
+      plannedStart: form.plannedStart,
+      plannedEnd: form.plannedEnd,
+      actualStart: null,
+      actualEnd: null,
+      estimateHours: 4,
+      actualHours: 0,
+      progressPercent: 0,
+      tags: taskType?.nameHe ? [taskType.nameHe] : [],
+      dependencies: [],
+      attachments: attachments.length > 0 ? attachments : undefined,
+    });
+
     toast.success(
       txt(locale, { he: `המשימה "${form.title}" נוצרה בהצלחה!`, en: `Task "${form.title}" created!` }),
       {
-        description: txt(locale, {
-          he: `סוג: ${taskType?.nameHe || ""} · צוות: ${form.teamMembers.length} חברים · מקור: ${TASK_SOURCES.find((s) => s.value === form.source)?.labelHe || form.sourceOther}`,
-          en: `Type: ${taskType?.nameEn || ""} · Team: ${form.teamMembers.length} members`,
-        }),
+        description: attachments.length > 0
+          ? (txt(locale, {
+              he: `סוג: ${taskType?.nameHe || ""} · ${attachments.length} קבצים מצורפים: ${attachments.map((a) => a.name).join(", ")}`,
+              en: `Type: ${taskType?.nameEn || ""} · ${attachments.length} files attached: ${attachments.map((a) => a.name).join(", ")}`,
+            }) as string)
+          : (txt(locale, {
+              he: `סוג: ${taskType?.nameHe || ""} · צוות: ${form.teamMembers.length} חברים`,
+              en: `Type: ${taskType?.nameEn || ""} · Team: ${form.teamMembers.length} members`,
+            }) as string),
       }
     );
     setOpen(false);
@@ -283,6 +330,7 @@ export function AddTaskDialog({
       description: "",
       teamMembers: [],
       sourceOther: "",
+      attachments: [],
     });
     setErrors({});
   };

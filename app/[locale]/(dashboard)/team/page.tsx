@@ -54,7 +54,18 @@ export default async function TeamPage({
                       <h3 className="font-semibold truncate">{user.name}</h3>
                       {user.role === "admin" && <Crown className="size-3.5 text-amber-500" />}
                     </div>
-                    {/* Email hidden for privacy */}
+                    {user.title && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{user.title}</p>
+                    )}
+                    {user.phone && (
+                      <a
+                        href={`tel:${user.phone.replace(/[^\d+]/g, "")}`}
+                        className="text-xs text-primary mt-1 inline-block hover:underline"
+                        dir="ltr"
+                      >
+                        {user.phone}
+                      </a>
+                    )}
                     <Badge variant="outline" className="mt-2">
                       {ROLE_LABELS[user.role][locale]}
                     </Badge>
