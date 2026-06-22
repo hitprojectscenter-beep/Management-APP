@@ -59,7 +59,7 @@ interface IntakeResponse {
   meta: IntakeMeta;
 }
 
-type Mode = "file" | "text" | "audio";
+type Mode = "file" | "text" | "audio" | "url";
 
 function fmtBytes(n: number | undefined): string {
   if (!n) return "—";
@@ -122,8 +122,8 @@ async function readIntakeResponse(
     return {
       ok: false,
       message: txt(locale, {
-        he: "הקובץ גדול מדי עבור השרת. בפריסת Vercel, פונקציה ללא-שרת מקבלת גוף בקשה מוגבל. נסה קובץ קטן יותר, או הפעל פריסת Fluid Compute / העלאה ישירה ל-Vercel Blob.",
-        en: "File is too large for the server. On Vercel, serverless functions cap the request body size. Try a smaller file, or switch to Fluid Compute / direct upload to Vercel Blob.",
+        he: "הקובץ גדול מהתקרה של Vercel (~4.5MB). הדרך הקלה: העלה את הקובץ ל-Google Drive / Dropbox, שתף עם 'כל מי שיש לו את הקישור', ובחר במצב 'קישור' והדבק. השרת מושך את הקובץ ישירות, ללא תקרת העלאה.",
+        en: "File exceeds Vercel's ~4.5MB cap. Easiest fix: upload to Google Drive or Dropbox, set 'Anyone with the link', then use the 'Link' mode and paste the URL. The server fetches it directly — no upload limit.",
       }) as string,
     };
   }
@@ -148,6 +148,7 @@ export function IntakeWorkflow() {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<Mode>("file");
   const [textInput, setTextInput] = useState("");
+  const [urlInput, setUrlInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<IntakeResponse | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -272,6 +273,50 @@ export function IntakeWorkflow() {
         txt(locale, {
           he: `זוהו ${parsed.data.count} משימות`,
           en: `Found ${parsed.data.count} tasks`,
+        })
+      );
+    } catch (err) {
+      toast.error(
+        (txt(locale, { he: "כשל בעיבוד", en: "Processing failed" }) as string) +
+          ": " + (err instanceof Error ? err.message : "unknown")
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Public URL path — user pastes a Google Drive / Dropbox / SharePoint
+   * link, the server fetches the file directly. This bypasses Vercel's
+   * 4.5MB serverless body cap entirely, with ZERO config required.
+   */
+  const handleUrl = async () => {
+    const trimmed = urlInput.trim();
+    if (!trimmed) {
+      toast.error(txt(locale, { he: "הדבק קישור תחילה", en: "Paste a URL first" }));
+      return;
+    }
+    if (!/^https?:\/\//i.test(trimmed)) {
+      toast.error(txt(locale, { he: "הקישור חייב להתחיל ב-http:// או https://", en: "URL must start with http:// or https://" }));
+      return;
+    }
+    setLoading(true);
+    setResult(null);
+    setSourceFile(null);
+    try {
+      const res = await fetch("/api/intake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceUrl: trimmed, locale }),
+      });
+      const parsed = await readIntakeResponse(res, locale);
+      if (!parsed.ok) throw new Error(parsed.message);
+      setResult(parsed.data);
+      setSelected(new Set(parsed.data.tasks.map((_, i) => i)));
+      toast.success(
+        txt(locale, {
+          he: `זוהו ${parsed.data.count} משימות מהקישור`,
+          en: `Found ${parsed.data.count} tasks from the URL`,
         })
       );
     } catch (err) {
@@ -433,7 +478,7 @@ export function IntakeWorkflow() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <button
                 type="button"
                 onClick={() => setMode("file")}
@@ -485,7 +530,28 @@ export function IntakeWorkflow() {
                   {txt(locale, { he: "הקלטת שמע", en: "Audio recording" })}
                 </span>
                 <span className="text-[11px] text-muted-foreground text-center">
-                  {txt(locale, { he: "הקלטות Zoom / Google Meet — MP3/WAV/M4A/MP4/WebM/OGG/FLAC · עד 300MB", en: "Zoom / Google Meet recordings — MP3/WAV/M4A/MP4/WebM/OGG/FLAC · up to 300 MB" })}
+                  {txt(locale, { he: "Zoom / Meet — MP3/WAV/M4A/MP4 · עד 300MB", en: "Zoom / Meet — MP3/WAV/M4A/MP4 · up to 300 MB" })}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("url")}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all min-h-[120px]",
+                  mode === "url"
+                    ? "border-violet-500 bg-violet-50/60 dark:bg-violet-950/30"
+                    : "border-border hover:border-violet-300"
+                )}
+              >
+                <FileIcon className="size-8 text-amber-600" />
+                <span className="font-semibold text-sm">
+                  {txt(locale, { he: "קישור (Drive / Dropbox)", en: "Link (Drive / Dropbox)" })}
+                </span>
+                <span className="text-[11px] text-muted-foreground text-center">
+                  {txt(locale, {
+                    he: "הדבק קישור ציבורי. השרת מושך את הקובץ — לא חסום ע\"י תקרת ההעלאה.",
+                    en: "Paste a public link. Server fetches it — no upload-size cap.",
+                  })}
                 </span>
               </button>
             </div>
@@ -559,6 +625,53 @@ export function IntakeWorkflow() {
                   />
                   <Button onClick={() => audioInputRef.current?.click()} disabled={loading}>
                     {loading ? (<><Loader2 className="size-4 animate-spin" />{txt(locale, { he: "מתמלל ומחלץ...", en: "Transcribing..." })}</>) : (<><Mic className="size-4" />{txt(locale, { he: "בחר קובץ שמע", en: "Choose audio file" })}</>)}
+                  </Button>
+                </div>
+              )}
+
+              {mode === "url" && (
+                <div className="space-y-3 p-5 border-2 border-dashed rounded-xl bg-amber-50/40 dark:bg-amber-950/10">
+                  <p className="text-sm text-foreground">
+                    {txt(locale, {
+                      he: "📎 הדבק קישור ציבורי לקובץ — השרת ימשוך אותו ישירות. עוקף את תקרת ההעלאה של Vercel.",
+                      en: "📎 Paste a public link to a file — the server downloads it directly. Bypasses Vercel's upload cap.",
+                    })}
+                  </p>
+                  <Input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    placeholder="https://drive.google.com/file/d/... · https://www.dropbox.com/scl/..."
+                    dir="ltr"
+                    className="min-h-[44px]"
+                    style={{ fontSize: "16px" }}
+                    disabled={loading}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !loading && urlInput.trim()) void handleUrl();
+                    }}
+                  />
+                  <div className="text-[11px] text-muted-foreground space-y-1">
+                    <p>
+                      <strong>{txt(locale, { he: "Google Drive:", en: "Google Drive:" })}</strong>{" "}
+                      {txt(locale, {
+                        he: "שתף → 'כל מי שיש לו את הקישור'. הדבק את הקישור.",
+                        en: 'Share → "Anyone with the link". Paste the link.',
+                      })}
+                    </p>
+                    <p>
+                      <strong>{txt(locale, { he: "Dropbox:", en: "Dropbox:" })}</strong>{" "}
+                      {txt(locale, {
+                        he: "Share → Create link → הדבק. השרת ימיר ל-dl=1 אוטומטית.",
+                        en: "Share → Create link → paste. Server auto-flips dl=1.",
+                      })}
+                    </p>
+                  </div>
+                  <Button onClick={handleUrl} disabled={loading || !urlInput.trim()} className="min-h-[44px]">
+                    {loading ? (
+                      <><Loader2 className="size-4 animate-spin" />{txt(locale, { he: "מוריד ומעבד...", en: "Downloading & processing..." })}</>
+                    ) : (
+                      <><Sparkles className="size-4" />{txt(locale, { he: "חלץ משימות מהקישור", en: "Extract tasks from URL" })}</>
+                    )}
                   </Button>
                 </div>
               )}

@@ -30,6 +30,55 @@ interface BodyBlobRef {
 }
 
 /**
+ * JSON variant: user pasted a public URL pointing at a Drive/Dropbox/
+ * SharePoint/Anything file. The server fetches it directly — which is
+ * NOT bounded by the serverless function's inbound body cap — and runs
+ * the normal ingest() pipeline on the downloaded buffer.
+ *
+ * Works for any public link without ANY Vercel setup.
+ */
+interface BodyUrlRef {
+  sourceUrl: string;
+  locale?: string;
+}
+
+/**
+ * Rewrite well-known cloud-storage "view" URLs to direct-download URLs.
+ *   • Google Drive    `…/file/d/<ID>/view…`  →  `https://drive.google.com/uc?export=download&id=<ID>`
+ *   • Dropbox         `…?dl=0`              →  `…?dl=1`
+ * Anything else is returned unchanged.
+ */
+function normalizeSourceUrl(raw: string): string {
+  const u = raw.trim();
+  // Google Drive — "file/d/<id>" form
+  const driveMatch = u.match(/^https?:\/\/(?:drive|docs)\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]+)/);
+  if (driveMatch) {
+    return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+  }
+  // Dropbox — flip dl=0 to dl=1 so we get the binary, not the HTML viewer
+  if (/^https?:\/\/(?:www\.)?dropbox\.com\//i.test(u)) {
+    if (u.includes("dl=0")) return u.replace(/dl=0/g, "dl=1");
+    if (!u.includes("dl=")) return u + (u.includes("?") ? "&" : "?") + "dl=1";
+  }
+  return u;
+}
+
+/** Best-effort filename guess from a URL — last path segment, no query string. */
+function guessFilenameFromUrl(url: string, contentDisposition?: string | null): string {
+  if (contentDisposition) {
+    const m = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+    if (m) return decodeURIComponent(m[1] || m[2] || "");
+  }
+  try {
+    const parsed = new URL(url);
+    const last = parsed.pathname.split("/").filter(Boolean).pop() || "download";
+    return decodeURIComponent(last);
+  } catch {
+    return "download";
+  }
+}
+
+/**
  * POST /api/intake
  *
  * Accepts either:
@@ -77,10 +126,53 @@ export async function POST(req: Request) {
       sourceText = result.text;
       meta = result.meta;
     } else {
-      const body = (await req.json().catch(() => ({}))) as BodyTextOnly & BodyBlobRef;
+      const body = (await req.json().catch(() => ({}))) as BodyTextOnly & BodyBlobRef & BodyUrlRef;
       if (body.locale) locale = body.locale;
 
-      if (body.blobUrl) {
+      if (body.sourceUrl) {
+        // Public-URL path: server fetches the file directly. Outbound
+        // fetches from a serverless function are NOT bounded by Vercel's
+        // ~4.5MB inbound body cap — this is the no-config workaround for
+        // when Vercel Blob isn't enabled on the project.
+        const url = normalizeSourceUrl(body.sourceUrl);
+        let fetchRes: Response;
+        try {
+          fetchRes = await fetch(url, {
+            // Follow Drive's confirmation redirect
+            redirect: "follow",
+            headers: { "User-Agent": "PMOPlus-Intake/1.0" },
+          });
+        } catch (err) {
+          return NextResponse.json(
+            { error: `Failed to fetch URL: ${err instanceof Error ? err.message : "unknown"}` },
+            { status: 502 }
+          );
+        }
+        if (!fetchRes.ok) {
+          return NextResponse.json(
+            { error: `Source URL returned ${fetchRes.status} — make sure the link is public ("Anyone with the link can view")` },
+            { status: 502 }
+          );
+        }
+        const buf = Buffer.from(await fetchRes.arrayBuffer());
+        if (buf.length === 0) {
+          return NextResponse.json({ error: "Fetched file is empty" }, { status: 400 });
+        }
+        if (buf.length > MAX_UPLOAD_BYTES) {
+          return NextResponse.json({ error: "Fetched file too large (max 300 MB)" }, { status: 413 });
+        }
+        const mime =
+          fetchRes.headers.get("content-type")?.split(";")[0].trim() ||
+          "application/octet-stream";
+        const filename = guessFilenameFromUrl(
+          url,
+          fetchRes.headers.get("content-disposition")
+        );
+        const result = await ingest(buf, mime, filename);
+        kind = result.kind;
+        sourceText = result.text;
+        meta = result.meta;
+      } else if (body.blobUrl) {
         // Fetch the file from Vercel Blob storage and feed it to the same
         // ingest() pipeline as a direct upload.
         let blobRes: Response;
