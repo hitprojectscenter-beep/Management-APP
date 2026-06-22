@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 import { mockUsers, type MockUser } from "@/lib/db/mock-data";
+
+/**
+ * Nodemailer needs a Node runtime; the default Edge runtime can't
+ * open TCP sockets to Gmail's SMTP servers. Pinning here keeps this
+ * route on the Node lambda even if global config changes.
+ */
+export const runtime = "nodejs";
 
 /**
  * POST /api/team/invite
@@ -52,9 +60,45 @@ function buildInviteMessage(name: string, locale: string): { subject: string; bo
 }
 
 /**
- * Try to send via Resend. Returns null if no key is configured (the
- * normal mock-data path), the parsed result on success, or throws on
- * a real Resend error so the caller can surface it.
+ * Try to send via Gmail SMTP using Nodemailer + an App Password.
+ *
+ * Why Gmail SMTP and not Gmail API: SMTP needs only an App Password
+ * (no OAuth, no Google Cloud Console project, no consent screen).
+ * The operator turns on 2FA, creates a 16-char password at
+ * myaccount.google.com/apppasswords, and pastes it into Vercel as
+ * GMAIL_APP_PASSWORD. That's it — no domain verification required
+ * (the trade-off being that every invite shows the operator's own
+ * Gmail as the sender).
+ *
+ * Returns null when no credentials are configured (so callers can
+ * fall through to the next transport), the messageId on success,
+ * or throws on real SMTP errors so the caller can surface them.
+ */
+async function sendViaGmail(toEmail: string, subject: string, body: string): Promise<{ id: string } | null> {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: { user, pass },
+  });
+
+  const info = await transporter.sendMail({
+    from: `"PMO++ — מפ\"י" <${user}>`,
+    to: toEmail,
+    subject,
+    text: body,
+  });
+  return { id: info.messageId };
+}
+
+/**
+ * Fallback transport: Resend. Returns null if no key is configured,
+ * the parsed result on success, or throws on a real Resend error.
+ * Kept for operators who later migrate to a verified domain.
  */
 async function sendViaResend(toEmail: string, fromAddress: string, subject: string, body: string): Promise<{ id: string } | null> {
   const key = process.env.RESEND_API_KEY;
@@ -142,17 +186,32 @@ export async function POST(req: Request) {
   let emailDeliveryStatus: "sent" | "no_transport" | "failed" = "no_transport";
   let emailError: string | undefined;
   let providerMessageId: string | undefined;
+  let provider: "gmail" | "resend" | undefined;
 
+  // Try Gmail SMTP first (the operator's chosen primary transport —
+  // no domain verification needed). Fall back to Resend only if Gmail
+  // isn't configured. If both throw, we keep the last error and let
+  // the client surface the mailto fallback so the message still
+  // reaches the recipient.
   try {
-    const result = await sendViaResend(
-      email,
-      process.env.RESEND_FROM_ADDRESS || "PMO++ <onboarding@resend.dev>",
-      subject,
-      msgBody,
-    );
-    if (result) {
+    const gmailResult = await sendViaGmail(email, subject, msgBody);
+    if (gmailResult) {
       emailDeliveryStatus = "sent";
-      providerMessageId = result.id;
+      providerMessageId = gmailResult.id;
+      provider = "gmail";
+    } else {
+      // Gmail not configured → try Resend.
+      const resendResult = await sendViaResend(
+        email,
+        process.env.RESEND_FROM_ADDRESS || "PMO++ <onboarding@resend.dev>",
+        subject,
+        msgBody,
+      );
+      if (resendResult) {
+        emailDeliveryStatus = "sent";
+        providerMessageId = resendResult.id;
+        provider = "resend";
+      }
     }
   } catch (err) {
     emailDeliveryStatus = "failed";
@@ -179,6 +238,7 @@ export async function POST(req: Request) {
     user: newUser,
     emailDeliveryStatus,
     emailError,
+    provider,
     providerMessageId,
     mailto,
     whatsapp,
