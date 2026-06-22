@@ -43,11 +43,14 @@ export async function POST(req: Request) {
     // Ensure locale is always a valid value — default to "he"
     const locale = rawLocale && ["he", "en", "ru", "fr", "es"].includes(rawLocale) ? rawLocale : "he";
 
-    console.log(`[assistant] locale=${locale} (raw=${rawLocale}) text="${text.slice(0, 50)}"`);
-
-    if (!text || !text.trim()) {
-      return NextResponse.json({ error: "Empty input" }, { status: 400 });
+    // Validate BEFORE logging — otherwise a missing `text` field gives a
+    // confusing 500 ("Cannot read .slice of undefined") instead of the
+    // intended 400 "Empty input".
+    if (!text || typeof text !== "string" || !text.trim()) {
+      return NextResponse.json({ error: "Empty input — expected { text: string }" }, { status: 400 });
     }
+
+    console.log(`[assistant] locale=${locale} (raw=${rawLocale}) text="${text.slice(0, 50)}"`);
 
     const projects = getProjects();
     const currentUser = getUserById(CURRENT_USER_ID);

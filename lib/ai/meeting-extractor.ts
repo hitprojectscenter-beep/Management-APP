@@ -49,10 +49,72 @@ export interface ExtractionResult {
 }
 
 /** Strip filler so the title fits in a task chip. */
-function trimTitle(s: string, max = 120): string {
+/**
+ * Conversational fillers that show up at the start of audio transcripts.
+ * Stripped from a candidate title before we measure word count, so an
+ * opening like "אהלן אביה ערב טוב מה שלומך התבקשתי להחליט" gets reduced
+ * to the actionable verb-noun phrase.
+ */
+const HE_FILLERS = [
+  "אהלן", "שלום", "ערב טוב", "בוקר טוב", "צהריים טובים", "לילה טוב",
+  "מה שלומך", "מה נשמע", "מה קורה", "אוקיי", "אוקי", "אה", "אהמ",
+  "תראי", "תראה", "כן", "לא", "תקשיב", "תקשיבי", "אז", "אז ככה",
+  "קודם כל", "בעצם", "כאילו", "נו", "טוב",
+];
+const EN_FILLERS = [
+  "hello", "hi", "hey", "good morning", "good evening", "good afternoon",
+  "ok", "okay", "uh", "um", "ah", "well", "so", "like", "you know",
+  "right", "alright", "listen",
+];
+
+/** Strip leading conversational fillers from a candidate title. */
+function stripFillers(s: string): string {
+  let out = s.replace(/^[\s,.\-—–:!?…]+/, "").trim();
+  const all = [...HE_FILLERS, ...EN_FILLERS].sort((a, b) => b.length - a.length);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const f of all) {
+      // Match the filler at the start, optionally followed by comma/period/space
+      const re = new RegExp(`^${f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b[\\s,.\\-—–:!?…]*`, "i");
+      if (re.test(out)) {
+        out = out.replace(re, "").trim();
+        changed = true;
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Squeeze a candidate title into a short, meaningful headline (≤ 8 words,
+ * ≤ 60 chars). Specifically designed for audio-transcript inputs where
+ * the "title" arriving from a weak extractor is the whole opening
+ * monologue — we strip fillers, take the first sentence, and cap word
+ * count so the UI shows a real headline instead of "אהלן אביה ערב טוב…".
+ */
+function trimTitle(s: string, maxWords = 5, maxChars = 50): string {
   const trimmed = s.replace(/\s+/g, " ").trim();
-  if (trimmed.length <= max) return trimmed;
-  return trimmed.slice(0, max - 1) + "…";
+  if (!trimmed) return "";
+
+  // First, take just the first sentence (any of . ? ! ;)
+  const firstSentence = trimmed.split(/[.!?;]\s+/)[0];
+
+  // Drop conversational openers if present
+  const cleaned = stripFillers(firstSentence) || firstSentence;
+
+  // Cap on words
+  const words = cleaned.split(/\s+/).filter(Boolean);
+  let out = words.slice(0, maxWords).join(" ");
+
+  // Cap on chars as a hard ceiling for very long single words
+  if (out.length > maxChars) {
+    out = out.slice(0, maxChars - 1).trim() + "…";
+  } else if (words.length > maxWords) {
+    out = out + "…";
+  }
+  return out;
 }
 
 /** Resolve relative dates ("עד יום חמישי", "by Thursday") to ISO. Conservative — returns undefined when unsure. */
@@ -254,7 +316,7 @@ function buildGeminiExtractionPrompt(text: string, isFirstChunk: boolean): strin
   ${isFirstChunk ? `"documentTitle": "כותרת המסמך/הפגישה אם הופיעה (לדוגמה: \\"סיכום פגישה — Salesforce, 27.06.2026\\")"` : `"documentTitle": ""`},
   "tasks": [
     {
-      "title": "כותרת קצרה (3-12 מילים) שתופסת את מהות המשימה",
+      "title": "כותרת מסכמת של עד 5-6 מילים שמתארת את הפעולה - לא ציטוט של המקור. דוגמאות טובות: 'הכנת דוח רבעוני', 'תיאום פגישה עם הספק', 'בדיקת אינטגרציית Salesforce'. אסור: ציטוט של פתיחה שיחתית ('אהלן, ערב טוב, התבקשתי...')",
       "description": "הפסקה המקורית ממקור המסמך שמדברת על המשימה — להעתיק את הטקסט המקורי כפי שהוא, בלי לסכם ובלי לקצר. אם המשימה משתרעת על כמה משפטים — להעתיק את כולם",
       "assigneeHint": "שם האחראי או התפקיד כפי שהוא כתוב במסמך — בלי לפרש (אם לא צוין מי האחראי, השאר \\"\\")",
       "dueDate": "YYYY-MM-DD אם הוזכר תאריך יעד מפורש; אם הוזכר תאריך יחסי (\\"עד יום חמישי\\", \\"בעוד שבועיים\\") — תרגם אותו ל-ISO לפי היום ${today}; אם לא הוזכר — השאר \\"\\"",

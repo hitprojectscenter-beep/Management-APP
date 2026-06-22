@@ -18,6 +18,23 @@ export function formatDate(date: string | Date, locale: string = "he"): string {
   }).format(d);
 }
 
+/**
+ * Israeli short date — always dd/mm/yyyy regardless of locale.
+ * Use this for any place we render an ISO date that the user reads
+ * as a calendar value (badges, list cells, status lines). The OS-driven
+ * Intl format for he-IL produces "27 ביוני 2026" which the team wanted
+ * replaced with the universal numeric form.
+ */
+export function formatDateDDMMYYYY(date: string | Date | null | undefined): string {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return typeof date === "string" ? date : "";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 export function formatDateTime(date: string | Date, locale: string = "he"): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat(INTL_LOCALES[locale] || "en-US", {

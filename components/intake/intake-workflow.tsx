@@ -24,7 +24,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { txt } from "@/lib/utils/locale-text";
-import { cn } from "@/lib/utils";
+import { cn, formatDateDDMMYYYY } from "@/lib/utils";
 import { mockUsers, mockWbsNodes, mockTasks, type MockTaskAttachment } from "@/lib/db/mock-data";
 import { pickResponsible } from "@/lib/ai/role-hierarchy";
 import { AddTaskDialog, type AddTaskInitialValues } from "@/components/landing/add-task-dialog";
@@ -608,9 +608,12 @@ export function IntakeWorkflow() {
         size: sourceFile.size,
         type: sourceFile.type || "application/octet-stream",
         blobUrl,
-        source: result.documentTitle && result.documentDate
-          ? `${result.documentTitle} · ${result.documentDate}`
-          : result.documentTitle || result.meta.filename,
+        // Source = filename · dd/mm/yyyy. We deliberately don't use
+        // documentTitle here because for audio transcripts it's the
+        // first sentence of speech, not a meaningful provenance string.
+        source: result.documentDate
+          ? `${sourceFile.name} · ${formatDateDDMMYYYY(result.documentDate)}`
+          : sourceFile.name,
       };
     } else if (result.kind === "text" && result.documentTitle) {
       // For pasted-text intake there's no file, but we still record the
@@ -620,7 +623,7 @@ export function IntakeWorkflow() {
         size: result.sourceText.length,
         type: "text/plain",
         source: result.documentDate
-          ? `${result.documentTitle} · ${result.documentDate}`
+          ? `${result.documentTitle} · ${formatDateDDMMYYYY(result.documentDate)}`
           : result.documentTitle,
       };
     }
@@ -1154,21 +1157,30 @@ function ExtractedTasksTable({
   // "to-create" list right after the dialog actually creates the task.
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  // Build the "source" label: document title (or filename) + document date.
-  // This is what the task's "מקור" field will be pre-filled with so the
-  // origin of each task is always traceable.
-  const docTitleForLabel = result.documentTitle || result.meta.filename || "";
+  // Build the "source" label as "filename · dd/mm/yyyy". The label has
+  // to be SHORT — it lands inside a single-line input. Rules:
+  //   • filename always wins (the user picked the file name; meaningful)
+  //   • for pasted text there's no filename → use a generic localized
+  //     label "טקסט חופשי" rather than the document's first sentence
+  //     (which for audio transcripts is the conversational opening and
+  //     is useless as a provenance string).
+  //   • cap whatever we ended up with at ~80 chars defensively.
   const docDateForLabel = result.documentDate || "";
-  const sourceLabel = docTitleForLabel && docDateForLabel
-    ? `${docTitleForLabel} · ${docDateForLabel}`
-    : docTitleForLabel || docDateForLabel || undefined;
+  const genericTextLabel = txt(locale, { he: "טקסט חופשי", en: "Pasted text" }) as string;
+  const rawFilename = result.meta.filename || (result.kind === "text" ? genericTextLabel : (result.documentTitle || ""));
+  const trimmedFilename = rawFilename && rawFilename.length > 80
+    ? rawFilename.slice(0, 77) + "…"
+    : rawFilename;
+  const sourceLabel = trimmedFilename && docDateForLabel
+    ? `${trimmedFilename} · ${formatDateDDMMYYYY(docDateForLabel)}`
+    : trimmedFilename || formatDateDDMMYYYY(docDateForLabel) || undefined;
 
-  // Pick sensible defaults so the user can review-and-submit each task in
-  // one click instead of having to fill 4+ required fields manually. We
-  // mirror what the bulk "Create N tasks" button uses so per-task and
-  // bulk behavior stay consistent.
-  const defaultProject = mockWbsNodes.find((n) => n.level === "project") ?? mockWbsNodes.find((n) => n.level === "task");
-  const defaultParentType: "project" | "program" = defaultProject?.level === "program" ? "program" : "project";
+  // Pre-fill sensible defaults so "Edit & submit" doesn't force the user
+  // to fill 4+ required fields per task. EXCEPT for the project picker —
+  // user explicitly asked that the project ("שיוך") select always start at
+  // "בחר", because tasks from different sources legitimately belong to
+  // different projects and we shouldn't silently land them on whichever
+  // project happens to be first in the catalog.
   const today = new Date().toISOString().slice(0, 10);
   const defaultEnd = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
 
@@ -1188,11 +1200,9 @@ function ExtractedTasksTable({
       estimateHours: task.estimateHours,
       sourceLabel,
       sourceFile: sourceFile || undefined,
-      // Intake-only pre-fills so "Edit & submit" doesn't force the user to
-      // pick a project, priority and methodology for every single task.
+      // Intake-only pre-fills. NOT pre-filling defaultParentId so the
+      // "שיוך" dropdown starts at "-- בחר --" (user choice required).
       defaultPriority: "medium",
-      defaultParentType,
-      defaultParentId: defaultProject?.id,
       defaultMethodology: "waterfall",
     });
     setEditingIndex(index);
@@ -1277,7 +1287,7 @@ function ExtractedTasksTable({
                       )}
                       {task.dueDate && (
                         <Badge variant="outline" className="text-[10px] text-emerald-700 border-emerald-300">
-                          📅 {task.dueDate}
+                          📅 {formatDateDDMMYYYY(task.dueDate)}
                         </Badge>
                       )}
                       {task.assigneeHint && (
