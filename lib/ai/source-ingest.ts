@@ -318,6 +318,74 @@ export async function ingestAudioByUri(
   throw lastErr ?? new Error("All Gemini models failed transcription");
 }
 
+/**
+ * Upload a buffer to Gemini's Files API using the resumable upload
+ * protocol. Returns the file URI you can then reference in a
+ * generateContent call via `file_data: { file_uri, mime_type }`.
+ *
+ * Why this exists: ingestAudio's inline_data path serializes the file
+ * as base64 inside a JSON body. For a 200 MB recording that means a
+ * ~270 MB JSON request, which kills Vercel's memory and Gemini's
+ * inline-payload cap (~20 MB). Files API has a 2 GB per-file limit and
+ * uses raw binary upload, so it scales properly to real meeting
+ * recordings.
+ */
+export async function uploadBufferToGeminiFiles(
+  buf: Buffer,
+  mime: string,
+  filename: string,
+  apiKey: string
+): Promise<string> {
+  // 1. Start resumable upload session — Google replies with X-Goog-Upload-URL.
+  const startRes = await fetch(
+    `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: {
+        "X-Goog-Upload-Protocol": "resumable",
+        "X-Goog-Upload-Command": "start",
+        "X-Goog-Upload-Header-Content-Length": String(buf.length),
+        "X-Goog-Upload-Header-Content-Type": mime,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ file: { display_name: filename || "upload" } }),
+    }
+  );
+  if (!startRes.ok) {
+    const errText = await startRes.text().catch(() => "");
+    throw new Error(`Gemini Files API start ${startRes.status}: ${errText.slice(0, 200)}`);
+  }
+  const uploadUrl = startRes.headers.get("x-goog-upload-url") || startRes.headers.get("X-Goog-Upload-URL");
+  if (!uploadUrl) throw new Error("Gemini Files API didn't return X-Goog-Upload-URL");
+
+  // 2. PUT the raw bytes in a single request. Resumable mode requires
+  //    non-final chunks to be multiples of 8 MB, but the FINAL chunk
+  //    can be any size — we send the whole file as one final chunk.
+  // Node's undici fetch accepts Buffer as a body at runtime, but TS's
+  // strict ArrayBufferLike vs ArrayBuffer narrowing rejects it. Wrap in
+  // a Blob over a fresh ArrayBuffer copy — TS-clean and works identically
+  // on the wire (Blob ctor accepts the slice, then fetch reads it back).
+  const ab = new ArrayBuffer(buf.byteLength);
+  new Uint8Array(ab).set(buf);
+  const putRes = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Length": String(buf.length),
+      "X-Goog-Upload-Offset": "0",
+      "X-Goog-Upload-Command": "upload, finalize",
+    },
+    body: new Blob([ab], { type: mime || "application/octet-stream" }),
+  });
+  if (!putRes.ok) {
+    const errText = await putRes.text().catch(() => "");
+    throw new Error(`Gemini Files API upload ${putRes.status}: ${errText.slice(0, 200)}`);
+  }
+  const data = await putRes.json().catch(() => ({}));
+  const fileUri = data?.file?.uri;
+  if (!fileUri) throw new Error("Gemini Files API upload didn't return file.uri");
+  return fileUri;
+}
+
 async function waitForFileActive(fileUri: string, apiKey: string, timeoutMs: number): Promise<void> {
   const metaUrl = `${fileUri}?key=${apiKey}`;
   const start = Date.now();
@@ -348,6 +416,13 @@ async function deleteGeminiFile(fileUri: string, apiKey: string): Promise<void> 
   }
 }
 
+/**
+ * Inline_data has a practical ceiling around ~20 MB (Gemini doc cap +
+ * JSON ballooning). Anything bigger goes via Files API so the
+ * payload doesn't kill the function.
+ */
+const INLINE_AUDIO_MAX_BYTES = 15 * 1024 * 1024;
+
 /** Dispatcher: pick the right ingest path by mime type. */
 export async function ingest(buf: Buffer, mime: string, filename = ""): Promise<IngestResult> {
   const kind = classifyMime(mime, filename);
@@ -365,8 +440,19 @@ export async function ingest(buf: Buffer, mime: string, filename = ""): Promise<
     case "pdf":
     case "image":
       return ingestVisual(buf, mime, filename);
-    case "audio":
-      return ingestAudio(buf, mime, filename);
+    case "audio": {
+      // Small clips can ride inline_data — one HTTP call, simplest path.
+      if (buf.length <= INLINE_AUDIO_MAX_BYTES) {
+        return ingestAudio(buf, mime, filename);
+      }
+      // Larger recordings: upload to Files API and reference by URI. This
+      // is the ONLY way a 200 MB Zoom recording can reach Gemini without
+      // blowing through Vercel's memory and Gemini's inline cap.
+      const apiKey = getApiKey();
+      if (!apiKey) throw new Error("GEMINI_API_KEY not set");
+      const fileUri = await uploadBufferToGeminiFiles(buf, mime, filename, apiKey);
+      return ingestAudioByUri(fileUri, mime, filename, buf.length);
+    }
     default:
       throw new Error(`Unsupported source type: ${mime} (${filename})`);
   }
