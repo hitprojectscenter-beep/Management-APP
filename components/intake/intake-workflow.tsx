@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { mockUsers, mockWbsNodes, mockTasks, type MockTaskAttachment } from "@/lib/db/mock-data";
 import { pickResponsible } from "@/lib/ai/role-hierarchy";
 import { AddTaskDialog, type AddTaskInitialValues } from "@/components/landing/add-task-dialog";
+import { LinkGuideDialog } from "@/components/intake/link-guide-dialog";
 
 interface ExtractedTask {
   title: string;
@@ -631,12 +632,15 @@ export function IntakeWorkflow() {
 
               {mode === "url" && (
                 <div className="space-y-3 p-5 border-2 border-dashed rounded-xl bg-amber-50/40 dark:bg-amber-950/10">
-                  <p className="text-sm text-foreground">
-                    {txt(locale, {
-                      he: "📎 הדבק קישור ציבורי לקובץ — השרת ימשוך אותו ישירות. עוקף את תקרת ההעלאה של Vercel.",
-                      en: "📎 Paste a public link to a file — the server downloads it directly. Bypasses Vercel's upload cap.",
-                    })}
-                  </p>
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <p className="text-sm text-foreground flex-1 min-w-[200px]">
+                      {txt(locale, {
+                        he: "📎 הדבק קישור ציבורי לקובץ — השרת ימשוך אותו ישירות. עוקף את תקרת ההעלאה של Vercel.",
+                        en: "📎 Paste a public link to a file — the server downloads it directly. Bypasses Vercel's upload cap.",
+                      })}
+                    </p>
+                    <LinkGuideDialog locale={locale} />
+                  </div>
                   <Input
                     type="url"
                     value={urlInput}
