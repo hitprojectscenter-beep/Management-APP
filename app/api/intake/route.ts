@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { del as deleteBlob } from "@vercel/blob";
 import { ingest } from "@/lib/ai/source-ingest";
 import { extractTasksFromText } from "@/lib/ai/meeting-extractor";
 
@@ -14,6 +15,17 @@ const MAX_UPLOAD_BYTES = 300 * 1024 * 1024; // 300 MB
 
 interface BodyTextOnly {
   text?: string;
+  locale?: string;
+}
+
+/**
+ * JSON variant used when the file is already in Vercel Blob storage
+ * (bypassing the 4.5 MB serverless function body cap).
+ */
+interface BodyBlobRef {
+  blobUrl: string;
+  blobMime?: string;
+  blobFilename?: string;
   locale?: string;
 }
 
@@ -40,6 +52,11 @@ export async function POST(req: Request) {
     let meta: Record<string, unknown> = {};
     let locale = "he";
 
+    // Hold onto the blob URL so we can delete the file after processing.
+    // Storage costs money — there's no reason to keep the artifact once
+    // we've extracted its text + tasks.
+    let blobToDelete: string | null = null;
+
     if (contentType.includes("multipart/form-data")) {
       const form = await req.formData();
       const file = form.get("file");
@@ -60,17 +77,52 @@ export async function POST(req: Request) {
       sourceText = result.text;
       meta = result.meta;
     } else {
-      const body = (await req.json().catch(() => ({}))) as BodyTextOnly;
-      sourceText = (body.text || "").trim();
+      const body = (await req.json().catch(() => ({}))) as BodyTextOnly & BodyBlobRef;
       if (body.locale) locale = body.locale;
-      if (!sourceText) {
-        return NextResponse.json({ error: "No text provided" }, { status: 400 });
+
+      if (body.blobUrl) {
+        // Fetch the file from Vercel Blob storage and feed it to the same
+        // ingest() pipeline as a direct upload.
+        let blobRes: Response;
+        try {
+          blobRes = await fetch(body.blobUrl);
+        } catch (err) {
+          return NextResponse.json(
+            { error: `Failed to fetch blob: ${err instanceof Error ? err.message : "unknown"}` },
+            { status: 502 }
+          );
+        }
+        if (!blobRes.ok) {
+          return NextResponse.json(
+            { error: `Blob fetch returned ${blobRes.status}` },
+            { status: 502 }
+          );
+        }
+        const buf = Buffer.from(await blobRes.arrayBuffer());
+        if (buf.length === 0) {
+          return NextResponse.json({ error: "Blob is empty" }, { status: 400 });
+        }
+        if (buf.length > MAX_UPLOAD_BYTES) {
+          return NextResponse.json({ error: "Blob too large (max 300 MB)" }, { status: 413 });
+        }
+        const blobMime = body.blobMime || blobRes.headers.get("content-type") || "application/octet-stream";
+        const blobFilename = body.blobFilename || body.blobUrl.split("/").pop() || "upload";
+        const result = await ingest(buf, blobMime, blobFilename);
+        kind = result.kind;
+        sourceText = result.text;
+        meta = result.meta;
+        blobToDelete = body.blobUrl;
+      } else {
+        sourceText = (body.text || "").trim();
+        if (!sourceText) {
+          return NextResponse.json({ error: "No text provided" }, { status: 400 });
+        }
+        if (sourceText.length > 200_000) {
+          return NextResponse.json({ error: "Text too long (max 200,000 chars)" }, { status: 413 });
+        }
+        kind = "text";
+        meta = { bytes: sourceText.length, mime: "text/plain" };
       }
-      if (sourceText.length > 50_000) {
-        return NextResponse.json({ error: "Text too long (max 50,000 chars)" }, { status: 413 });
-      }
-      kind = "text";
-      meta = { bytes: sourceText.length, mime: "text/plain" };
     }
 
     if (!sourceText) {
@@ -83,6 +135,16 @@ export async function POST(req: Request) {
     // Hand the extracted text to the existing task extractor — same code path
     // as the paste-text dialog, so behavior is consistent across sources.
     const result = await extractTasksFromText(sourceText, locale);
+
+    // Clean up the blob once we've extracted everything we need from it.
+    // Failure to delete shouldn't fail the request — it'll get gc'd eventually.
+    if (blobToDelete) {
+      try {
+        await deleteBlob(blobToDelete);
+      } catch (delErr) {
+        console.warn("[/api/intake] Blob cleanup failed:", delErr);
+      }
+    }
 
     return NextResponse.json({
       kind,

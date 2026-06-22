@@ -90,38 +90,115 @@ function resolveDueDate(text: string, fromDate = new Date()): string | undefined
   return undefined;
 }
 
-/** Heuristic: split text into action sentences and pull out structure per line. */
+/**
+ * Heuristic: split text into action sentences and pull out structure per line.
+ *
+ * Wider net than the previous version — catches:
+ *  • Infinitive forms ("לכתוב", "להכין", "להעביר", "to prepare")
+ *  • Future tense including 2nd/3rd-person plural ("יכינו", "תכתבו", "ננסה")
+ *  • Imperatives ("הכן", "כתוב", "תאם")
+ *  • Deliverable nouns introducing an implicit task ("דוח שבועי", "מצגת",
+ *    "מסמך אפיון", "פגישה עם...") — these almost always imply someone
+ *    needs to produce them.
+ *  • Decision markers ("הוחלט ש…", "סוכם ש…", "נקבע ש…") — what's after
+ *    them is virtually always a task.
+ *  • Hebrew responsible-followed-by-task pattern ("X ידאג ל…", "Y תכין את…").
+ */
 export function extractTasksHeuristic(text: string): ExtractedTask[] {
   if (!text) return [];
-  // Split into action lines: bullets, numbered list, or sentences with action verbs
-  const lines = text
-    .split(/\n+|(?<=[.!?])\s+/)
-    .map((l) => l.trim().replace(/^[\d.\-•·*●▪◦►]+\s*/, ""))
-    .filter(Boolean);
+  // Prefer PARAGRAPH boundaries (\n\n+) over sentence boundaries — a single
+  // task is typically discussed across several sentences in the same
+  // paragraph ("X יכין מצגת. את המצגת יש להגיש עד..."). Treating each
+  // paragraph as one task drastically reduces fragmentation. Markdown
+  // bullets ("- ...") and numbered list items ("1. ...") also count as
+  // paragraph separators because each bullet is a distinct action item.
+  const blocks: string[] = [];
+  for (const para of text.split(/\n\s*\n+/)) {
+    // Inside a paragraph, split on markdown bullets / numbered items, but
+    // KEEP the rest of the paragraph attached so multi-sentence items
+    // stay intact.
+    const bulleted = para.split(/\n\s*(?=(?:\d+[.)]|[\-•·*●▪◦►])\s+)/);
+    for (const b of bulleted) blocks.push(b.trim());
+  }
+  const lines = blocks
+    .map((l) => l.replace(/^[#\d.)\-•·*●▪◦►]+\s*/, "").trim())
+    .filter((l) => l.length >= 4);
 
-  // Match infinitive forms (לכתוב), future tense (יכתוב/תכתוב/יכתבו), and English verbs.
-  // Hebrew future tense prefixes: י/ת/א/נ + 2-3 root letters.
+  // Hebrew verb stems — the most common task-bearing roots, written WITHOUT
+  // their prefix so we can match all conjugations (infinitive ל-, future
+  // י/ת/נ/א-, imperative as-is).
+  const HE_VERB_STEMS = [
+    "כין", "כתוב", "כתב", "סכם", "ייצר", "צור", "שלוח", "שלח", "עביר", "ציג",
+    "בצע", "פתוח", "פתח", "בדוק", "בדק", "אסוף", "תאם", "חזיר", "עדכן", "אשר",
+    "פנה", "פנות", "דאג", "טפל", "פרסם", "הזמין", "ענה", "ענו", "השלים",
+    "הקים", "הוביל", "ארגן", "תכנן", "ייעץ", "ייסד", "מנה", "קבע", "מצא",
+    "בנה", "הציג", "בדק", "אישר", "ספק", "סקור", "מסר", "החזיר", "פתר",
+    "ערך", "ניתח", "אסף", "כנס", "כינס", "התקין", "ייעל",
+  ];
+  // English verbs commonly used in meeting minutes
+  const EN_VERBS = [
+    "prepare", "write", "create", "send", "review", "submit", "follow up",
+    "coordinate", "deliver", "reply", "respond", "present", "draft", "build",
+    "design", "schedule", "approve", "investigate", "analyze", "audit",
+    "publish", "verify", "validate", "deploy", "ship", "fix", "update",
+    "communicate", "collect", "compile", "summarize", "research", "test",
+  ];
+  // Pi'el / hif'il past tense — these don't fit the simple י/ת/נ/א + stem
+  // pattern (they have an inserted 'י' between root letters: תיאם, סיכם,
+  // כינס, פירסם, etc.). Enumerated explicitly so we don't miss action lines
+  // like "אסתר תיאם פגישה" or "הצוות סיכם את הנושא".
+  const HE_PIEL_PAST = [
+    "תיאם", "תיאמה", "תיאמו", "כינס", "כינסה", "כינסו", "סיכם", "סיכמה",
+    "סיכמו", "פירסם", "פירסמה", "פירסמו", "אישר", "אישרה", "אישרו", "ביקש",
+    "ביקשה", "ביקשו", "ייצר", "ייצרה", "ייצרו", "ייעץ", "ייעצה", "ייעצו",
+    "דיווח", "דיווחה", "דיווחו", "סיים", "סיימה", "סיימו", "דיבר", "דיברה",
+    "דיברו", "ביצע", "ביצעה", "ביצעו", "בירר", "ביררה", "ביררו", "הכין",
+    "הכינה", "הכינו", "העביר", "העבירה", "העבירו", "הזמין", "הזמינה",
+    "הזמינו", "הכניס", "הכניסה", "הכניסו", "פתח", "פתחה", "פתחו", "סקר",
+    "סקרה", "סקרו", "ניתח", "ניתחה", "ניתחו",
+  ];
+
+  // Decision markers — "הוחלט ש…", "סוכם ש…" — what follows is almost
+  // always a task. These count as task-indicators on their own.
+  const HE_DECISION_MARKER = /(?:הוחלט\s+(?:ש|כי|להמשיך)|סוכם\s+ש|נקבע\s+ש|אנחנו\s+(?:צריכים|חייבים|נעשה)|need\s+to|must|should|action\s+item)/i;
+
+  // Detector for boring document-meta lines we want to SKIP entirely:
+  // a date+title header ("סיכום פגישה Salesforce 27.06.2026"), a section
+  // heading ("נושאים:"), a bare noun phrase with no verb.
+  const HEADER_ONLY = /^(?:סיכום\s+פגישה|נושאים|רקע|מבוא|סדר\s+יום|agenda|summary|introduction)\b[^.]*[:—–-]?\s*$/i;
+
+  const heStems = HE_VERB_STEMS.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  // Only real verbs (infinitive / future / imperative / past). Deliverable
+  // nouns used to be here too, but they kept catching headers like
+  // "סיכום פגישה — Salesforce" — too noisy.
   const actionRe = new RegExp(
     [
-      // Hebrew infinitive
-      "ל(?:הכין|כתוב|סכם|ייצר|שלוח|העביר|הציג|בצע|פתוח|בדוק|אסוף|תאם|החזיר|עדכן|אשר|פנות|דאוג|טפל|הכניס|פרסם|הזמין)",
-      // Hebrew future tense — common 3-letter & 4-letter roots
-      "(?:י|ת|נ|א)(?:כין|כתוב|סכם|ייצר|שלח|עביר|ציג|בצע|פתח|בדוק|אסוף|תאם|חזיר|עדכן|אשר|פנה|דאג|טפל|הכניס|פרסם|הזמין|כתבו|סכמו|ענה|ענו|לך|לכו)",
-      // English
-      "(?:prepare|write|create|send|review|submit|follow up|coordinate|deliver|reply|respond|present|draft)",
+      `ל(?:${heStems})`,              // infinitive: לכתוב
+      `(?:י|ת|נ|א)(?:${heStems})`,     // future: יכתוב / תכתבו
+      `(?:${heStems})ו?\\b`,           // imperative/past: כתוב / כתבו
+      HE_PIEL_PAST.join("|"),          // pi'el past: תיאם, סיכם, כינס...
+      EN_VERBS.join("|"),
     ].join("|"),
     "i"
   );
+
   const out: ExtractedTask[] = [];
   for (const line of lines) {
-    if (!actionRe.test(line)) continue;
-    const responsibleHint = parseResponsibleOverride(line) ?? undefined;
-    // Title: take up to the responsible-hint segment or up to ~100 chars
-    const title = trimTitle(line.replace(/(?:אחראי|אחראית|אחריות|responsible|assign(?:ed)?\s+to|owner)[^.]*/i, ""));
+    if (line.length < 8) continue;
+    if (HEADER_ONLY.test(line)) continue;
+    if (!actionRe.test(line) && !HE_DECISION_MARKER.test(line)) continue;
+    // Strip leading "הוחלט ש" / "סוכם ש" so the title reads as the action,
+    // not as the meta-decision.
+    const cleaned = line
+      .replace(/^(?:הוחלט\s+(?:ש|כי)\s+|סוכם\s+ש\s+|נקבע\s+ש\s+)/, "")
+      .trim();
+    const responsibleHint = parseResponsibleOverride(cleaned) ?? undefined;
+    // Title strips trailing "אחראי X" suffix so it's a clean task name.
+    const title = trimTitle(
+      cleaned.replace(/(?:אחראי|אחראית|אחריות|responsible|assign(?:ed)?\s+to|owner)[^.]*/i, "")
+    );
     out.push({
       title,
-      // Always keep the full source paragraph as the description so the user
-      // sees the original wording, not just the trimmed title.
       description: line,
       assigneeHint: responsibleHint,
       dueDate: resolveDueDate(line),
@@ -162,6 +239,108 @@ function detectDocumentMeta(text: string): { documentDate?: string; documentTitl
   return out;
 }
 
+/**
+ * Build the Gemini extraction prompt for ONE chunk of source text.
+ * Kept as its own function so we can call it many times for long documents
+ * (chunking) and pool the results.
+ */
+function buildGeminiExtractionPrompt(text: string, isFirstChunk: boolean): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return `אתה אנליסט פגישות בכיר. תפקידך: לקרוא טקסט חופשי — סיכום פגישה, מסמך, תעתיק שמע — ולחלץ ממנו ${isFirstChunk ? "את **כל**" : "את **כל**"} המשימות שהוזכרו, בלי לפספס. עדיף לכלול משימה ספקית מאשר להחמיץ אחת אמיתית.
+
+החזר JSON בלבד (ללא טקסט נוסף) בפורמט הזה בדיוק:
+{
+  ${isFirstChunk ? `"documentDate": "YYYY-MM-DD אם הופיע תאריך בכותרת/בראש המסמך, אחרת \\"\\""` : `"documentDate": ""`},
+  ${isFirstChunk ? `"documentTitle": "כותרת המסמך/הפגישה אם הופיעה (לדוגמה: \\"סיכום פגישה — Salesforce, 27.06.2026\\")"` : `"documentTitle": ""`},
+  "tasks": [
+    {
+      "title": "כותרת קצרה (3-12 מילים) שתופסת את מהות המשימה",
+      "description": "הפסקה המקורית ממקור המסמך שמדברת על המשימה — להעתיק את הטקסט המקורי כפי שהוא, בלי לסכם ובלי לקצר. אם המשימה משתרעת על כמה משפטים — להעתיק את כולם",
+      "assigneeHint": "שם האחראי או התפקיד כפי שהוא כתוב במסמך — בלי לפרש (אם לא צוין מי האחראי, השאר \\"\\")",
+      "dueDate": "YYYY-MM-DD אם הוזכר תאריך יעד מפורש; אם הוזכר תאריך יחסי (\\"עד יום חמישי\\", \\"בעוד שבועיים\\") — תרגם אותו ל-ISO לפי היום ${today}; אם לא הוזכר — השאר \\"\\"",
+      "workTypeLabel": "אחד מאלה: מצגת / מסמך אפיון / מכתב / דוח / סיכום פגישה / מענה ללקוח / הכנה לפגישה / פיתוח / בדיקה / תיאום / סקירה / החלטה / אחר"
+    }
+  ]
+}
+
+**מה לכלול כמשימה:**
+✓ פעולות ברורות עם פועל ("X יכין מצגת", "Y תכתוב מסמך אפיון")
+✓ החלטות שמובילות לפעולה ("הוחלט שנפנה לספק החדש", "סוכם להעביר את הנתונים")
+✓ deliverables שמישהו צריך להפיק ("צריך דוח שבועי", "נדרשת מצגת לדירקטוריון")
+✓ בקשות והתחייבויות ("נביא תשובה עד יום חמישי", "אבדוק ואחזור")
+✓ סעיפי action items בסיכומי פגישות
+
+**מה לא לכלול:**
+✗ דעות, אבחנות, רקע כללי שאינו דורש פעולה
+✗ מידע שכבר נעשה ("פגשנו את הלקוח אתמול")
+✗ חזון/אסטרטגיה ברמת על
+
+**חוקים נוקשים:**
+- description = פסקה מקורית מהמסמך, לא סיכום שלך. אם המשימה מוזכרת ב-3 משפטים — להעתיק את שלושתם.
+- אם אותה משימה מוזכרת בכמה מקומות — לאחד לרשומה אחת.
+- title חייב להיות שונה לכל משימה. אסור 2 משימות עם אותה כותרת.
+- מקסימום 50 משימות בתגובה.
+
+הטקסט לחילוץ:
+${text}`;
+}
+
+/**
+ * Split a long source text into overlapping chunks suitable for Gemini.
+ * Overlap prevents losing a task that straddles a chunk boundary.
+ */
+function chunkText(text: string, chunkSize = 12_000, overlap = 600): string[] {
+  if (text.length <= chunkSize) return [text];
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < text.length) {
+    const end = Math.min(start + chunkSize, text.length);
+    // Try to break on a paragraph or sentence boundary near `end`
+    let cut = end;
+    if (end < text.length) {
+      const tail = text.slice(end - 400, end);
+      const lastBreak = Math.max(tail.lastIndexOf("\n\n"), tail.lastIndexOf("\n"), tail.lastIndexOf(". "), tail.lastIndexOf("? "), tail.lastIndexOf("! "));
+      if (lastBreak > 0) cut = end - 400 + lastBreak;
+    }
+    chunks.push(text.slice(start, cut));
+    if (cut >= text.length) break;
+    start = Math.max(cut - overlap, start + 1);
+  }
+  return chunks;
+}
+
+/** Parse a single Gemini JSON reply into typed tasks + meta. */
+function parseGeminiReply(reply: string): {
+  tasks: ExtractedTask[];
+  documentDate?: string;
+  documentTitle?: string;
+} {
+  const objMatch = reply.match(/\{[\s\S]*\}/);
+  const arrMatch = reply.match(/\[[\s\S]*\]/);
+  const raw = objMatch
+    ? JSON.parse(objMatch[0])
+    : arrMatch
+    ? { tasks: JSON.parse(arrMatch[0]) }
+    : null;
+  if (!raw) return { tasks: [] };
+  const out: { tasks: ExtractedTask[]; documentDate?: string; documentTitle?: string } = { tasks: [] };
+  if (raw.documentDate && /^\d{4}-\d{2}-\d{2}$/.test(raw.documentDate)) out.documentDate = raw.documentDate;
+  if (raw.documentTitle && typeof raw.documentTitle === "string") out.documentTitle = String(raw.documentTitle).slice(0, 120);
+  const tasksRaw = Array.isArray(raw.tasks) ? raw.tasks : Array.isArray(raw) ? raw : [];
+  out.tasks = tasksRaw
+    .filter((t: any) => typeof t?.title === "string" && t.title.trim().length > 0)
+    .slice(0, 50)
+    .map((t: any) => ({
+      title: trimTitle(String(t.title)),
+      description: t.description ? String(t.description) : undefined,
+      assigneeHint: t.assigneeHint ? String(t.assigneeHint) : undefined,
+      dueDate: t.dueDate ? String(t.dueDate) : undefined,
+      workTypeLabel: t.workTypeLabel ? String(t.workTypeLabel) : undefined,
+      confidence: 0.85,
+    }));
+  return out;
+}
+
 /** Main entry. AI when available, heuristic fallback. */
 export async function extractTasksFromText(text: string, lang = "he"): Promise<ExtractionResult> {
   if (!text || !text.trim()) return { tasks: [] };
@@ -171,50 +350,23 @@ export async function extractTasksFromText(text: string, lang = "he"): Promise<E
 
   if (isGeminiAvailable()) {
     try {
-      const prompt = `אתה עוזר בניתוח סיכומי פגישות / מסמכים לרשימת משימות מבנית.
-החזר JSON בלבד בפורמט אובייקט עם שני שדות:
-{
-  "documentDate": "YYYY-MM-DD אם נמצא תאריך בכותרת המסמך, אחרת ריק",
-  "documentTitle": "כותרת המסמך/הפגישה אם מופיעה (לדוגמה: 'סיכום פגישה Salesforce')",
-  "tasks": [
-    {
-      "title": "כותרת משימה קצרה ברורה",
-      "description": "הפסקה השלמה ממקור המסמך שמדברת על המשימה הזו (לא לסכם — להעתיק כפי שכתוב)",
-      "assigneeHint": "השם או התפקיד שמופיע במסמך כאחראי על המשימה — בדיוק כפי שכתוב",
-      "dueDate": "YYYY-MM-DD אם נאמר תאריך יעד",
-      "workTypeLabel": "מצגת/מסמך אפיון/מכתב/דוח/סיכום פגישה/מענה ללקוח/הכנה לפגישה/אחר"
-    }
-  ]
-}
-חוקים:
-- חלץ רק משימות מפורשות (לא דעות, לא חזון).
-- description = הפסקה המלאה ממקור המסמך, לא סיכום שלך.
-- assigneeHint = הטקסט המלא של האחראי במסמך (שם + תפקיד אם יש).
-- תאריכים יחסיים ("עד יום חמישי") → תאריך ISO לפי היום ${new Date().toISOString().slice(0, 10)}.
-- מקסימום 20 משימות.
-
-הטקסט:
-${text.slice(0, 6000)}`;
-      const reply = await askGemini(prompt, "", lang);
-      // Accept both object-shape and legacy array-shape responses for backward compat
-      const objMatch = reply.match(/\{[\s\S]*\}/);
-      const arrMatch = reply.match(/\[[\s\S]*\]/);
-      const raw = objMatch ? JSON.parse(objMatch[0]) : arrMatch ? { tasks: JSON.parse(arrMatch[0]) } : null;
-      if (raw) {
-        if (raw.documentDate && /^\d{4}-\d{2}-\d{2}$/.test(raw.documentDate)) documentMeta.documentDate = raw.documentDate;
-        if (raw.documentTitle && typeof raw.documentTitle === "string") documentMeta.documentTitle = String(raw.documentTitle).slice(0, 120);
-        const tasksRaw = Array.isArray(raw.tasks) ? raw.tasks : Array.isArray(raw) ? raw : [];
-        extracted = tasksRaw
-          .filter((t: any) => typeof t?.title === "string" && t.title.trim().length > 0)
-          .slice(0, 20)
-          .map((t: any) => ({
-            title: trimTitle(String(t.title)),
-            description: t.description ? String(t.description) : undefined,
-            assigneeHint: t.assigneeHint ? String(t.assigneeHint) : undefined,
-            dueDate: t.dueDate ? String(t.dueDate) : undefined,
-            workTypeLabel: t.workTypeLabel ? String(t.workTypeLabel) : undefined,
-            confidence: 0.8,
-          }));
+      // Chunk long documents so nothing past 6000 chars gets silently dropped.
+      // Sequential, not parallel, so we don't hammer Gemini's rate limit.
+      const chunks = chunkText(text);
+      for (let i = 0; i < chunks.length; i++) {
+        const prompt = buildGeminiExtractionPrompt(chunks[i], i === 0);
+        try {
+          const reply = await askGemini(prompt, "", lang);
+          const parsedChunk = parseGeminiReply(reply);
+          if (i === 0) {
+            if (parsedChunk.documentDate) documentMeta.documentDate = parsedChunk.documentDate;
+            if (parsedChunk.documentTitle) documentMeta.documentTitle = parsedChunk.documentTitle;
+          }
+          extracted.push(...parsedChunk.tasks);
+        } catch (chunkErr) {
+          console.warn(`[meeting-extractor] Gemini chunk ${i + 1}/${chunks.length} failed:`, chunkErr);
+          // Keep going — other chunks may still succeed
+        }
       }
     } catch (err) {
       console.warn("[meeting-extractor] Gemini failed, using heuristic:", err);

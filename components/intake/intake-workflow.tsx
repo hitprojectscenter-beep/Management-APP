@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { useLocale } from "next-intl";
+import { upload as blobUpload } from "@vercel/blob/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -154,6 +155,21 @@ export function IntakeWorkflow() {
   // created from this source. Cleared whenever the user resets.
   const [sourceFile, setSourceFile] = useState<File | null>(null);
 
+  /**
+   * Upload a file via Vercel Blob direct-upload, then POST the blob URL
+   * to /api/intake for processing. Falls back to direct multipart upload
+   * if Vercel Blob isn't configured (e.g. local dev without a token,
+   * or a deployment without a Blob store attached).
+   *
+   * Why two paths:
+   *  • Vercel serverless functions cap request bodies at ~4.5 MB. A 200 MB
+   *    audio file via multipart will 413 at the platform layer before our
+   *    handler runs. Direct blob upload bypasses that cap entirely — the
+   *    client uploads straight to blob storage; our function only sees a
+   *    small JSON ref.
+   *  • In local dev there's no 4.5 MB cap and Blob may not be set up, so
+   *    we keep the multipart path as a fallback.
+   */
   const handleFile = async (file: File) => {
     if (!file) return;
     if (file.size > 300 * 1024 * 1024) {
@@ -164,11 +180,58 @@ export function IntakeWorkflow() {
     setResult(null);
     setSourceFile(file);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("locale", locale);
-      const res = await fetch("/api/intake", { method: "POST", body: fd });
-      const parsed = await readIntakeResponse(res, locale);
+      // Try the blob-direct path FIRST for any file > 3 MB. Under 3 MB we
+      // know the multipart path will work even on Vercel Hobby, so skip
+      // the extra round-trip.
+      const USE_BLOB_THRESHOLD = 3 * 1024 * 1024;
+      const tryBlob = file.size > USE_BLOB_THRESHOLD;
+
+      let parsed:
+        | { ok: true; data: IntakeResponse }
+        | { ok: false; message: string }
+        | null = null;
+
+      if (tryBlob) {
+        try {
+          // Direct-upload to Vercel Blob. The client SDK handles the
+          // signed-token round-trip with /api/intake/upload-token.
+          // Path scopes the file under "intake/<timestamp>-<name>" so each
+          // upload has a unique key.
+          const ts = Date.now();
+          const blob = await blobUpload(`intake/${ts}-${file.name}`, file, {
+            access: "public",
+            handleUploadUrl: "/api/intake/upload-token",
+            clientPayload: locale,
+          });
+          // Hand the blob URL off for processing
+          const res = await fetch("/api/intake", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              blobUrl: blob.url,
+              blobMime: file.type,
+              blobFilename: file.name,
+              locale,
+            }),
+          });
+          parsed = await readIntakeResponse(res, locale);
+        } catch (blobErr) {
+          // Likely: BLOB_NOT_CONFIGURED, or the user is offline. Fall
+          // through to multipart so we still try to process the file.
+          console.warn("[intake] blob upload failed, falling back:", blobErr);
+        }
+      }
+
+      if (!parsed) {
+        // Multipart fallback (works in local dev; on Vercel works for
+        // files under ~4.5 MB).
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("locale", locale);
+        const res = await fetch("/api/intake", { method: "POST", body: fd });
+        parsed = await readIntakeResponse(res, locale);
+      }
+
       if (!parsed.ok) throw new Error(parsed.message);
       setResult(parsed.data);
       setSelected(new Set(parsed.data.tasks.map((_, i) => i)));
