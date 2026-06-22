@@ -44,18 +44,79 @@ interface InviteBody {
   locale?: string;
 }
 
-function buildInviteMessage(name: string, locale: string): { subject: string; body: string } {
+/**
+ * Resolve the canonical public URL of this deployment. Priority:
+ *   1. NEXT_PUBLIC_APP_URL — operator-controlled override (set this in
+ *      Vercel to a custom domain like https://pmo.mapi.gov.il).
+ *   2. VERCEL_URL — auto-injected by Vercel on every deployment as
+ *      the *.vercel.app host (without protocol).
+ *   3. localhost fallback — only meaningful in dev; if it ever appears
+ *      in a production email, the operator forgot to set the env vars.
+ *
+ * Important: the previous version unconditionally trusted
+ * NEXT_PUBLIC_APP_URL even when it pointed at localhost. That meant a
+ * Vercel deployment whose local .env.local was checked in with
+ * localhost:3000 would mail localhost links to recipients. We now skip
+ * any localhost value when VERCEL_URL is available, so production
+ * never sends a localhost link by accident.
+ */
+function getAppBaseUrl(): string {
+  const overrideUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const vercelUrl = process.env.VERCEL_URL;
+  const overrideIsLocalhost = overrideUrl ? /localhost|127\.0\.0\.1/.test(overrideUrl) : false;
+  if (overrideUrl && !overrideIsLocalhost) return overrideUrl.replace(/\/$/, "");
+  if (vercelUrl) return `https://${vercelUrl}`;
+  if (overrideUrl) return overrideUrl.replace(/\/$/, "");
+  return "http://localhost:3000";
+}
+
+/**
+ * Build the per-invite token that lets /accept-invite reconstruct the
+ * invited user even when the in-memory mockUsers array got wiped
+ * between the POST that created them and the GET that lands on the
+ * accept page. Plain base64-encoded JSON — no signature.
+ *
+ * Why we encode the WHOLE user record (not just the id): mockUsers is
+ * an in-memory module variable. In dev, Fast Refresh resets it on
+ * every code change. In Vercel production, every cold-start lambda
+ * gets a fresh copy with only the seeded 6 users. Either way, the
+ * "u7" pushed by the invite POST is gone by the time the recipient
+ * clicks the link. Encoding the full record in the token lets the
+ * client rebuild the user purely from the URL — no server state
+ * required.
+ *
+ * Why no signature: mock-mode users are public, mockUsers has no
+ * secrets, and there's no way to "log in as someone else" in this
+ * demo (the role switcher already exposes all users). When this app
+ * moves to real auth + DB, the token should become an HMAC-signed
+ * JWT with an expiry and the payload should shrink back to just uid.
+ */
+function buildInviteToken(user: MockUser): string {
+  const payload = JSON.stringify({
+    uid: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    title: user.title,
+    image: user.image,
+    locale: user.locale,
+    role: user.role,
+    iat: Date.now(),
+  });
+  return Buffer.from(payload, "utf8").toString("base64url");
+}
+
+function buildInviteMessage(name: string, locale: string, acceptUrl: string): { subject: string; body: string } {
   const inviterName = "מארק ישראל"; // CURRENT_USER until real auth lands
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://pmo.example.com";
   if (locale === "en") {
     return {
       subject: `You're invited to PMO++ at Mapi`,
-      body: `Hi ${name},\n\n${inviterName} invited you to join the PMO++ workspace at the Survey of Israel.\n\nClick to accept the invitation and set your password:\n${appUrl}\n\n—\nMapi PMO++`,
+      body: `Hi ${name},\n\n${inviterName} invited you to join the PMO++ workspace at the Survey of Israel.\n\nClick to accept the invitation and activate your account:\n${acceptUrl}\n\n—\nMapi PMO++`,
     };
   }
   return {
     subject: `הזמנה לפלטפורמת PMO++ במרכז למיפוי ישראל`,
-    body: `שלום ${name},\n\n${inviterName} הזמין אותך להצטרף ליישום PMO++ של המרכז למיפוי ישראל.\n\nלחץ כאן כדי לאשר את ההזמנה ולהגדיר סיסמה:\n${appUrl}\n\n—\nצוות PMO++ במפ"י`,
+    body: `שלום ${name},\n\n${inviterName} הזמין אותך להצטרף ליישום PMO++ של המרכז למיפוי ישראל.\n\nלחץ כאן כדי לאשר את ההזמנה ולהיכנס למערכת:\n${acceptUrl}\n\n—\nצוות PMO++ במפ"י`,
   };
 }
 
@@ -178,10 +239,16 @@ export async function POST(req: Request) {
   };
   mockUsers.push(newUser);
 
+  // Build the invite acceptance link. The token tells /accept-invite
+  // which user the recipient is, so the page can switch the active
+  // user to them instead of dropping them into the default u1 session.
+  const token = buildInviteToken(newUser);
+  const acceptUrl = `${getAppBaseUrl()}/${locale}/accept-invite?token=${token}`;
+
   // Build the invite message once; we'll either send it via Resend or
   // hand the client mailto/whatsapp links so the operator can send it
   // from their own client.
-  const { subject, body: msgBody } = buildInviteMessage(fullName, locale);
+  const { subject, body: msgBody } = buildInviteMessage(fullName, locale, acceptUrl);
 
   let emailDeliveryStatus: "sent" | "no_transport" | "failed" = "no_transport";
   let emailError: string | undefined;

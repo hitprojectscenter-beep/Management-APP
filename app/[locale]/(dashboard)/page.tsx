@@ -25,6 +25,7 @@ import {
   getMembersOfNode,
 } from "@/lib/db/mock-data";
 import { MyTasksTabs } from "@/components/landing/my-tasks-tabs";
+import { ActiveUserGreeting } from "@/components/landing/active-user-greeting";
 import { ProjectMembers } from "@/components/members/project-members";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { txt } from "@/lib/utils/locale-text";
@@ -63,29 +64,7 @@ export default async function LandingPage({
     <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="flex items-center gap-3 sm:gap-4">
-          {currentUser && (
-            <Avatar
-              src={currentUser.image}
-              fallback={currentUser.name[0]}
-              className="size-12 sm:size-14 ring-2 ring-primary/20"
-            />
-          )}
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              {txt(locale, { he: "שלום", en: "Hello", ru: "Здравствуйте", fr: "Bonjour", es: "Hola" })}, {currentUser?.name?.split(" ")[0]} 👋
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              {txt(locale, {
-                he: "כל המשימות שעדיין לא נסגרו - מסודרות לפי דחיפות",
-                en: "All tasks that are still open - sorted by urgency",
-                ru: "Все незакрытые задачи — по срочности",
-                fr: "Toutes les tâches ouvertes — par urgence",
-                es: "Todas las tareas abiertas — por urgencia",
-              })}
-            </p>
-          </div>
-        </div>
+        <ActiveUserGreeting locale={locale} fallbackUser={currentUser} />
         <Link href="/reports">
           <Card className="cursor-pointer card-hover">
             <CardContent className="p-3 flex items-center gap-3">
