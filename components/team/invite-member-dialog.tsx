@@ -174,27 +174,122 @@ export function InviteMemberDialog({
     if (!validate()) return;
     setSending(true);
 
-    await new Promise((r) => setTimeout(r, 800));
-
     const effectiveRole = getEffectiveValue(form.role, form.roleOther, ROLE_OPTIONS);
     const effectiveDivision = getEffectiveValue(form.division, form.divisionOther, DIVISION_OPTIONS);
     const effectiveDepartment = getEffectiveValue(form.department, form.departmentOther, DEPARTMENT_OPTIONS);
 
-    toast.info(
-      txt(locale, {
-        he: `⚠️ מצב הדגמה — ${form.fullName} נרשם בהצלחה`,
-        en: `⚠️ Demo mode — ${form.fullName} registered`,
-      }),
-      {
-        description: txt(locale, {
-          he: `תפקיד: ${effectiveRole || "—"} · חטיבה: ${effectiveDivision || "—"} · אגף: ${effectiveDepartment || "—"}\nבמצב הדגמה לא נשלחים מיילים/SMS. בייצור: הזמנה תישלח ל-${form.email} ול-${form.phone}.`,
-          en: `Role: ${effectiveRole || "—"} · Division: ${effectiveDivision || "—"} · Dept: ${effectiveDepartment || "—"}\nDemo: no emails/SMS. Production: invite sent to ${form.email} and ${form.phone}.`,
+    let res: Response;
+    try {
+      res = await fetch("/api/team/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          role: effectiveRole,
+          division: effectiveDivision,
+          department: effectiveDepartment,
+          locale,
         }),
-        duration: 8000,
-      }
-    );
+      });
+    } catch (err) {
+      setSending(false);
+      toast.error(txt(locale, { he: "כשל ברשת — לא ניתן ליצור את המשתמש", en: "Network error — could not create user" }), {
+        description: err instanceof Error ? err.message : String(err),
+      });
+      return;
+    }
 
+    const data = await res.json().catch(() => null);
     setSending(false);
+
+    if (!res.ok || !data?.ok) {
+      toast.error(
+        txt(locale, { he: "❌ יצירת המשתמש נכשלה", en: "❌ User creation failed" }),
+        { description: data?.error || `HTTP ${res.status}`, duration: 10_000 },
+      );
+      return;
+    }
+
+    if (data.duplicate) {
+      toast.warning(
+        txt(locale, { he: `כבר רשום: ${form.fullName}`, en: `Already a member: ${form.fullName}` }),
+        { description: data.message, duration: 8000 },
+      );
+      setOpen(false);
+      setForm({ fullName: "", role: "", roleOther: "", division: "", divisionOther: "", department: "", departmentOther: "", phone: "", email: "" });
+      setErrors({});
+      return;
+    }
+
+    // User actually created. Now report email status honestly and offer
+    // one-click fallback links (mailto + WhatsApp) so the operator can
+    // make sure the invite reaches the inbox even when no SMTP is set up.
+    const emailStatus: "sent" | "no_transport" | "failed" = data.emailDeliveryStatus;
+
+    if (emailStatus === "sent") {
+      toast.success(
+        txt(locale, {
+          he: `✅ ${form.fullName} נוצר ומייל הזמנה נשלח`,
+          en: `✅ ${form.fullName} created and invite email sent`,
+        }),
+        {
+          description: txt(locale, {
+            he: `המייל נשלח ל-${form.email}. תפקיד: ${effectiveRole || "—"}.`,
+            en: `Email sent to ${form.email}. Role: ${effectiveRole || "—"}.`,
+          }),
+          duration: 10_000,
+        },
+      );
+    } else {
+      // Either no transport configured or send failed. Tell the user
+      // honestly AND give them a one-click button to open their mail
+      // client with the invite pre-filled — that's the path that
+      // actually delivers the message.
+      const statusLine = emailStatus === "failed"
+        ? txt(locale, { he: `שליחה אוטומטית נכשלה: ${data.emailError || "שגיאה לא ידועה"}`, en: `Auto-send failed: ${data.emailError || "unknown error"}` })
+        : txt(locale, { he: "שליחה אוטומטית לא מוגדרת בשרת (חסר RESEND_API_KEY)", en: "Auto-send not configured on the server (no RESEND_API_KEY)" });
+
+      toast(
+        txt(locale, {
+          he: `✅ ${form.fullName} נוצר. נדרשת פעולה לשליחת המייל`,
+          en: `✅ ${form.fullName} created. Action needed to send invite`,
+        }),
+        {
+          description: txt(locale, {
+            he: `${statusLine}\nלחץ "פתח לקוח מייל" כדי לשלוח את ההזמנה מהחשבון שלך.`,
+            en: `${statusLine}\nClick "Open mail client" to send the invite from your account.`,
+          }),
+          duration: 30_000,
+          action: {
+            label: txt(locale, { he: "פתח לקוח מייל", en: "Open mail client" }),
+            onClick: () => {
+              window.location.href = data.mailto;
+            },
+          },
+        },
+      );
+
+      // Secondary toast: WhatsApp option for phone-first delivery.
+      toast(
+        txt(locale, { he: "אפשר גם לשלוח בוואטסאפ", en: "Or send via WhatsApp" }),
+        {
+          description: txt(locale, {
+            he: `שליחה ישירה ל-${form.phone}.`,
+            en: `Direct send to ${form.phone}.`,
+          }),
+          duration: 30_000,
+          action: {
+            label: txt(locale, { he: "פתח WhatsApp", en: "Open WhatsApp" }),
+            onClick: () => {
+              window.open(data.whatsapp, "_blank");
+            },
+          },
+        },
+      );
+    }
+
     setOpen(false);
     setForm({ fullName: "", role: "", roleOther: "", division: "", divisionOther: "", department: "", departmentOther: "", phone: "", email: "" });
     setErrors({});
