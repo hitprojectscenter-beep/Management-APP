@@ -77,6 +77,49 @@ function normalizeSourceUrl(raw: string): string {
   return u;
 }
 
+/**
+ * Returns true if the response body looks like a Google sign-in page
+ * (i.e. the file isn't shared with "Anyone with the link"), so the
+ * caller can return a clear error instead of trying to parse the HTML
+ * as a document.
+ */
+function isGoogleSignInPage(buf: Buffer, mime: string): boolean {
+  if (!mime.includes("text/html")) return false;
+  // Look at first 2 KB — Google's sign-in page has very recognizable markers
+  const head = buf.slice(0, 2048).toString("utf8");
+  return (
+    head.includes("accounts.google.com/v3/signin") ||
+    head.includes("Sign in") && head.includes("Google Account") ||
+    head.includes("/v3/signin/") ||
+    head.includes("ServiceLogin")
+  );
+}
+
+/**
+ * Drive's "virus scan warning" interstitial for files >100 MB.
+ * The response is an HTML page with a form whose action contains a
+ * `&confirm=<token>` URL we need to GET to actually receive the file.
+ * Returns the confirmation URL if detected, null otherwise.
+ */
+function findDriveConfirmUrl(buf: Buffer, mime: string): string | null {
+  if (!mime.includes("text/html")) return null;
+  const html = buf.slice(0, 64 * 1024).toString("utf8");
+  // Modern Drive form: action="https://drive.usercontent.google.com/download" with hidden id, confirm, uuid
+  const formMatch = html.match(/action="(https:\/\/drive\.usercontent\.google\.com\/download[^"]*)"/);
+  if (!formMatch) return null;
+  const action = formMatch[1].replace(/&amp;/g, "&");
+  const idMatch = html.match(/name="id"\s+value="([^"]+)"/);
+  const confirmMatch = html.match(/name="confirm"\s+value="([^"]+)"/);
+  const uuidMatch = html.match(/name="uuid"\s+value="([^"]+)"/);
+  if (!idMatch || !confirmMatch) return null;
+  const params = new URLSearchParams();
+  params.set("id", idMatch[1]);
+  params.set("export", "download");
+  params.set("confirm", confirmMatch[1]);
+  if (uuidMatch) params.set("uuid", uuidMatch[1]);
+  return `${action.split("?")[0]}?${params.toString()}`;
+}
+
 /** Best-effort filename guess from a URL — last path segment, no query string. */
 function guessFilenameFromUrl(url: string, contentDisposition?: string | null): string {
   if (contentDisposition) {
@@ -160,14 +203,39 @@ export async function POST(req: Request) {
         // fetches from a serverless function are NOT bounded by Vercel's
         // ~4.5MB inbound body cap — this is the no-config workaround for
         // when Vercel Blob isn't enabled on the project.
+        //
+        // Two gotchas this code handles:
+        //   1. If the user shared the Drive link but NOT with "Anyone with
+        //      the link can view", Drive returns its sign-in HTML page
+        //      instead of the file. We detect that page and return a clear
+        //      Hebrew error instead of treating it as a real document.
+        //   2. For files >100 MB Drive returns a "virus scan warning"
+        //      interstitial with a confirmation form. We parse it and
+        //      re-fetch with the confirm token.
         const url = normalizeSourceUrl(body.sourceUrl);
+        const isDrive = /drive\.google\.com|drive\.usercontent\.google\.com/i.test(url);
+
+        // Cookie jar that survives the virus-scan re-fetch.
+        let cookieJar = "";
+        const fetchWithCookies = async (target: string): Promise<Response> => {
+          const headers: Record<string, string> = { "User-Agent": "PMOPlus-Intake/1.0" };
+          if (cookieJar) headers.cookie = cookieJar;
+          const res = await fetch(target, { redirect: "follow", headers });
+          const setCookie = res.headers.get("set-cookie");
+          if (setCookie) {
+            // Browsers split on multiple Set-Cookie headers; Next bundles them.
+            cookieJar = setCookie
+              .split(/,(?=[^;]+=)/g)
+              .map((c) => c.split(";")[0].trim())
+              .filter(Boolean)
+              .join("; ");
+          }
+          return res;
+        };
+
         let fetchRes: Response;
         try {
-          fetchRes = await fetch(url, {
-            // Follow Drive's confirmation redirect
-            redirect: "follow",
-            headers: { "User-Agent": "PMOPlus-Intake/1.0" },
-          });
+          fetchRes = await fetchWithCookies(url);
         } catch (err) {
           return NextResponse.json(
             { error: `Failed to fetch URL: ${err instanceof Error ? err.message : "unknown"}` },
@@ -176,20 +244,68 @@ export async function POST(req: Request) {
         }
         if (!fetchRes.ok) {
           return NextResponse.json(
-            { error: `Source URL returned ${fetchRes.status} — make sure the link is public ("Anyone with the link can view")` },
+            {
+              error:
+                'הקישור החזיר שגיאה ' +
+                fetchRes.status +
+                '. ודאו ששיתפתם את הקובץ במצב "כל מי שיש לו את הקישור" — לא "מוגבל".',
+            },
             { status: 502 }
           );
         }
-        const buf = Buffer.from(await fetchRes.arrayBuffer());
+        let buf = Buffer.from(await fetchRes.arrayBuffer());
+        let mime =
+          fetchRes.headers.get("content-type")?.split(";")[0].trim() ||
+          "application/octet-stream";
+
+        // ── Drive virus-scan interstitial (large files) ────────────────
+        if (isDrive) {
+          const confirmUrl = findDriveConfirmUrl(buf, mime);
+          if (confirmUrl) {
+            try {
+              const confirmed = await fetchWithCookies(confirmUrl);
+              if (confirmed.ok) {
+                buf = Buffer.from(await confirmed.arrayBuffer());
+                mime =
+                  confirmed.headers.get("content-type")?.split(";")[0].trim() ||
+                  "application/octet-stream";
+              }
+            } catch (err) {
+              console.warn("[intake] Drive confirm fetch failed:", err);
+            }
+          }
+        }
+
+        // ── Sign-in page detection (file not shared publicly) ──────────
+        if (isGoogleSignInPage(buf, mime)) {
+          return NextResponse.json(
+            {
+              error:
+                'הקובץ ב-Google Drive אינו ציבורי. גוגל החזירה דף התחברות במקום הקובץ. ' +
+                'פתחו את הקובץ ב-Drive, לחצו "שתף" וודאו שמצב הגישה הוא "כל מי שיש לו את הקישור" (ולא "מוגבל"). ' +
+                "לאחר מכן נסו שוב.",
+            },
+            { status: 403 }
+          );
+        }
+
+        // ── HTML response from a non-Drive source (probably a webpage) ─
+        if (mime.includes("text/html") && !isDrive) {
+          return NextResponse.json(
+            {
+              error:
+                "הקישור הוביל לדף אינטרנט (HTML) ולא לקובץ ישיר. הדביקו קישור הורדה ישיר — לא קישור לתצוגה.",
+            },
+            { status: 415 }
+          );
+        }
+
         if (buf.length === 0) {
           return NextResponse.json({ error: "Fetched file is empty" }, { status: 400 });
         }
         if (buf.length > MAX_UPLOAD_BYTES) {
           return NextResponse.json({ error: "Fetched file too large (max 300 MB)" }, { status: 413 });
         }
-        const mime =
-          fetchRes.headers.get("content-type")?.split(";")[0].trim() ||
-          "application/octet-stream";
         const filename = guessFilenameFromUrl(
           url,
           fetchRes.headers.get("content-disposition")
