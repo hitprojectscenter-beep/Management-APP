@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { upload as blobUpload } from "@vercel/blob/client";
+import { decodeAndChunkAudio, type AudioChunk } from "@/components/intake/audio-chunker";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -153,22 +154,78 @@ function isAudioOrVideo(file: File): boolean {
 }
 
 /**
- * Upload an audio/video file DIRECTLY to Gemini Files API from the browser.
- * The server only mints a signed upload URL (small JSON in, small JSON out).
- * The file bytes never traverse Vercel's serverless function — bypasses
- * the 4.5 MB inbound body cap entirely.
+ * Transcribe an audio/video file by decoding + chunking in the BROWSER,
+ * then transcribing each ~3.8 MB WAV chunk through plain multipart
+ * (which fits under Vercel's 4.5 MB inbound body cap).
+ *
+ * Returns the concatenated transcript text — caller is responsible
+ * for then running task extraction on it.
+ */
+async function transcribeAudioInChunks(
+  file: File,
+  locale: string,
+  onProgress?: (done: number, total: number, label: string) => void
+): Promise<{ transcript: string; meta: { bytes: number; estimatedDurationSec?: number } }> {
+  // Decode + chunk locally. The browser does all the heavy resampling.
+  onProgress?.(0, 1, "decoding");
+  const chunks = await decodeAndChunkAudio(file);
+  if (chunks.length === 0) throw new Error("No audio chunks produced");
+
+  // Transcribe each chunk via the existing /api/intake multipart path.
+  // Each chunk is a complete WAV file < 4 MB so multipart works.
+  const transcripts: string[] = [];
+  for (let i = 0; i < chunks.length; i++) {
+    onProgress?.(i, chunks.length, "transcribing");
+    const chunk = chunks[i];
+    const fd = new FormData();
+    fd.append("file", chunk.blob, `chunk-${i + 1}.wav`);
+    fd.append("locale", locale);
+    const res = await fetch("/api/intake", { method: "POST", body: fd });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      throw new Error(`Chunk ${i + 1}/${chunks.length} failed: HTTP ${res.status} ${errText.slice(0, 120)}`);
+    }
+    const data = await res.json();
+    const text = typeof data?.sourceText === "string" ? data.sourceText.trim() : "";
+    if (text) transcripts.push(text);
+  }
+  onProgress?.(chunks.length, chunks.length, "done");
+
+  const totalDurationSec = chunks.length ? chunks[chunks.length - 1].endSec : 0;
+  return {
+    transcript: transcripts.join("\n\n"),
+    meta: { bytes: file.size, estimatedDurationSec: Math.round(totalDurationSec) },
+  };
+}
+
+/**
+ * Legacy: upload audio file to Gemini Files API via chunked resumable upload.
+ * Kept around but unused — Gemini's 8 MB chunk-granularity requirement
+ * exceeds Vercel's 4.5 MB body cap, so this never worked in production.
+ * See transcribeAudioInChunks above for the actual working path.
+ *
+ * Why chunked-via-server: Google's `generativelanguage.googleapis.com`
+ * upload endpoint does NOT respond with CORS headers, so the browser
+ * cannot PUT the file directly to it. We instead split the file into
+ * 3.5 MB chunks (under Vercel's ~4.5 MB inbound cap) and POST each to
+ * /api/intake/gemini-chunk, which proxies the bytes onward to Google
+ * over an outbound fetch (no CORS, no Vercel cap on outbound).
  *
  * Flow:
- *   1. POST {filename, mime, size} to /api/intake/gemini-upload-url
- *   2. Server asks Google for a resumable upload session, hands us the
- *      signed upload URL.
- *   3. PUT the file bytes to that URL directly from the browser.
- *   4. Google returns { file: { uri, name, ... } }.
- *   5. Return the fileUri to the caller.
- *
- * Throws on any failure so the caller can fall back to multipart.
+ *   1. POST {filename, mime, size} → /api/intake/gemini-upload-url
+ *      Returns a resumable-session URL.
+ *   2. Slice the file into ~3.5 MB chunks. For each:
+ *        - POST chunk + uploadUrl + offset + isFinal → /api/intake/gemini-chunk
+ *        - Wait for ack before sending the next (Gemini's resumable
+ *          protocol expects sequential offsets).
+ *   3. The final chunk response includes {fileUri}.
+ *   4. Return that URI to the caller.
  */
-async function uploadAudioToGemini(file: File): Promise<string> {
+async function uploadAudioToGemini(
+  file: File,
+  onProgress?: (uploaded: number, total: number) => void
+): Promise<string> {
+  // Step 1: init session
   const initRes = await fetch("/api/intake/gemini-upload-url", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -185,23 +242,43 @@ async function uploadAudioToGemini(file: File): Promise<string> {
   const { uploadUrl } = (await initRes.json()) as { uploadUrl: string };
   if (!uploadUrl) throw new Error("No upload URL from server");
 
-  // Upload bytes directly to Google. The signed URL handles auth.
-  const putRes = await fetch(uploadUrl, {
-    method: "POST", // resumable PUT is actually a POST with the offset+finalize headers
-    headers: {
-      "Content-Length": String(file.size),
-      "X-Goog-Upload-Offset": "0",
-      "X-Goog-Upload-Command": "upload, finalize",
-    },
-    body: file,
-  });
-  if (!putRes.ok) {
-    const errText = await putRes.text().catch(() => "");
-    throw new Error(`gemini upload PUT ${putRes.status}: ${errText.slice(0, 200)}`);
+  // Step 2: send the file in 3.5 MB chunks. We could parallelize but
+  // Google's resumable protocol is happier with sequential offsets, and
+  // the simpler code is easier to reason about.
+  const CHUNK_SIZE = 3_500_000; // 3.5 MB — safely under Vercel's 4.5 MB inbound cap
+  let offset = 0;
+  let fileUri: string | null = null;
+  while (offset < file.size) {
+    const end = Math.min(offset + CHUNK_SIZE, file.size);
+    const chunk = file.slice(offset, end);
+    const isFinal = end >= file.size;
+
+    const fd = new FormData();
+    fd.append("chunk", chunk, "chunk.bin");
+    fd.append("uploadUrl", uploadUrl);
+    fd.append("offset", String(offset));
+    fd.append("isFinal", isFinal ? "1" : "0");
+
+    const chunkRes = await fetch("/api/intake/gemini-chunk", {
+      method: "POST",
+      body: fd,
+    });
+    if (!chunkRes.ok) {
+      const errText = await chunkRes.text().catch(() => "");
+      throw new Error(
+        `gemini-chunk ${chunkRes.status} at offset ${offset}: ${errText.slice(0, 200)}`
+      );
+    }
+    const body = (await chunkRes.json()) as { ok?: boolean; fileUri?: string };
+    if (isFinal) {
+      if (!body.fileUri) throw new Error("Final chunk uploaded but no file URI returned");
+      fileUri = body.fileUri;
+    }
+    offset = end;
+    onProgress?.(offset, file.size);
   }
-  const uploadData = await putRes.json();
-  const fileUri = uploadData?.file?.uri;
-  if (!fileUri) throw new Error("No file URI in Gemini response");
+
+  if (!fileUri) throw new Error("Chunked upload completed without a file URI");
   return fileUri;
 }
 
@@ -218,6 +295,11 @@ export function IntakeWorkflow() {
   // Keep the original uploaded File so we can pre-attach it to every task
   // created from this source. Cleared whenever the user resets.
   const [sourceFile, setSourceFile] = useState<File | null>(null);
+
+  // Live upload progress for the chunked-Gemini path. Null when no upload
+  // is in flight. The chunked path can take 30-180s for a long recording —
+  // showing progress turns "is it stuck?" anxiety into "I see it moving".
+  const [uploadProgress, setUploadProgress] = useState<{ uploaded: number; total: number } | null>(null);
 
   // Pre-flight capability probe: ask the server which upload paths are
   // wired up BEFORE the user picks a file. Lets us show realistic guidance
@@ -296,24 +378,48 @@ export function IntakeWorkflow() {
         | { ok: false; message: string }
         | null = null;
 
-      // ── Path A: audio/video via Gemini Files API ───────────────────
+      // ── Path A: audio/video → client-side decode + chunk + transcribe ────
+      // The browser does the heavy lifting: decodes the audio, resamples
+      // to 16 kHz mono, slices into ~2-minute WAV chunks (~3.8 MB each),
+      // and uploads each through plain multipart (fits under Vercel's
+      // 4.5 MB cap). Each chunk is transcribed independently; we then
+      // glue the transcripts together and run task extraction on the
+      // combined text. No external storage, no Vercel config needed.
       if (isMedia && file.size > SIZE_THRESHOLD) {
         try {
-          const fileUri = await uploadAudioToGemini(file);
+          setUploadProgress({ uploaded: 0, total: file.size });
+          const { transcript, meta: audioMeta } = await transcribeAudioInChunks(
+            file,
+            locale,
+            (done, total) => setUploadProgress({ uploaded: done, total })
+          );
+          setUploadProgress(null);
+          // Run task extraction on the joined transcript via text mode
           const res = await fetch("/api/intake", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              geminiFileUri: fileUri,
-              geminiMime: file.type || "audio/mpeg",
-              geminiFilename: file.name,
-              geminiSize: file.size,
-              locale,
-            }),
+            body: JSON.stringify({ text: transcript, locale }),
           });
           parsed = await readIntakeResponse(res, locale);
-        } catch (geminiErr) {
-          console.warn("[intake] gemini direct upload failed, trying next path:", geminiErr);
+          // Patch the meta so the UI shows the original audio file info,
+          // not the text-extraction info, in the source preview card.
+          if (parsed.ok) {
+            parsed.data = {
+              ...parsed.data,
+              kind: "audio",
+              sourceText: transcript,
+              meta: {
+                ...(parsed.data.meta || {}),
+                bytes: audioMeta.bytes,
+                filename: file.name,
+                mime: file.type || "audio/mpeg",
+                estimatedDurationSec: audioMeta.estimatedDurationSec,
+              },
+            };
+          }
+        } catch (audioErr) {
+          setUploadProgress(null);
+          console.warn("[intake] client-side audio chunked transcription failed, trying next path:", audioErr);
         }
       }
 
