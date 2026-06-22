@@ -78,6 +78,15 @@ export interface AddTaskInitialValues {
   /** Original uploaded file — pre-attached to the task's attachments list
    *  so the source can always be downloaded for context. */
   sourceFile?: File;
+  /** When the dialog is opened from the intake center, default a few more
+   *  required fields so the user can submit with one click after a tiny
+   *  review — instead of having to manually fill priority, parent, etc.
+   *  for every single extracted task. Manual New-Task flow leaves these
+   *  empty so the user picks consciously. */
+  defaultPriority?: "low" | "medium" | "high" | "critical";
+  defaultParentType?: "project" | "program";
+  defaultParentId?: string;
+  defaultMethodology?: string;
 }
 
 export function AddTaskDialog({
@@ -89,6 +98,10 @@ export function AddTaskDialog({
   /** Controlled-open mode (intake table opens externally) — optional. */
   open: openProp,
   onOpenChange,
+  /** Fired right after the task is pushed to mockTasks. Used by the
+   *  intake table to remove the source row once the user has converted it
+   *  into a real task. */
+  onCreated,
 }: {
   projects: MockWbsNode[];
   users: MockUser[];
@@ -97,6 +110,7 @@ export function AddTaskDialog({
   initialValues?: AddTaskInitialValues;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onCreated?: () => void;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = openProp ?? internalOpen;
@@ -139,13 +153,28 @@ export function AddTaskDialog({
   // pick consciously instead of submitting whatever the form happened to
   // pre-fill. EXCEPT when initialValues are passed in from the intake
   // center — then the pre-fill comes from real source data, not a default.
+  // For intake-initiated edits, fall back to the first task type in the
+  // catalog when the work-type label couldn't be matched. Without this the
+  // user would have to manually pick a task type for every single extracted
+  // task even when the source didn't say anything specific.
+  const resolvedTaskTypeId = (() => {
+    const fromLabel = resolveTaskTypeId(initialValues?.workTypeLabel);
+    if (fromLabel) return fromLabel;
+    // Only auto-default when this open came from intake (i.e. caller asked
+    // for intake-mode defaults). Manual New-Task flow stays blank.
+    if (initialValues?.defaultPriority || initialValues?.defaultParentId) {
+      return taskTypes[0]?.id || "";
+    }
+    return "";
+  })();
+
   const [form, setForm] = useState<AddTaskFormData>({
     title: initialValues?.title || "",
-    taskType: resolveTaskTypeId(initialValues?.workTypeLabel),
+    taskType: resolvedTaskTypeId,
     taskTypeOther: "",
-    parentType: "project",
-    parentId: "",
-    methodology: "" as any,
+    parentType: initialValues?.defaultParentType || "project",
+    parentId: initialValues?.defaultParentId || "",
+    methodology: (initialValues?.defaultMethodology || "") as any,
     description: initialValues?.description || "",
     teamMembers: initialAssigneeId ? [initialAssigneeId] : [],
     plannedStart: initialValues?.plannedStart || "",
@@ -155,7 +184,7 @@ export function AddTaskDialog({
     // For a manual New Task it stays empty so the user has to choose.
     source: initialValues?.sourceLabel ? ("other" as any) : ("" as any),
     sourceOther: initialValues?.sourceLabel || "",
-    priority: "" as any,
+    priority: (initialValues?.defaultPriority || "") as any,
     // Pre-attach the original source file (if any) so the task always
     // carries provenance back to the document/audio it came from.
     attachments: initialValues?.sourceFile ? [initialValues.sourceFile] : [],
@@ -171,7 +200,12 @@ export function AddTaskDialog({
     setForm((prev) => ({
       ...prev,
       title: initialValues.title ?? prev.title,
-      taskType: resolveTaskTypeId(initialValues.workTypeLabel) || prev.taskType,
+      taskType:
+        resolveTaskTypeId(initialValues.workTypeLabel) ||
+        // When opened from intake, default to the first catalog type if the
+        // work-type label didn't match anything — keeps "click → submit" working.
+        ((initialValues.defaultPriority || initialValues.defaultParentId) ? taskTypes[0]?.id : "") ||
+        prev.taskType,
       description: initialValues.description ?? prev.description,
       teamMembers: initialAssigneeId ? [initialAssigneeId] : prev.teamMembers,
       plannedStart: initialValues.plannedStart ?? prev.plannedStart,
@@ -179,6 +213,12 @@ export function AddTaskDialog({
       source: initialValues.sourceLabel ? ("other" as any) : prev.source,
       sourceOther: initialValues.sourceLabel ?? prev.sourceOther,
       attachments: initialValues.sourceFile ? [initialValues.sourceFile] : prev.attachments,
+      // Intake-only defaults — populated only when the caller asked for them,
+      // so the manual New-Task flow keeps its blank-required-fields behavior.
+      priority: initialValues.defaultPriority ? (initialValues.defaultPriority as any) : prev.priority,
+      parentType: initialValues.defaultParentType ?? prev.parentType,
+      parentId: initialValues.defaultParentId ?? prev.parentId,
+      methodology: initialValues.defaultMethodology ? (initialValues.defaultMethodology as any) : prev.methodology,
     }));
     setErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -307,6 +347,7 @@ export function AddTaskDialog({
       dependencies: [],
       attachments: attachments.length > 0 ? attachments : undefined,
     });
+    onCreated?.();
 
     toast.success(
       txt(locale, { he: `המשימה "${form.title}" נוצרה בהצלחה!`, en: `Task "${form.title}" created!` }),

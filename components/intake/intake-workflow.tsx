@@ -301,6 +301,15 @@ export function IntakeWorkflow() {
   // showing progress turns "is it stuck?" anxiety into "I see it moving".
   const [uploadProgress, setUploadProgress] = useState<{ uploaded: number; total: number } | null>(null);
 
+  // Persistent error banner — toast messages disappear after a few seconds
+  // and the user is left wondering what happened. We mirror the toast into
+  // an in-page banner so the user can read the actual server error any time.
+  const [persistentError, setPersistentError] = useState<string | null>(null);
+  const showError = (msg: string) => {
+    setPersistentError(msg);
+    toast.error(msg);
+  };
+
   // Pre-flight capability probe: ask the server which upload paths are
   // wired up BEFORE the user picks a file. Lets us show realistic guidance
   // instead of letting an upload fail.
@@ -354,11 +363,12 @@ export function IntakeWorkflow() {
   const handleFile = async (file: File) => {
     if (!file) return;
     if (file.size > 300 * 1024 * 1024) {
-      toast.error(txt(locale, { he: "קובץ גדול מ-300MB", en: "File over 300 MB" }));
+      showError(txt(locale, { he: "קובץ גדול מ-300MB", en: "File over 300 MB" }) as string);
       return;
     }
     setLoading(true);
     setResult(null);
+    setPersistentError(null);
     setSourceFile(file);
     try {
       // Three-tier upload strategy:
@@ -467,7 +477,7 @@ export function IntakeWorkflow() {
         })
       );
     } catch (err) {
-      toast.error(
+      showError(
         (txt(locale, { he: "כשל בעיבוד", en: "Processing failed" }) as string) +
           ": " + (err instanceof Error ? err.message : "unknown")
       );
@@ -478,11 +488,12 @@ export function IntakeWorkflow() {
 
   const handleText = async () => {
     if (!textInput.trim()) {
-      toast.error(txt(locale, { he: "הדבק טקסט תחילה", en: "Paste text first" }));
+      showError(txt(locale, { he: "הדבק טקסט תחילה", en: "Paste text first" }) as string);
       return;
     }
     setLoading(true);
     setResult(null);
+    setPersistentError(null);
     try {
       const res = await fetch("/api/intake", {
         method: "POST",
@@ -500,7 +511,7 @@ export function IntakeWorkflow() {
         })
       );
     } catch (err) {
-      toast.error(
+      showError(
         (txt(locale, { he: "כשל בעיבוד", en: "Processing failed" }) as string) +
           ": " + (err instanceof Error ? err.message : "unknown")
       );
@@ -517,15 +528,16 @@ export function IntakeWorkflow() {
   const handleUrl = async () => {
     const trimmed = urlInput.trim();
     if (!trimmed) {
-      toast.error(txt(locale, { he: "הדבק קישור תחילה", en: "Paste a URL first" }));
+      showError(txt(locale, { he: "הדבק קישור תחילה", en: "Paste a URL first" }) as string);
       return;
     }
     if (!/^https?:\/\//i.test(trimmed)) {
-      toast.error(txt(locale, { he: "הקישור חייב להתחיל ב-http:// או https://", en: "URL must start with http:// or https://" }));
+      showError(txt(locale, { he: "הקישור חייב להתחיל ב-http:// או https://", en: "URL must start with http:// or https://" }) as string);
       return;
     }
     setLoading(true);
     setResult(null);
+    setPersistentError(null);
     setSourceFile(null);
     try {
       const res = await fetch("/api/intake", {
@@ -544,7 +556,7 @@ export function IntakeWorkflow() {
         })
       );
     } catch (err) {
-      toast.error(
+      showError(
         (txt(locale, { he: "כשל בעיבוד", en: "Processing failed" }) as string) +
           ": " + (err instanceof Error ? err.message : "unknown")
       );
@@ -680,6 +692,7 @@ export function IntakeWorkflow() {
     setSelected(new Set());
     setTextInput("");
     setSourceFile(null);
+    setPersistentError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (audioInputRef.current) audioInputRef.current.value = "";
   };
@@ -689,6 +702,29 @@ export function IntakeWorkflow() {
       {/* Capability badge — shows BEFORE the user picks a file so the
        *  guidance matches what's actually available on this deployment. */}
       {capabilities && !result && <CapabilityStatusBadge caps={capabilities} locale={locale} />}
+
+      {/* Persistent error banner — toast disappears in seconds; this stays
+       *  until the next attempt so the user can actually read what went wrong. */}
+      {persistentError && (
+        <div className="flex items-start gap-3 p-4 rounded-lg border border-red-300 bg-red-50/60 dark:bg-red-950/20 text-sm">
+          <span className="text-red-600 text-xl leading-none">⚠</span>
+          <div className="flex-1">
+            <div className="font-medium text-red-900 dark:text-red-100">
+              {txt(locale, { he: "כשל בעיבוד הקלט", en: "Intake error" })}
+            </div>
+            <div className="text-red-800/90 dark:text-red-200/90 mt-1 break-words" dir="auto">
+              {persistentError}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPersistentError(null)}
+            className="text-red-700 hover:text-red-900 text-xs underline shrink-0"
+          >
+            {txt(locale, { he: "סגור", en: "Dismiss" })}
+          </button>
+        </div>
+      )}
 
       {/* Mode selector */}
       {!result && (
@@ -1114,6 +1150,9 @@ function ExtractedTasksTable({
   // Controlled-open dialog that gets pre-filled when the user clicks a row.
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorInit, setEditorInit] = useState<AddTaskInitialValues | null>(null);
+  // Remember which row opened the editor so we can remove it from the
+  // "to-create" list right after the dialog actually creates the task.
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   // Build the "source" label: document title (or filename) + document date.
   // This is what the task's "מקור" field will be pre-filled with so the
@@ -1124,7 +1163,16 @@ function ExtractedTasksTable({
     ? `${docTitleForLabel} · ${docDateForLabel}`
     : docTitleForLabel || docDateForLabel || undefined;
 
-  const openEditor = (task: ExtractedTask) => {
+  // Pick sensible defaults so the user can review-and-submit each task in
+  // one click instead of having to fill 4+ required fields manually. We
+  // mirror what the bulk "Create N tasks" button uses so per-task and
+  // bulk behavior stay consistent.
+  const defaultProject = mockWbsNodes.find((n) => n.level === "project") ?? mockWbsNodes.find((n) => n.level === "task");
+  const defaultParentType: "project" | "program" = defaultProject?.level === "program" ? "program" : "project";
+  const today = new Date().toISOString().slice(0, 10);
+  const defaultEnd = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+
+  const openEditor = (task: ExtractedTask, index: number) => {
     const resolved = resolveAssignee(task.assigneeHint) || autoFallback?.user;
     setEditorInit({
       title: task.title,
@@ -1133,13 +1181,21 @@ function ExtractedTasksTable({
       assigneeHint: task.assigneeHint,
       assigneeUserId: resolved?.id,
       // plannedStart defaults to the document's date — that's when the
-      // decision to do the task was made.
-      plannedStart: result.documentDate,
-      plannedEnd: task.dueDate,
+      // decision to do the task was made. plannedEnd uses the task's own
+      // due date, or one week out as a sane default.
+      plannedStart: result.documentDate || today,
+      plannedEnd: task.dueDate || result.documentDate || defaultEnd,
       estimateHours: task.estimateHours,
       sourceLabel,
       sourceFile: sourceFile || undefined,
+      // Intake-only pre-fills so "Edit & submit" doesn't force the user to
+      // pick a project, priority and methodology for every single task.
+      defaultPriority: "medium",
+      defaultParentType,
+      defaultParentId: defaultProject?.id,
+      defaultMethodology: "waterfall",
     });
+    setEditingIndex(index);
     setEditorOpen(true);
   };
 
@@ -1153,8 +1209,8 @@ function ExtractedTasksTable({
             </CardTitle>
             <CardDescription>
               {txt(locale, {
-                he: `${selected.size} מתוך ${result.tasks.length} נבחרו. עיין במשימה, חלוף עליה, או הסר משלא רלוונטית.`,
-                en: `${selected.size} of ${result.tasks.length} selected. Review, modify, or remove items that aren't relevant.`,
+                he: `${selected.size} מתוך ${result.tasks.length} משימות נבחרו. לחץ על כל משימה כדי לערוך טופס מלא, או על "ערוך ושלח" — וצור משימות בודדות. לחילופין, "צור ${selected.size} משימות" יוצר את כל הנבחרות בבת אחת.`,
+                en: `${selected.size} of ${result.tasks.length} tasks selected. Click any task to edit a full form, or use "Edit & submit" per task. Alternatively, "Create ${selected.size} tasks" creates all selected at once.`,
               })}
             </CardDescription>
           </div>
@@ -1186,7 +1242,7 @@ function ExtractedTasksTable({
                     ? "border-violet-400 bg-violet-50/40 dark:bg-violet-950/20"
                     : "border-border bg-muted/10"
                 )}
-                onClick={() => openEditor(task)}
+                onClick={() => openEditor(task, i)}
                 title={txt(locale, { he: "לחץ לפתיחת טופס משימה עם הפרטים מהמקור", en: "Click to open the task form prefilled from source" }) as string}
               >
                 <div className="flex items-start gap-3">
@@ -1237,24 +1293,25 @@ function ExtractedTasksTable({
                       )}
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1 shrink-0">
+                  <div className="flex flex-col gap-1.5 shrink-0">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        openEditor(task);
+                        openEditor(task, i);
                       }}
-                      className="text-muted-foreground hover:text-violet-600 p-1"
-                      title={txt(locale, { he: "פתח טופס מלא", en: "Open full form" }) as string}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-violet-600 text-white text-xs font-medium hover:bg-violet-700 transition-colors shadow-sm"
+                      title={txt(locale, { he: "פתח טופס מלא לעריכה ויצירה", en: "Open full form to edit and create" }) as string}
                     >
-                      <Pencil className="size-4" />
+                      <Pencil className="size-3" />
+                      {txt(locale, { he: "ערוך ושלח", en: "Edit & submit" })}
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         removeTask(i);
                       }}
-                      className="text-muted-foreground hover:text-red-500 p-1"
-                      title={txt(locale, { he: "הסר", en: "Remove" }) as string}
+                      className="flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 p-1 rounded-md"
+                      title={txt(locale, { he: "הסר משימה זו מהרשימה", en: "Remove this task" }) as string}
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -1267,7 +1324,9 @@ function ExtractedTasksTable({
       </CardContent>
 
       {/* Hidden controlled-open AddTaskDialog used for "click row → pre-filled form".
-          It has no children (no trigger button) — opens/closes purely via state. */}
+          It has no children (no trigger button) — opens/closes purely via state.
+          onCreated removes the source row from the to-create list once the
+          user has converted it into a real task via the dialog. */}
       <AddTaskDialog
         projects={mockWbsNodes}
         users={mockUsers}
@@ -1275,6 +1334,12 @@ function ExtractedTasksTable({
         open={editorOpen}
         onOpenChange={setEditorOpen}
         initialValues={editorInit ?? undefined}
+        onCreated={() => {
+          if (editingIndex != null) {
+            removeTask(editingIndex);
+          }
+          setEditingIndex(null);
+        }}
       />
     </Card>
   );
