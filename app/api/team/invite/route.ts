@@ -47,25 +47,33 @@ interface InviteBody {
 /**
  * Resolve the canonical public URL of this deployment. Priority:
  *   1. NEXT_PUBLIC_APP_URL — operator-controlled override (set this in
- *      Vercel to a custom domain like https://pmo.mapi.gov.il).
- *   2. VERCEL_URL — auto-injected by Vercel on every deployment as
- *      the *.vercel.app host (without protocol).
- *   3. localhost fallback — only meaningful in dev; if it ever appears
- *      in a production email, the operator forgot to set the env vars.
+ *      Vercel to a custom domain like https://pmo.mapi.gov.il, or to
+ *      the stable production *.vercel.app domain).
+ *   2. VERCEL_PROJECT_PRODUCTION_URL — auto-injected by Vercel and
+ *      points at the stable production domain (e.g.
+ *      "management-app-henna.vercel.app"). Public to everyone.
+ *   3. VERCEL_URL — per-deployment URL with a random hash
+ *      ("management-qz2su0e52-...vercel.app"). Always protected by
+ *      Vercel Authentication unless preview protection is turned off,
+ *      so links sent in emails would force the recipient to log into
+ *      Vercel — exactly what just happened to the operator.
+ *   4. localhost fallback — only meaningful in dev.
  *
- * Important: the previous version unconditionally trusted
- * NEXT_PUBLIC_APP_URL even when it pointed at localhost. That meant a
- * Vercel deployment whose local .env.local was checked in with
- * localhost:3000 would mail localhost links to recipients. We now skip
- * any localhost value when VERCEL_URL is available, so production
- * never sends a localhost link by accident.
+ * Why the order matters: VERCEL_URL is the FIRST thing every Vercel
+ * deployment has, including production builds. If we use it
+ * unconditionally we send protected-preview links to the wrong people.
+ * VERCEL_PROJECT_PRODUCTION_URL is stable and public, so it's the
+ * right default. We only fall back to VERCEL_URL on preview/branch
+ * deployments where the operator is testing.
  */
 function getAppBaseUrl(): string {
   const overrideUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const vercelUrl = process.env.VERCEL_URL;
+  const productionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const deploymentUrl = process.env.VERCEL_URL;
   const overrideIsLocalhost = overrideUrl ? /localhost|127\.0\.0\.1/.test(overrideUrl) : false;
   if (overrideUrl && !overrideIsLocalhost) return overrideUrl.replace(/\/$/, "");
-  if (vercelUrl) return `https://${vercelUrl}`;
+  if (productionUrl) return `https://${productionUrl}`;
+  if (deploymentUrl) return `https://${deploymentUrl}`;
   if (overrideUrl) return overrideUrl.replace(/\/$/, "");
   return "http://localhost:3000";
 }
