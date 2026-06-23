@@ -1,35 +1,23 @@
-import { setRequestLocale, getTranslations } from "next-intl/server";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
-import {
-  CheckSquare,
-  Clock,
-  AlertTriangle,
-  Calendar as CalendarIcon,
-  Sparkles,
-  Briefcase,
-  TrendingUp,
-} from "lucide-react";
-import { Link } from "@/lib/i18n/routing";
+import { setRequestLocale } from "next-intl/server";
 import {
   CURRENT_USER_ID,
-  getOpenTasksForUser,
   getUserById,
-  getNodesForUser,
   mockProjectMembers,
+  mockTasks,
   mockUsers,
   mockWbsNodes,
   getProjects,
-  getMembersOfNode,
 } from "@/lib/db/mock-data";
-import { MyTasksTabs } from "@/components/landing/my-tasks-tabs";
 import { ActiveUserGreeting } from "@/components/landing/active-user-greeting";
-import { ProjectMembers } from "@/components/members/project-members";
-import { CollapsibleSection } from "@/components/ui/collapsible-section";
-import { txt } from "@/lib/utils/locale-text";
+import { MyDashboardContent } from "@/components/landing/my-dashboard-content";
 
+/**
+ * Home page. The shell + greeting are server-rendered; everything
+ * scoped to the active user (stats, tasks, projects, FTE) is moved
+ * into the MyDashboardContent client component so it can follow the
+ * role-switcher / accept-invite flow instead of being pinned to the
+ * static CURRENT_USER_ID constant.
+ */
 export default async function LandingPage({
   params,
 }: {
@@ -37,259 +25,21 @@ export default async function LandingPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("landing");
 
-  const currentUser = getUserById(CURRENT_USER_ID);
-  const myOpenTasks = getOpenTasksForUser(CURRENT_USER_ID);
-  const myNodes = getNodesForUser(CURRENT_USER_ID);
-  const myProjects = myNodes.filter((n) => n.level === "project");
-  const myMemberships = mockProjectMembers.filter((m) => m.userId === CURRENT_USER_ID);
-  const totalFte = myMemberships.reduce((sum, m) => sum + m.ftePercent, 0);
-
-  // Stats
-  const inProgress = myOpenTasks.filter((t) => t.status === "in_progress").length;
-  const overdue = myOpenTasks.filter((t) => {
-    if (!t.plannedEnd) return false;
-    return new Date(t.plannedEnd).getTime() < Date.now();
-  }).length;
-  const dueThisWeek = myOpenTasks.filter((t) => {
-    if (!t.plannedEnd) return false;
-    const days = (new Date(t.plannedEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-    return days >= 0 && days <= 7;
-  }).length;
-
+  const fallbackUser = getUserById(CURRENT_USER_ID);
   const projects = getProjects();
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <ActiveUserGreeting locale={locale} fallbackUser={currentUser} />
-        <Link href="/reports">
-          <Card className="cursor-pointer card-hover">
-            <CardContent className="p-3 flex items-center gap-3">
-              <div className="size-9 rounded-lg bg-purple-100 dark:bg-purple-950/30 flex items-center justify-center">
-                <TrendingUp className="size-4 text-purple-600" />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">{txt(locale, { he: "סך הקצאה שלי", en: "My total allocation", ru: "Моя загрузка", fr: "Mon allocation", es: "Mi asignación" })}</div>
-                <div className="text-lg font-bold">{totalFte}%</div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-
-      {/* Stats cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats">
-        <StatCard
-          delay={0}
-          icon={CheckSquare}
-          label={txt(locale, { he: "סך משימות פתוחות", en: "Total Open Tasks", ru: "Открытые задачи", fr: "Tâches ouvertes", es: "Tareas abiertas" })}
-          value={myOpenTasks.length}
-          color="from-blue-500 to-indigo-600"
-          bg="bg-blue-500/10"
-          iconColor="text-blue-600"
-          tooltip={txt(locale, { he: "כל המשימות שעוד לא הושלמו או בוטלו", en: "All tasks not yet completed or cancelled", ru: "Все незавершённые задачи", fr: "Toutes les tâches non terminées", es: "Todas las tareas no completadas" })}
-        />
-        <StatCard
-          delay={100}
-          icon={Clock}
-          label={txt(locale, { he: "בביצוע", en: "In Progress", ru: "В работе", fr: "En cours", es: "En progreso" })}
-          value={inProgress}
-          color="from-emerald-500 to-teal-600"
-          bg="bg-emerald-500/10"
-          iconColor="text-emerald-600"
-          tooltip={txt(locale, { he: "משימות שכבר התחלת לעבוד עליהן", en: "Tasks you've started working on", ru: "Задачи, над которыми вы работаете", fr: "Tâches en cours de réalisation", es: "Tareas en las que estás trabajando" })}
-        />
-        <StatCard
-          delay={200}
-          icon={AlertTriangle}
-          label={txt(locale, { he: "באיחור", en: "Overdue", ru: "Просрочено", fr: "En retard", es: "Retrasadas" })}
-          value={overdue}
-          color="from-red-500 to-rose-600"
-          bg="bg-red-500/10"
-          iconColor="text-red-600"
-          tooltip={txt(locale, { he: "משימות שעברו את תאריך היעד", en: "Tasks past their due date", ru: "Задачи с истёкшим сроком", fr: "Tâches en retard", es: "Tareas vencidas" })}
-        />
-        <StatCard
-          delay={300}
-          icon={CalendarIcon}
-          label={txt(locale, { he: "השבוע", en: "Due This Week", ru: "На этой неделе", fr: "Cette semaine", es: "Esta semana" })}
-          value={dueThisWeek}
-          color="from-amber-500 to-orange-600"
-          bg="bg-amber-500/10"
-          iconColor="text-amber-600"
-          tooltip={txt(locale, { he: "תאריך היעד שלהן בתוך 7 הימים הקרובים", en: "Due within the next 7 days", ru: "Срок — в ближайшие 7 дней", fr: "Échéance dans les 7 prochains jours", es: "Vencen en los próximos 7 días" })}
-        />
-      </div>
-
-      {/* Main content: tasks tabs + side panel — both collapsed by default */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        <div className="xl:col-span-3">
-          <CollapsibleSection
-            id="home:open-tasks"
-            title={
-              <span className="flex items-center gap-2">
-                <CheckSquare className="size-4 text-blue-600" />
-                {txt(locale, {
-                  he: "משימות פתוחות",
-                  en: "Open Tasks",
-                  ru: "Открытые задачи",
-                  fr: "Tâches ouvertes",
-                  es: "Tareas abiertas",
-                })}
-              </span>
-            }
-            badge={<Badge variant="outline">{myOpenTasks.length}</Badge>}
-          >
-            <div className="p-4">
-              <MyTasksTabs
-                tasks={myOpenTasks}
-                users={mockUsers}
-                projects={projects}
-                wbsNodes={mockWbsNodes}
-                locale={locale}
-              />
-            </div>
-          </CollapsibleSection>
-        </div>
-
-        {/* Side panel */}
-        <div className="space-y-4">
-          {/* My Projects — collapsible */}
-          <CollapsibleSection
-            id="home:my-projects"
-            title={
-              <span className="flex items-center gap-2">
-                <Briefcase className="size-4 text-blue-600" />
-                {txt(locale, { he: "הפרויקטים שלי", en: "My Projects", ru: "Мои проекты", fr: "Mes projets", es: "Mis proyectos" })}
-              </span>
-            }
-            badge={<Badge variant="outline">{myProjects.length}</Badge>}
-          >
-            <div className="p-4 space-y-2">
-              {myProjects.map((project) => {
-                const myMembership = myMemberships.find((m) => m.wbsNodeId === project.id);
-                return (
-                  <Link
-                    key={project.id}
-                    href={`/projects/${project.id}`}
-                    className="block p-2 rounded-md hover:bg-accent transition-colors"
-                  >
-                    <div className="text-sm font-medium line-clamp-1">
-                      {locale === "he" ? project.name : project.nameEn || project.name}
-                    </div>
-                    {myMembership && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-muted-foreground truncate">
-                          {locale === "he" ? myMembership.roleInProject : myMembership.roleInProjectEn || myMembership.roleInProject}
-                        </span>
-                        <Badge variant="outline" className="text-[9px] py-0">
-                          {myMembership.ftePercent}%
-                        </Badge>
-                      </div>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </CollapsibleSection>
-
-          {/* My participation - all WBS nodes */}
-          <Card data-tour="fte-panel">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="size-4 text-purple-600" />
-                <h3 className="font-semibold text-sm">{txt(locale, { he: "ההשתתפות שלי", en: "My Participation", ru: "Моё участие", fr: "Ma participation", es: "Mi participación" })}</h3>
-              </div>
-              <div className="text-xs text-muted-foreground mb-3">
-                {txt(locale, {
-                  he: "סך אחוזי המשרה שלך בכל הפרויקטים",
-                  en: "Total FTE % across all your projects",
-                  ru: "Общая загрузка по всем проектам",
-                  fr: "% total d'allocation sur tous vos projets",
-                  es: "Asignación total en todos sus proyectos",
-                })}
-              </div>
-              <div className="space-y-2">
-                {myMemberships.map((m) => {
-                  const node = mockWbsNodes.find((n) => n.id === m.wbsNodeId);
-                  if (!node) return null;
-                  return (
-                    <div key={m.id} className="space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-xs font-medium line-clamp-1 flex-1">
-                          {locale === "he" ? node.name : node.nameEn || node.name}
-                        </div>
-                        <span className="text-xs font-bold text-primary">{m.ftePercent}%</span>
-                      </div>
-                      <Progress value={m.ftePercent} className="h-1" />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-4 pt-3 border-t">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold">{txt(locale, { he: "סה״כ", en: "Total", ru: "Итого", fr: "Total", es: "Total" })}</span>
-                  <span
-                    className={
-                      totalFte > 100
-                        ? "text-red-600 font-bold"
-                        : "text-emerald-600 font-bold"
-                    }
-                  >
-                    {totalFte}%
-                  </span>
-                </div>
-                {totalFte > 100 && (
-                  <div className="text-[10px] text-red-600 mt-1">
-                    {txt(locale, { he: "⚠️ הקצאת יתר!", en: "⚠️ Over-allocated!", ru: "⚠️ Перегрузка!", fr: "⚠️ Sur-alloué !", es: "⚠️ Sobre-asignado!" })}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-  bg,
-  iconColor,
-  tooltip,
-  delay,
-}: {
-  icon: typeof CheckSquare;
-  label: string;
-  value: number;
-  color: string;
-  bg: string;
-  iconColor: string;
-  tooltip: string;
-  delay?: number;
-}) {
-  return (
-    <div
-      className={`stat-gradient bg-gradient-to-br ${color} animate-fade-up`}
-      style={delay ? { animationDelay: `${delay}ms` } : undefined}
-      title={tooltip}
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-sm text-white/80 font-medium">{label}</div>
-          <div className="text-4xl font-bold mt-2">{value}</div>
-        </div>
-        <div className="size-12 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-          <Icon className="size-6 text-white" />
-        </div>
-      </div>
+      <ActiveUserGreeting locale={locale} fallbackUser={fallbackUser} />
+      <MyDashboardContent
+        allTasks={mockTasks}
+        allUsers={mockUsers}
+        allWbsNodes={mockWbsNodes}
+        allMembers={mockProjectMembers}
+        projects={projects}
+        locale={locale}
+      />
     </div>
   );
 }
