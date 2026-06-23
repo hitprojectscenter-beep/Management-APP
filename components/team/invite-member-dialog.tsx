@@ -30,6 +30,10 @@ function persistAddedUser(user: MockUser): void {
     if (idx >= 0) list[idx] = user;
     else list.push(user);
     window.localStorage.setItem(ADDED_USERS_KEY, JSON.stringify(list));
+    // Notify the team grid (and anything else listening) to re-read the
+    // list immediately — without this the operator had to refresh the
+    // page to see the new member, which they flagged as "not normal".
+    window.dispatchEvent(new CustomEvent("pmo:users-changed", { detail: user }));
   } catch {
     // Quietly ignore — Safari private mode etc.
   }

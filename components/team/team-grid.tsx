@@ -30,26 +30,51 @@ export function TeamGrid({
   const [users, setUsers] = useState<MockUser[]>(initialUsers);
 
   useEffect(() => {
-    try {
-      const addedRaw = window.localStorage.getItem("pmo_added_users");
-      if (!addedRaw) return;
-      const added = JSON.parse(addedRaw) as MockUser[];
-      if (!Array.isArray(added) || added.length === 0) return;
-      // Dedupe on id — server may already include some added users
-      // (once a real persistence layer ships) and we don't want them
-      // showing twice in the grid.
-      const seen = new Set(initialUsers.map((u) => u.id));
-      const fresh = added.filter((u) => u?.id && !seen.has(u.id));
-      if (fresh.length === 0) return;
-      setUsers([...initialUsers, ...fresh]);
-    } catch {
-      // Quietly ignore — falling back to server-rendered list is fine.
-    }
+    // Merge any operator-added members (localStorage) into the seeded
+    // list. Extracted into a function so we can also call it live when a
+    // member is added in the same session (no refresh needed).
+    const mergeAdded = () => {
+      try {
+        const addedRaw = window.localStorage.getItem("pmo_added_users");
+        if (!addedRaw) {
+          setUsers(initialUsers);
+          return;
+        }
+        const added = JSON.parse(addedRaw) as MockUser[];
+        if (!Array.isArray(added) || added.length === 0) {
+          setUsers(initialUsers);
+          return;
+        }
+        // Dedupe on id — server may already include some added users
+        // (once a real persistence layer ships) and we don't want them
+        // showing twice in the grid.
+        const seen = new Set(initialUsers.map((u) => u.id));
+        const fresh = added.filter((u) => u?.id && !seen.has(u.id));
+        setUsers(fresh.length ? [...initialUsers, ...fresh] : initialUsers);
+      } catch {
+        // Quietly ignore — falling back to server-rendered list is fine.
+      }
+    };
+
+    mergeAdded();
+    // Live updates: the invite dialog dispatches "pmo:users-changed" right
+    // after it persists a new member. The "storage" event covers the
+    // (rarer) case of a second tab adding someone.
+    window.addEventListener("pmo:users-changed", mergeAdded);
+    window.addEventListener("storage", mergeAdded);
+    return () => {
+      window.removeEventListener("pmo:users-changed", mergeAdded);
+      window.removeEventListener("storage", mergeAdded);
+    };
   }, [initialUsers]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {users.map((user) => {
+    <div className="space-y-4">
+      <p className="text-muted-foreground -mt-2">
+        {users.length} {txt(locale, COMMON_LABELS.teamMembers)}
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {users.map((user) => {
         const userTasks = mockTasks.filter((t) => t.assigneeId === user.id);
         const open = userTasks.filter((t) => t.status !== "done" && t.status !== "cancelled").length;
         const done = userTasks.filter((t) => t.status === "done").length;
@@ -97,7 +122,8 @@ export function TeamGrid({
             </CardContent>
           </Card>
         );
-      })}
+        })}
+      </div>
     </div>
   );
 }

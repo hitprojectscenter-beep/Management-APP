@@ -224,11 +224,13 @@ export function AddTaskDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialValues]);
 
-  const validate = (): boolean => {
+  const validate = (): typeof errors => {
     const errs: typeof errors = {};
     if (!form.title.trim()) errs.title = txt(locale, { he: "חובה למלא כותרת", en: "Title is required" });
     if (!form.taskType) errs.taskType = txt(locale, { he: "חובה לבחור סוג משימה", en: "Task type required" });
-    if (!form.parentId) errs.parentId = txt(locale, { he: "חובה לבחור שיוך", en: "Must select assignment" });
+    // NOTE: parentId (שיוך לפרויקט/פרוגרמה) is intentionally OPTIONAL — a task
+    // doesn't have to belong to a project. (User feedback: "משימה לא חייבת
+    // להיות משוייכת לפרויקט/פרוגרמה כלשהי".)
     if (!form.plannedStart) errs.plannedStart = txt(locale, { he: "חובה", en: "Required" });
     if (!form.plannedEnd) errs.plannedEnd = txt(locale, { he: "חובה", en: "Required" });
     if (!form.priority) errs.priority = txt(locale, { he: "חובה לבחור עדיפות", en: "Priority required" });
@@ -262,7 +264,24 @@ export function AddTaskDialog({
       errs.teamMembers = txt(locale, { he: "חובה לבחור לפחות חבר צוות אחד", en: "Select at least one member" });
     }
     setErrors(errs);
-    return Object.keys(errs).length === 0;
+    return errs;
+  };
+
+  /** Friendly label per field — used to tell the user EXACTLY which
+   *  required fields are missing, instead of a generic "complete all
+   *  required fields" message that leaves them hunting. */
+  const FIELD_LABELS: Partial<Record<keyof AddTaskFormData, string>> = {
+    title: txt(locale, { he: "כותרת", en: "Title" }) as string,
+    taskType: txt(locale, { he: "סוג משימה", en: "Task type" }) as string,
+    taskTypeOther: txt(locale, { he: "סוג משימה (אחר)", en: "Task type (other)" }) as string,
+    plannedStart: txt(locale, { he: "תאריך התחלה", en: "Start date" }) as string,
+    plannedEnd: txt(locale, { he: "תאריך סיום", en: "End date" }) as string,
+    priority: txt(locale, { he: "עדיפות", en: "Priority" }) as string,
+    source: txt(locale, { he: "מקור", en: "Source" }) as string,
+    sourceOther: txt(locale, { he: "מקור (אחר)", en: "Source (other)" }) as string,
+    teamMembers: txt(locale, { he: "צוות", en: "Team" }) as string,
+    description: txt(locale, { he: "תיאור", en: "Description" }) as string,
+    attachments: txt(locale, { he: "קבצים מצורפים", en: "Attachments" }) as string,
   };
 
   const toggleTeamMember = (userId: string) => {
@@ -276,18 +295,22 @@ export function AddTaskDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) {
-      // Tell the user WHY nothing happened, and scroll the first missing field
-      // into view. Without this the dialog was scrolled to the bottom (next to
-      // the submit button) and the error messages — sitting far above — were
-      // invisible, so users assumed the button was broken.
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      // Tell the user EXACTLY which fields are missing — the old generic
+      // "complete all required fields" left users (who believed they had
+      // filled everything) hunting for a field they couldn't see. Now we
+      // name the offending fields and scroll the first one into view.
+      const missingLabels = (Object.keys(errs) as (keyof AddTaskFormData)[])
+        .map((k) => FIELD_LABELS[k] || k)
+        .filter((v, i, a) => a.indexOf(v) === i); // dedupe
       toast.error(
         txt(locale, {
-          he: "נא להשלים את כל שדות החובה המסומנים ב-*",
-          en: "Please complete all required fields marked with *",
-          ru: "Заполните все обязательные поля, помеченные *",
-          fr: "Veuillez compléter tous les champs obligatoires marqués *",
-          es: "Complete todos los campos obligatorios marcados con *",
+          he: "חסרים פרטים: " + missingLabels.join(", "),
+          en: "Missing: " + missingLabels.join(", "),
+          ru: "Не заполнено: " + missingLabels.join(", "),
+          fr: "Manquant : " + missingLabels.join(", "),
+          es: "Falta: " + missingLabels.join(", "),
         })
       );
       requestAnimationFrame(() => {
@@ -447,7 +470,8 @@ export function AddTaskDialog({
           {/* Assignment: Project or Program */}
           <div className="space-y-1.5">
             <Label>
-              {txt(locale, { he: "שיוך", en: "Assignment" })} <span className="text-red-500">*</span>
+              {txt(locale, { he: "שיוך", en: "Assignment" })}{" "}
+              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "רשות", en: "optional" })})</span>
             </Label>
             <div className="flex gap-2 mb-2">
               <button

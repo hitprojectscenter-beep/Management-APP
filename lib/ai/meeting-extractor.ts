@@ -176,14 +176,27 @@ export function extractTasksHeuristic(text: string): ExtractedTask[] {
   // paragraph separators because each bullet is a distinct action item.
   const blocks: string[] = [];
   for (const para of text.split(/\n\s*\n+/)) {
-    // Inside a paragraph, split on markdown bullets / numbered items, but
-    // KEEP the rest of the paragraph attached so multi-sentence items
-    // stay intact.
-    const bulleted = para.split(/\n\s*(?=(?:\d+[.)]|[\-•·*●▪◦►])\s+)/);
+    // Inside a paragraph, split before any list-item marker at the start
+    // of a line: numbers (1. 2)), bullets, Hebrew-letter ordinals
+    // ("א." "ב." "ג.") and roman numerals ("i." "ii." "iv."). Hebrew
+    // meeting docs nest items under א/ב/ג and i/ii — without splitting on
+    // those, a whole multi-item section collapsed into one giant block
+    // and the title became a header fragment ("משימות להמשך: א").
+    const bulleted = para.split(/\n\s*(?=(?:\d+[.)]|[א-ת][.)]|[ivxIVX]{1,4}[.)]|[\-•·*●▪◦►])\s+)/);
     for (const b of bulleted) blocks.push(b.trim());
   }
   const lines = blocks
-    .map((l) => l.replace(/^[#\d.)\-•·*●▪◦►]+\s*/, "").trim())
+    .map((l) =>
+      l
+        // Strip leading list markers of every flavor we've seen in real
+        // Hebrew meeting docs: "(1)" / "1." / "2)" numerics, bullets,
+        // Hebrew-letter ordinals ("א." "ב." "ג.") and roman numerals
+        // ("i." "ii." "iv."). Repeated so a nested "(1) א." prefix is
+        // fully removed — without this the title for "א. סטאטוס…" became
+        // just the bare letter "א".
+        .replace(/^(?:\(?\d+[.)]\s*|[#\-•·*●▪◦►]+\s*|[א-ת][.)]\s+|[ivxIVX]{1,4}[.)]\s+)+/, "")
+        .trim()
+    )
     .filter((l) => l.length >= 4);
 
   // Hebrew verb stems — the most common task-bearing roots, written WITHOUT
@@ -229,6 +242,20 @@ export function extractTasksHeuristic(text: string): ExtractedTask[] {
   // heading ("נושאים:"), a bare noun phrase with no verb.
   const HEADER_ONLY = /^(?:סיכום\s+פגישה|נושאים|רקע|מבוא|סדר\s+יום|agenda|summary|introduction)\b[^.]*[:—–-]?\s*$/i;
 
+  // Lines that OPEN a background / context / administrative section are
+  // narration, never action items — even when content continues on the
+  // same line ("רקע: בתאריך 11.6.2025 התקיימה פגישה…"). User feedback:
+  // a "רקע" section was being extracted as a task.
+  const BACKGROUND_PREFIX = /^(?:רקע|כללי|מבוא|הקדמה|הנדון|בנדון|סדר\s+יום|נוכחים|משתתפים|נושאים\s+שעלו|להלן\s+הנושאים|background|agenda|attendees|present\b|general|introduction|context|minutes)/i;
+
+  // Status / reporting lines ("סטאטוס X", "status of Y", "עדכון בנושא…")
+  // describe a state, not an action to perform. Skip them.
+  const STATUS_PREFIX = /^(?:סטאטוס|סטטוס|status\b|update\s+on|עדכון\s+(?:בנושא|לגבי|על))/i;
+
+  // A "title" that is just an ordinal letter / roman numeral / number is a
+  // list artifact, not a task name ("א", "ii", "3").
+  const BARE_ORDINAL = /^(?:[א-ת]|[ivxlcdm]+|\d+)$/i;
+
   const heStems = HE_VERB_STEMS.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
   // Only real verbs (infinitive / future / imperative / past). Deliverable
   // nouns used to be here too, but they kept catching headers like
@@ -248,6 +275,11 @@ export function extractTasksHeuristic(text: string): ExtractedTask[] {
   for (const line of lines) {
     if (line.length < 8) continue;
     if (HEADER_ONLY.test(line)) continue;
+    // Skip narration: background/context sections and status reports are
+    // not tasks (user feedback: "רקע" and section letters were extracted
+    // as tasks; a task should be an activity to perform).
+    if (BACKGROUND_PREFIX.test(line)) continue;
+    if (STATUS_PREFIX.test(line)) continue;
     if (!actionRe.test(line) && !HE_DECISION_MARKER.test(line)) continue;
     // Strip leading "הוחלט ש" / "סוכם ש" so the title reads as the action,
     // not as the meta-decision.
@@ -259,6 +291,15 @@ export function extractTasksHeuristic(text: string): ExtractedTask[] {
     const title = trimTitle(
       cleaned.replace(/(?:אחראי|אחראית|אחריות|responsible|assign(?:ed)?\s+to|owner)[^.]*/i, "")
     );
+    // Reject artifact titles: a bare ordinal/number, or a fragment with
+    // fewer than two meaningful words. A real task title is a verb-phrase
+    // of 2+ words ("הכנת דוח", "תיאום פגישה") — not "א" or "3".
+    const trimmedTitle = title.trim();
+    if (BARE_ORDINAL.test(trimmedTitle)) continue;
+    const meaningfulWords = trimmedTitle
+      .split(/\s+/)
+      .filter((w) => w.replace(/[.,;:'"()]/g, "").length > 1);
+    if (meaningfulWords.length < 2) continue;
     out.push({
       title,
       description: line,
@@ -308,7 +349,7 @@ function detectDocumentMeta(text: string): { documentDate?: string; documentTitl
  */
 function buildGeminiExtractionPrompt(text: string, isFirstChunk: boolean): string {
   const today = new Date().toISOString().slice(0, 10);
-  return `אתה אנליסט פגישות בכיר. תפקידך: לקרוא טקסט חופשי — סיכום פגישה, מסמך, תעתיק שמע — ולחלץ ממנו ${isFirstChunk ? "את **כל**" : "את **כל**"} המשימות שהוזכרו, בלי לפספס. עדיף לכלול משימה ספקית מאשר להחמיץ אחת אמיתית.
+  return `אתה אנליסט פגישות בכיר. תפקידך: לקרוא טקסט חופשי — סיכום פגישה, מסמך, תעתיק שמע — ולחלץ ממנו את **המשימות הברורות לביצוע** בלבד. משימה היא **פעולה שמישהו צריך לבצע** — לא רקע, לא סטאטוס, לא תיאור של מה שכבר קרה. כשמשהו אינו פעולה ברורה — אל תכלול אותו. עדיף להחזיר 3 משימות אמיתיות מאשר 9 שכוללות רקע וכותרות.
 
 החזר JSON בלבד (ללא טקסט נוסף) בפורמט הזה בדיוק:
 {
@@ -332,10 +373,18 @@ function buildGeminiExtractionPrompt(text: string, isFirstChunk: boolean): strin
 ✓ בקשות והתחייבויות ("נביא תשובה עד יום חמישי", "אבדוק ואחזור")
 ✓ סעיפי action items בסיכומי פגישות
 
-**מה לא לכלול:**
+**מה לא לכלול (חשוב מאוד — אלה לא משימות):**
+✗ **סעיף "רקע" / "כללי" / "מבוא" / "הנדון"** — תיאור הקשר, לא פעולה
+✗ **שורות סטאטוס** ("סטאטוס פעילות IR", "סטאטוס פרויקטי ענן") — דיווח מצב, לא פעולה
+✗ כותרות וכותרות-משנה ("נושאים שעלו", "להלן הנושאים")
+✗ אותיות/מספרי סעיף בלבד ("א", "ii") — אלה סימני רשימה, לא משימות
 ✗ דעות, אבחנות, רקע כללי שאינו דורש פעולה
-✗ מידע שכבר נעשה ("פגשנו את הלקוח אתמול")
+✗ מידע שכבר נעשה ("פגשנו את הלקוח אתמול", "התקיימה פגישה")
 ✗ חזון/אסטרטגיה ברמת על
+
+**מבחן פשוט:** אם אי אפשר לכתוב את הפריט כ"מי עושה מה" — זו לא משימה.
+- "סטאטוס הצגת ממצאי מבדק" → לא משימה (זה כותרת/סטאטוס)
+- "אלעד יציג את ממצאי המבדק עד יום חמישי" → משימה ✓
 
 **חוקים נוקשים:**
 - description = פסקה מקורית מהמסמך, לא סיכום שלך. אם המשימה מוזכרת ב-3 משפטים — להעתיק את שלושתם.

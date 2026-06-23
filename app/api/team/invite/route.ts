@@ -72,17 +72,45 @@ function getAppBaseUrl(): string {
   return "http://localhost:3000";
 }
 
+/**
+ * Encode the member into a base64url token carried on the app-root URL
+ * (`/he?invite=<token>`). When the recipient opens that link the client
+ * decodes it, adds the member to its in-memory store, and switches the
+ * active user to them — so they "log in" as themselves instead of
+ * landing as the default user (u1 = Mark).
+ *
+ * Why the whole record, not just an id: mockUsers is in-memory and is
+ * wiped on every Vercel cold start, so by the time the link is clicked
+ * the server no longer has the member. The token carries everything the
+ * client needs to reconstruct them. No signature — there are no secrets
+ * in mock mode and the role switcher already exposes every user. Real
+ * auth would replace this with a signed, expiring JWT.
+ */
+function buildInviteToken(user: MockUser): string {
+  const payload = JSON.stringify({
+    uid: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    title: user.title,
+    image: user.image,
+    locale: user.locale,
+    role: user.role,
+  });
+  return Buffer.from(payload, "utf8").toString("base64url");
+}
+
 function buildInviteMessage(name: string, locale: string, appUrl: string): { subject: string; body: string } {
   const inviterName = "מארק ישראל"; // CURRENT_USER until real auth lands
   if (locale === "en") {
     return {
       subject: `You've been added to PMO++ at Mapi`,
-      body: `Hi ${name},\n\n${inviterName} added you to the PMO++ workspace at the Survey of Israel. Your account is active — tasks assigned to you will show up the next time you visit.\n\nOpen the app:\n${appUrl}\n\n—\nMapi PMO++`,
+      body: `Hi ${name},\n\n${inviterName} added you to the PMO++ workspace at the Survey of Israel. Your account is active.\n\nClick to open the app as yourself:\n${appUrl}\n\n—\nMapi PMO++`,
     };
   }
   return {
     subject: `נוספת לפלטפורמת PMO++ במרכז למיפוי ישראל`,
-    body: `שלום ${name},\n\n${inviterName} הוסיף אותך ליישום PMO++ של המרכז למיפוי ישראל. החשבון שלך פעיל — משימות ששייכו אליך יופיעו בכניסה הבאה.\n\nכניסה ליישום:\n${appUrl}\n\n—\nצוות PMO++ במפ"י`,
+    body: `שלום ${name},\n\n${inviterName} הוסיף אותך ליישום PMO++ של המרכז למיפוי ישראל. החשבון שלך פעיל.\n\nלחץ כדי להיכנס ליישום בזהותך:\n${appUrl}\n\n—\nצוות PMO++ במפ"י`,
   };
 }
 
@@ -179,10 +207,12 @@ export async function POST(req: Request) {
   };
   mockUsers.push(newUser);
 
-  // Notification: a short message pointing at the app root. No token,
-  // no per-recipient path — just the public production URL so the
-  // recipient never lands on a protected Vercel preview.
-  const appUrl = getAppBaseUrl();
+  // Notification: a message pointing at the app root WITH an ?invite=
+  // token so the recipient enters as themselves. Root path (not a
+  // dedicated page) keeps it off Vercel preview-protection and needs no
+  // Suspense boundary.
+  const inviteToken = buildInviteToken(newUser);
+  const appUrl = `${getAppBaseUrl()}/${locale}?invite=${inviteToken}`;
   const { subject, body: msgBody } = buildInviteMessage(fullName, locale, appUrl);
 
   let emailDeliveryStatus: "sent" | "no_transport" | "failed" = "no_transport";

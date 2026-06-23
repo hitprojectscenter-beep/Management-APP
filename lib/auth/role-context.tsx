@@ -11,6 +11,40 @@ import type { UserRole } from "@/lib/db/types";
  * writes here so a manual switch survives a reload.
  */
 const ACTIVE_USER_KEY = "pmo_active_user_id";
+const ADDED_USERS_KEY = "pmo_added_users";
+
+/**
+ * Decode the base64url ?invite= token the invite email links to. Mirrors
+ * buildInviteToken in app/api/team/invite/route.ts. atob yields a binary
+ * string, so we re-decode the bytes as UTF-8 — otherwise Hebrew names
+ * come back as mojibake.
+ */
+function decodeInviteToken(token: string): MockUser | null {
+  try {
+    const b64 = token.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    const json = new TextDecoder("utf-8").decode(bytes);
+    const p = JSON.parse(json);
+    if (typeof p?.uid !== "string" || typeof p?.name !== "string") return null;
+    return {
+      id: p.uid,
+      name: p.name,
+      email: p.email || "",
+      phone: p.phone,
+      title: p.title,
+      image: p.image || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(p.name)}`,
+      locale: p.locale === "en" ? "en" : "he",
+      role: (p.role as UserRole) || "member",
+      skills: [],
+      performanceScore: 80,
+      hourlyCapacity: 40,
+    };
+  } catch {
+    return null;
+  }
+}
 
 interface RoleContextType {
   /** Currently active user */
@@ -56,13 +90,43 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       // Re-inject any members added via the dialog. Stored as an array
       // (pmo_added_users) so multiple invites in a session accumulate
       // instead of overwriting each other.
-      const addedRaw = window.localStorage.getItem("pmo_added_users");
+      const addedRaw = window.localStorage.getItem(ADDED_USERS_KEY);
       if (addedRaw) {
         const list = JSON.parse(addedRaw) as MockUser[];
         for (const u of list) {
           if (u?.id && !mockUsers.some((m) => m.id === u.id)) {
             mockUsers.push(u);
           }
+        }
+      }
+
+      // ?invite=<token> — recipient opened the invite email link. Decode
+      // the member, register them, persist them, and make them the active
+      // user so they enter the app as THEMSELVES (not as the default u1).
+      // Then strip the param from the URL so a refresh doesn't re-run it.
+      const params = new URLSearchParams(window.location.search);
+      const inviteToken = params.get("invite");
+      if (inviteToken) {
+        const invited = decodeInviteToken(inviteToken);
+        if (invited) {
+          if (!mockUsers.some((u) => u.id === invited.id)) mockUsers.push(invited);
+          // Persist to the added-users array so they survive future loads
+          // and show on /team.
+          try {
+            const raw = window.localStorage.getItem(ADDED_USERS_KEY);
+            const list: MockUser[] = raw ? JSON.parse(raw) : [];
+            if (!list.some((u) => u.id === invited.id)) {
+              list.push(invited);
+              window.localStorage.setItem(ADDED_USERS_KEY, JSON.stringify(list));
+            }
+          } catch { /* ignore */ }
+          window.localStorage.setItem(ACTIVE_USER_KEY, invited.id);
+          setUserId(invited.id);
+          // Clean the URL: drop ?invite= but keep the rest of the path.
+          params.delete("invite");
+          const clean = window.location.pathname + (params.toString() ? `?${params}` : "");
+          window.history.replaceState({}, "", clean);
+          return; // invite wins over any stored active-user
         }
       }
 

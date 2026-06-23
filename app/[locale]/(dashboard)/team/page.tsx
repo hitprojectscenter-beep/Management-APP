@@ -22,9 +22,8 @@ export default async function TeamPage({
           <h1 className="text-3xl font-bold tracking-tight">
             {txt(locale, COMMON_LABELS.team)}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            {mockUsers.length} {txt(locale, COMMON_LABELS.teamMembers)}
-          </p>
+          {/* Count is rendered inside <TeamGrid> so it stays in sync with
+              members added live in this session (no refresh). */}
         </div>
         <RoleGate permission="manage_team">
           <InviteMemberDialog locale={locale}>
