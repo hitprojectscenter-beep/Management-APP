@@ -282,6 +282,28 @@ async function uploadAudioToGemini(
   return fileUri;
 }
 
+/**
+ * Translate a raw error into something the user can act on. The most
+ * common failure mode the operator was hitting was Gemini's free-tier
+ * quota — and the previous version surfaced the raw JSON
+ * ("Gemini gemini-2.0-flash 429: {...}") which neither said WHAT the
+ * problem was nor WHAT the operator can do about it. This function
+ * detects 429 / quota / RESOURCE_EXHAUSTED markers and replaces them
+ * with a localized, actionable message.
+ */
+function formatIntakeError(err: unknown, locale: string): string {
+  const raw = err instanceof Error ? err.message : String(err || "");
+  const isQuota = /\b429\b|quota|RESOURCE_EXHAUSTED|exceeded.*quota/i.test(raw);
+  if (isQuota) {
+    return locale === "en"
+      ? "⚠️ Gemini daily free-tier quota exhausted. The PDF extractor will retry with the local text parser when possible; for image-only PDFs or other AI features, either wait until tomorrow (Pacific midnight) or set a new GEMINI_API_KEY in Vercel Environment Variables."
+      : "⚠️ מכסת ה-Free Tier היומית של Gemini התמלאה. עבור PDF דיגיטלי המערכת תנסה לחלץ מקומית; עבור PDF סרוק או שירותי AI אחרים — חכה לאיפוס המכסה (חצות לפי שעון פסיפי) או הגדר GEMINI_API_KEY חדש ב-Vercel Environment Variables.";
+  }
+  // Generic error — keep the original message so debugging is still possible.
+  const prefix = locale === "en" ? "Processing failed" : "כשל בעיבוד";
+  return `${prefix}: ${raw || "unknown error"}`;
+}
+
 export function IntakeWorkflow() {
   const locale = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -477,12 +499,15 @@ export function IntakeWorkflow() {
         })
       );
     } catch (err) {
-      showError(
-        (txt(locale, { he: "כשל בעיבוד", en: "Processing failed" }) as string) +
-          ": " + (err instanceof Error ? err.message : "unknown")
-      );
+      showError(formatIntakeError(err, locale));
     } finally {
       setLoading(false);
+      // Reset the file input value so the user can pick the SAME file
+      // again (the browser fires onChange only when the value changes;
+      // without this, after a 429 the user clicks "choose file", picks
+      // the same PDF, and nothing happens — appears broken).
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (audioInputRef.current) audioInputRef.current.value = "";
     }
   };
 
@@ -511,10 +536,7 @@ export function IntakeWorkflow() {
         })
       );
     } catch (err) {
-      showError(
-        (txt(locale, { he: "כשל בעיבוד", en: "Processing failed" }) as string) +
-          ": " + (err instanceof Error ? err.message : "unknown")
-      );
+      showError(formatIntakeError(err, locale));
     } finally {
       setLoading(false);
     }
@@ -556,10 +578,7 @@ export function IntakeWorkflow() {
         })
       );
     } catch (err) {
-      showError(
-        (txt(locale, { he: "כשל בעיבוד", en: "Processing failed" }) as string) +
-          ": " + (err instanceof Error ? err.message : "unknown")
-      );
+      showError(formatIntakeError(err, locale));
     } finally {
       setLoading(false);
     }
