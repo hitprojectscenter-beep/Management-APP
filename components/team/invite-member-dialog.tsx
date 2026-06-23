@@ -11,6 +11,29 @@ import { toast } from "sonner";
 import { Send, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
+import type { MockUser } from "@/lib/db/mock-data";
+
+/**
+ * localStorage key holding the array of users created via the invite
+ * dialog. Used by team-grid and role-context to keep added members
+ * visible across page loads and across Vercel cold starts (where the
+ * in-memory mockUsers wipes back to the seeded 6).
+ */
+const ADDED_USERS_KEY = "pmo_added_users";
+
+function persistAddedUser(user: MockUser): void {
+  try {
+    const raw = window.localStorage.getItem(ADDED_USERS_KEY);
+    const list: MockUser[] = raw ? JSON.parse(raw) : [];
+    // Dedupe on id — a duplicate POST shouldn't double the array.
+    const idx = list.findIndex((u) => u.id === user.id);
+    if (idx >= 0) list[idx] = user;
+    else list.push(user);
+    window.localStorage.setItem(ADDED_USERS_KEY, JSON.stringify(list));
+  } catch {
+    // Quietly ignore — Safari private mode etc.
+  }
+}
 
 interface InviteFormData {
   fullName: string;
@@ -223,65 +246,59 @@ export function InviteMemberDialog({
       return;
     }
 
-    // User actually created. Now report email status honestly and offer
-    // one-click fallback links (mailto + WhatsApp) so the operator can
-    // make sure the invite reaches the inbox even when no SMTP is set up.
+    // User exists from the moment the API returned. Persist them to
+    // localStorage so they stay visible on /team across page loads
+    // (the in-memory server-side mockUsers gets wiped on Vercel cold
+    // starts).
+    persistAddedUser(data.user);
+
     const emailStatus: "sent" | "no_transport" | "failed" = data.emailDeliveryStatus;
 
-    if (emailStatus === "sent") {
-      toast.success(
-        txt(locale, {
-          he: `✅ ${form.fullName} נוצר ומייל הזמנה נשלח`,
-          en: `✅ ${form.fullName} created and invite email sent`,
-        }),
-        {
-          description: txt(locale, {
-            he: `המייל נשלח ל-${form.email}. תפקיד: ${effectiveRole || "—"}.`,
-            en: `Email sent to ${form.email}. Role: ${effectiveRole || "—"}.`,
-          }),
-          duration: 10_000,
-        },
-      );
-    } else {
-      // Either no transport configured or send failed. Tell the user
-      // honestly AND give them a one-click button to open their mail
-      // client with the invite pre-filled — that's the path that
-      // actually delivers the message.
-      const statusLine = emailStatus === "failed"
-        ? txt(locale, { he: `שליחה אוטומטית נכשלה: ${data.emailError || "שגיאה לא ידועה"}`, en: `Auto-send failed: ${data.emailError || "unknown error"}` })
-        : txt(locale, { he: "שליחה אוטומטית לא מוגדרת בשרת (חסר RESEND_API_KEY)", en: "Auto-send not configured on the server (no RESEND_API_KEY)" });
+    // Lead the toast with the actual fact: the user was added. Send-
+    // notification is an optional follow-up, not the primary action.
+    const titleAdded = txt(locale, {
+      he: `✅ ${form.fullName} נוסף לצוות`,
+      en: `✅ ${form.fullName} added to the team`,
+    });
 
-      toast(
-        txt(locale, {
-          he: `✅ ${form.fullName} נוצר. נדרשת פעולה לשליחת המייל`,
-          en: `✅ ${form.fullName} created. Action needed to send invite`,
+    if (emailStatus === "sent") {
+      // Best case: server delivered the heads-up email itself.
+      toast.success(titleAdded, {
+        description: txt(locale, {
+          he: `הודעת יידוע נשלחה ל-${form.email}. אפשר לראות אותו ב-/team.`,
+          en: `Heads-up email sent to ${form.email}. They now appear on /team.`,
         }),
-        {
-          description: txt(locale, {
-            he: `${statusLine}\nלחץ "פתח לקוח מייל" כדי לשלוח את ההזמנה מהחשבון שלך.`,
-            en: `${statusLine}\nClick "Open mail client" to send the invite from your account.`,
-          }),
-          duration: 30_000,
-          action: {
-            label: txt(locale, { he: "פתח לקוח מייל", en: "Open mail client" }),
-            onClick: () => {
-              window.location.href = data.mailto;
-            },
+        duration: 8000,
+      });
+    } else {
+      // No SMTP configured (or it failed). The member is still added —
+      // we just couldn't auto-send. Offer one-click hand-off to the
+      // operator's own mail client / WhatsApp. Phrased as "optional
+      // notification" because the user creation already succeeded.
+      toast(titleAdded, {
+        description: txt(locale, {
+          he: `הוא מופיע ב-/team. אם תרצה לשלוח לו הודעה — בחר ערוץ:`,
+          en: `Visible on /team. Want to send a heads-up? Pick a channel:`,
+        }),
+        duration: 30_000,
+        action: {
+          label: txt(locale, { he: "📧 מייל", en: "📧 Email" }),
+          onClick: () => {
+            window.location.href = data.mailto;
           },
         },
-      );
-
-      // Secondary toast: WhatsApp option for phone-first delivery.
+      });
+      // Second toast offers WhatsApp as the alt channel.
       toast(
-        txt(locale, { he: "אפשר גם לשלוח בוואטסאפ", en: "Or send via WhatsApp" }),
+        txt(locale, { he: "או דרך WhatsApp", en: "Or via WhatsApp" }),
         {
           description: txt(locale, {
-            he: `שליחה ישירה ל-${form.phone}.`,
-            en: `Direct send to ${form.phone}.`,
+            he: `שלח הודעה ל-${form.phone}.`,
+            en: `Send a message to ${form.phone}.`,
           }),
           duration: 30_000,
           action: {
-            label: txt(locale, { he: "פתח WhatsApp", en: "Open WhatsApp" }),
+            label: txt(locale, { he: "💬 WhatsApp", en: "💬 WhatsApp" }),
             onClick: () => {
               window.open(data.whatsapp, "_blank");
             },
@@ -300,11 +317,11 @@ export function InviteMemberDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{txt(locale, { he: "הזמנת חבר צוות חדש", en: "Invite Team Member" })}</DialogTitle>
+          <DialogTitle>{txt(locale, { he: "הוספת חבר צוות", en: "Add Team Member" })}</DialogTitle>
           <DialogDescription>
             {txt(locale, {
-              he: "מלא את הפרטים ונשלח קישור הזמנה במייל.",
-              en: "Fill in the details and we'll send an invitation link.",
+              he: "פרטים מינימליים. ברגע השמירה — החבר מופיע ב-/team.",
+              en: "Fill in the basics. The member appears on /team immediately on save.",
             })}
             {" "}<span className="text-red-500">*</span> = {txt(locale, { he: "חובה", en: "required" })}
           </DialogDescription>
@@ -400,8 +417,8 @@ export function InviteMemberDialog({
             <Button type="submit" disabled={sending} className="min-h-[44px]">
               <Send className="size-4" />
               {sending
-                ? txt(locale, { he: "שולח...", en: "Sending..." })
-                : txt(locale, { he: "שלח הזמנה", en: "Send Invite" })}
+                ? txt(locale, { he: "מוסיף...", en: "Adding..." })
+                : txt(locale, { he: "הוסף לצוות", en: "Add to Team" })}
             </Button>
           </DialogFooter>
         </form>

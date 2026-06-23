@@ -4,34 +4,39 @@ import { mockUsers, type MockUser } from "@/lib/db/mock-data";
 
 /**
  * Nodemailer needs a Node runtime; the default Edge runtime can't
- * open TCP sockets to Gmail's SMTP servers. Pinning here keeps this
- * route on the Node lambda even if global config changes.
+ * open TCP sockets to Gmail's SMTP servers.
  */
 export const runtime = "nodejs";
 
 /**
  * POST /api/team/invite
  *
- * Creates a new team member in the (mock) user store and returns
- * payloads the client can use to open the user's mail/SMS client.
+ * Demo-mode user creation.
  *
- * Why no real email is sent: the project has no SMTP/Resend/SendGrid
- * credentials configured. Until those exist, the "invite" pipeline has
- * to honestly report "no transport configured" instead of pretending
- * the message went out. The client-side then opens a `mailto:` link so
- * the invite actually reaches the inbox — via the operator's own mail
- * client (Outlook/Gmail/Apple Mail) — instead of vanishing into a
- * silent toast.
+ * The "invite" is really just a team-member create + an optional
+ * notification email. There's no real authentication system here, so
+ * we deliberately do NOT generate an activation token or a magic
+ * acceptance link. The member exists the moment this endpoint returns.
  *
- * Server side does:
+ * What the server does:
  *   1. validate the form
- *   2. dedupe on email (avoid creating the same user twice if the
- *      operator hits Send twice or the network glitches)
+ *   2. dedupe on email
  *   3. push to mockUsers so the new member shows up in /team, /admin,
  *      and is selectable as an assignee on tasks
- *   4. return { user, emailDeliveryStatus, mailto, sms, whatsapp }
- *      so the client can both (a) tell the user truthfully whether a
- *      message went out and (b) hand them a one-click way to send it.
+ *   4. compose a short "you've been added" notice
+ *   5. optionally deliver it via Gmail SMTP (or Resend) if credentials
+ *      are present; otherwise return mailto + WhatsApp URLs so the
+ *      operator can send a notification from their own client
+ *
+ * What we removed (intentionally):
+ *   • The base64-encoded user-payload token. There's nothing for the
+ *     recipient to "accept" — they're already a member.
+ *   • The /accept-invite landing page. With no auth there's no
+ *     activation step.
+ *   • Any URL that points back into the app from the email. The
+ *     notification just says "you've been added; here's the link to
+ *     the app" — links go to the production root, no special path,
+ *     so the recipient never hits Vercel preview-protection.
  */
 
 interface InviteBody {
@@ -47,24 +52,13 @@ interface InviteBody {
 /**
  * Resolve the canonical public URL of this deployment. Priority:
  *   1. NEXT_PUBLIC_APP_URL — operator-controlled override (set this in
- *      Vercel to a custom domain like https://pmo.mapi.gov.il, or to
- *      the stable production *.vercel.app domain).
- *   2. VERCEL_PROJECT_PRODUCTION_URL — auto-injected by Vercel and
- *      points at the stable production domain (e.g.
- *      "management-app-henna.vercel.app"). Public to everyone.
- *   3. VERCEL_URL — per-deployment URL with a random hash
- *      ("management-qz2su0e52-...vercel.app"). Always protected by
- *      Vercel Authentication unless preview protection is turned off,
- *      so links sent in emails would force the recipient to log into
- *      Vercel — exactly what just happened to the operator.
- *   4. localhost fallback — only meaningful in dev.
- *
- * Why the order matters: VERCEL_URL is the FIRST thing every Vercel
- * deployment has, including production builds. If we use it
- * unconditionally we send protected-preview links to the wrong people.
- * VERCEL_PROJECT_PRODUCTION_URL is stable and public, so it's the
- * right default. We only fall back to VERCEL_URL on preview/branch
- * deployments where the operator is testing.
+ *      Vercel to a custom domain like https://pmo.mapi.gov.il).
+ *   2. VERCEL_PROJECT_PRODUCTION_URL — auto-injected by Vercel, points
+ *      at the stable production *.vercel.app domain. Public.
+ *   3. VERCEL_URL — per-deployment URL with a random hash. Protected
+ *      by Vercel Auth on previews, but correct on preview branches
+ *      where the operator is just testing locally.
+ *   4. localhost fallback — dev only.
  */
 function getAppBaseUrl(): string {
   const overrideUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -78,83 +72,35 @@ function getAppBaseUrl(): string {
   return "http://localhost:3000";
 }
 
-/**
- * Build the per-invite token that lets /accept-invite reconstruct the
- * invited user even when the in-memory mockUsers array got wiped
- * between the POST that created them and the GET that lands on the
- * accept page. Plain base64-encoded JSON — no signature.
- *
- * Why we encode the WHOLE user record (not just the id): mockUsers is
- * an in-memory module variable. In dev, Fast Refresh resets it on
- * every code change. In Vercel production, every cold-start lambda
- * gets a fresh copy with only the seeded 6 users. Either way, the
- * "u7" pushed by the invite POST is gone by the time the recipient
- * clicks the link. Encoding the full record in the token lets the
- * client rebuild the user purely from the URL — no server state
- * required.
- *
- * Why no signature: mock-mode users are public, mockUsers has no
- * secrets, and there's no way to "log in as someone else" in this
- * demo (the role switcher already exposes all users). When this app
- * moves to real auth + DB, the token should become an HMAC-signed
- * JWT with an expiry and the payload should shrink back to just uid.
- */
-function buildInviteToken(user: MockUser): string {
-  const payload = JSON.stringify({
-    uid: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    title: user.title,
-    image: user.image,
-    locale: user.locale,
-    role: user.role,
-    iat: Date.now(),
-  });
-  return Buffer.from(payload, "utf8").toString("base64url");
-}
-
-function buildInviteMessage(name: string, locale: string, acceptUrl: string): { subject: string; body: string } {
+function buildInviteMessage(name: string, locale: string, appUrl: string): { subject: string; body: string } {
   const inviterName = "מארק ישראל"; // CURRENT_USER until real auth lands
   if (locale === "en") {
     return {
-      subject: `You're invited to PMO++ at Mapi`,
-      body: `Hi ${name},\n\n${inviterName} invited you to join the PMO++ workspace at the Survey of Israel.\n\nClick to accept the invitation and activate your account:\n${acceptUrl}\n\n—\nMapi PMO++`,
+      subject: `You've been added to PMO++ at Mapi`,
+      body: `Hi ${name},\n\n${inviterName} added you to the PMO++ workspace at the Survey of Israel. Your account is active — tasks assigned to you will show up the next time you visit.\n\nOpen the app:\n${appUrl}\n\n—\nMapi PMO++`,
     };
   }
   return {
-    subject: `הזמנה לפלטפורמת PMO++ במרכז למיפוי ישראל`,
-    body: `שלום ${name},\n\n${inviterName} הזמין אותך להצטרף ליישום PMO++ של המרכז למיפוי ישראל.\n\nלחץ כאן כדי לאשר את ההזמנה ולהיכנס למערכת:\n${acceptUrl}\n\n—\nצוות PMO++ במפ"י`,
+    subject: `נוספת לפלטפורמת PMO++ במרכז למיפוי ישראל`,
+    body: `שלום ${name},\n\n${inviterName} הוסיף אותך ליישום PMO++ של המרכז למיפוי ישראל. החשבון שלך פעיל — משימות ששייכו אליך יופיעו בכניסה הבאה.\n\nכניסה ליישום:\n${appUrl}\n\n—\nצוות PMO++ במפ"י`,
   };
 }
 
 /**
  * Try to send via Gmail SMTP using Nodemailer + an App Password.
- *
- * Why Gmail SMTP and not Gmail API: SMTP needs only an App Password
- * (no OAuth, no Google Cloud Console project, no consent screen).
- * The operator turns on 2FA, creates a 16-char password at
- * myaccount.google.com/apppasswords, and pastes it into Vercel as
- * GMAIL_APP_PASSWORD. That's it — no domain verification required
- * (the trade-off being that every invite shows the operator's own
- * Gmail as the sender).
- *
- * Returns null when no credentials are configured (so callers can
- * fall through to the next transport), the messageId on success,
- * or throws on real SMTP errors so the caller can surface them.
+ * Returns null when no credentials are configured, the messageId on
+ * success, or throws on real SMTP errors.
  */
 async function sendViaGmail(toEmail: string, subject: string, body: string): Promise<{ id: string } | null> {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
   if (!user || !pass) return null;
-
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
     secure: true,
     auth: { user, pass },
   });
-
   const info = await transporter.sendMail({
     from: `"PMO++ — מפ\"י" <${user}>`,
     to: toEmail,
@@ -165,8 +111,7 @@ async function sendViaGmail(toEmail: string, subject: string, body: string): Pro
 }
 
 /**
- * Fallback transport: Resend. Returns null if no key is configured,
- * the parsed result on success, or throws on a real Resend error.
+ * Fallback transport: Resend. Returns null if no key is configured.
  * Kept for operators who later migrate to a verified domain.
  */
 async function sendViaResend(toEmail: string, fromAddress: string, subject: string, body: string): Promise<{ id: string } | null> {
@@ -174,16 +119,8 @@ async function sendViaResend(toEmail: string, fromAddress: string, subject: stri
   if (!key) return null;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: fromAddress,
-      to: [toEmail],
-      subject,
-      text: body,
-    }),
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from: fromAddress, to: [toEmail], subject, text: body }),
   });
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -210,9 +147,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "valid email required" }, { status: 400 });
   if (!phone) return NextResponse.json({ error: "phone required" }, { status: 400 });
 
-  // Dedupe — if the email already exists, return the existing user so
-  // the UI can tell the operator "already on the team" instead of
-  // silently creating a duplicate.
+  // Dedupe on email — if the member already exists, return them so the
+  // UI can tell the operator "already on the team" instead of creating
+  // a silent duplicate.
   const existing = mockUsers.find((u) => u.email.toLowerCase() === email);
   if (existing) {
     return NextResponse.json({
@@ -226,9 +163,6 @@ export async function POST(req: Request) {
     });
   }
 
-  // Generate a stable id. Real auth will replace this with a UUID from
-  // Postgres, but for mock mode "uN" is consistent with the existing
-  // catalog (u1..u6).
   const nextNum = mockUsers.length + 1;
   const newUser: MockUser = {
     id: `u${nextNum}`,
@@ -238,8 +172,6 @@ export async function POST(req: Request) {
     title: body.role || undefined,
     image: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName)}`,
     locale: locale === "en" ? "en" : "he",
-    // New invites default to "member" — admins/managers are promoted
-    // explicitly from the admin panel.
     role: "member",
     skills: [],
     performanceScore: 80,
@@ -247,27 +179,17 @@ export async function POST(req: Request) {
   };
   mockUsers.push(newUser);
 
-  // Build the invite acceptance link. The token tells /accept-invite
-  // which user the recipient is, so the page can switch the active
-  // user to them instead of dropping them into the default u1 session.
-  const token = buildInviteToken(newUser);
-  const acceptUrl = `${getAppBaseUrl()}/${locale}/accept-invite?token=${token}`;
-
-  // Build the invite message once; we'll either send it via Resend or
-  // hand the client mailto/whatsapp links so the operator can send it
-  // from their own client.
-  const { subject, body: msgBody } = buildInviteMessage(fullName, locale, acceptUrl);
+  // Notification: a short message pointing at the app root. No token,
+  // no per-recipient path — just the public production URL so the
+  // recipient never lands on a protected Vercel preview.
+  const appUrl = getAppBaseUrl();
+  const { subject, body: msgBody } = buildInviteMessage(fullName, locale, appUrl);
 
   let emailDeliveryStatus: "sent" | "no_transport" | "failed" = "no_transport";
   let emailError: string | undefined;
   let providerMessageId: string | undefined;
   let provider: "gmail" | "resend" | undefined;
 
-  // Try Gmail SMTP first (the operator's chosen primary transport —
-  // no domain verification needed). Fall back to Resend only if Gmail
-  // isn't configured. If both throw, we keep the last error and let
-  // the client surface the mailto fallback so the message still
-  // reaches the recipient.
   try {
     const gmailResult = await sendViaGmail(email, subject, msgBody);
     if (gmailResult) {
@@ -275,7 +197,6 @@ export async function POST(req: Request) {
       providerMessageId = gmailResult.id;
       provider = "gmail";
     } else {
-      // Gmail not configured → try Resend.
       const resendResult = await sendViaResend(
         email,
         process.env.RESEND_FROM_ADDRESS || "PMO++ <onboarding@resend.dev>",
@@ -294,16 +215,12 @@ export async function POST(req: Request) {
     console.warn("[invite] email delivery failed:", emailError);
   }
 
-  // Always return mailto + whatsapp + sms URIs so the client can hand
-  // the operator a one-click "open my mail client" fallback even when
-  // server-side delivery succeeded (some teams want both).
+  // mailto + WhatsApp + sms — always returned, so even when the server
+  // sent the email itself the operator can still ping the new member
+  // through another channel without composing a new message.
   const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msgBody)}`;
   const phoneDigits = phone.replace(/\D/g, "");
-  // WhatsApp expects E.164 without +. Assume Israel (+972) for local
-  // numbers starting with 0; otherwise pass digits through.
-  const waNumber = phoneDigits.startsWith("0")
-    ? "972" + phoneDigits.slice(1)
-    : phoneDigits;
+  const waNumber = phoneDigits.startsWith("0") ? "972" + phoneDigits.slice(1) : phoneDigits;
   const whatsapp = `https://wa.me/${waNumber}?text=${encodeURIComponent(`${subject}\n\n${msgBody}`)}`;
   const sms = `sms:${phone}?body=${encodeURIComponent(`${subject} — ${msgBody.split("\n").slice(0, 3).join(" ")}`)}`;
 

@@ -31,15 +31,17 @@ export function TeamGrid({
 
   useEffect(() => {
     try {
-      const payloadRaw = window.localStorage.getItem("pmo_invited_user_payload");
-      if (!payloadRaw) return;
-      const payload = JSON.parse(payloadRaw) as MockUser;
-      if (!payload?.id) return;
-      // Dedupe — server may already include the user once we ship a
-      // real persistence layer, in which case we don't want to render
-      // them twice.
-      if (initialUsers.some((u) => u.id === payload.id)) return;
-      setUsers([...initialUsers, payload]);
+      const addedRaw = window.localStorage.getItem("pmo_added_users");
+      if (!addedRaw) return;
+      const added = JSON.parse(addedRaw) as MockUser[];
+      if (!Array.isArray(added) || added.length === 0) return;
+      // Dedupe on id — server may already include some added users
+      // (once a real persistence layer ships) and we don't want them
+      // showing twice in the grid.
+      const seen = new Set(initialUsers.map((u) => u.id));
+      const fresh = added.filter((u) => u?.id && !seen.has(u.id));
+      if (fresh.length === 0) return;
+      setUsers([...initialUsers, ...fresh]);
     } catch {
       // Quietly ignore — falling back to server-rendered list is fine.
     }

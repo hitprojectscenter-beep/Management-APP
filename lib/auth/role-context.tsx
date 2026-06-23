@@ -45,25 +45,24 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState("u1"); // default: admin
 
   // Hydrate from localStorage on mount so that:
-  //   1. The /accept-invite flow can pre-select the newly invited user
-  //      before redirecting here.
-  //   2. A manual role switch survives a page reload (previously a
-  //      reload always snapped back to u1, which made the topbar's
-  //      role-switcher feel broken).
-  //   3. An invited user (created post-build via /accept-invite) gets
-  //      re-injected into mockUsers after a hard refresh, so they
-  //      remain visible in the team page and role switcher.
+  //   1. A manual role switch in the topbar survives a page reload.
+  //   2. Members added via the invite dialog get re-injected into
+  //      mockUsers — the server-side mockUsers wipes on Vercel cold
+  //      starts, so the operator's localStorage is the only durable
+  //      record of who they've added.
   // SSR-safety: useEffect only runs in the browser, so window is defined.
   useEffect(() => {
     try {
-      // Re-inject the invited user payload if it's not already in
-      // mockUsers — handles the case where the user accepted an invite,
-      // then later did a hard reload and lost the in-memory push.
-      const payloadRaw = window.localStorage.getItem("pmo_invited_user_payload");
-      if (payloadRaw) {
-        const payload = JSON.parse(payloadRaw) as MockUser;
-        if (payload?.id && !mockUsers.some((u) => u.id === payload.id)) {
-          mockUsers.push(payload);
+      // Re-inject any members added via the dialog. Stored as an array
+      // (pmo_added_users) so multiple invites in a session accumulate
+      // instead of overwriting each other.
+      const addedRaw = window.localStorage.getItem("pmo_added_users");
+      if (addedRaw) {
+        const list = JSON.parse(addedRaw) as MockUser[];
+        for (const u of list) {
+          if (u?.id && !mockUsers.some((m) => m.id === u.id)) {
+            mockUsers.push(u);
+          }
         }
       }
 
