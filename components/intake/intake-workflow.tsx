@@ -499,7 +499,14 @@ export function IntakeWorkflow() {
           }
         } catch (audioErr) {
           setUploadProgress(null);
-          console.warn("[intake] client-side audio chunked transcription failed, trying next path:", audioErr);
+          // The chunked transcription is the ONLY viable path for large
+          // audio/video on Vercel (multipart would 413, blob still ends
+          // at Gemini). So DON'T silently fall through — that produced a
+          // misleading "file too large (~4.5MB)" message when the real
+          // cause was the Gemini quota. Surface the real error so
+          // formatIntakeError can show the accurate (quota) guidance.
+          console.warn("[intake] client-side audio chunked transcription failed:", audioErr);
+          throw audioErr instanceof Error ? audioErr : new Error(String(audioErr));
         }
       }
 
