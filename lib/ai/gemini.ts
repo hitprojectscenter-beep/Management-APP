@@ -3,6 +3,8 @@
  * Used as a fallback when the knowledge base doesn't have an exact match.
  */
 
+import { getGeminiApiKeys, isQuotaError } from "./gemini-keys";
+
 // Prefer 2.5 Flash (stable, wide availability), fallback to 2.0 if quota hit
 const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash"];
 
@@ -11,22 +13,12 @@ export interface GeminiMessage {
   parts: { text: string }[];
 }
 
-function getApiKey(): string | null {
-  // Normalize — some .env files have trailing whitespace in the key name
-  const key =
-    process.env.GEMINI_API_KEY ||
-    process.env["GEMINI_API_KEY "] ||
-    process.env.GOOGLE_API_KEY ||
-    null;
-  return key?.trim() || null;
-}
-
 export async function chatWithGemini(
   messages: GeminiMessage[],
   systemInstruction?: string
 ): Promise<string> {
-  const apiKey = getApiKey();
-  if (!apiKey) {
+  const keys = getGeminiApiKeys();
+  if (keys.length === 0) {
     throw new Error("GEMINI_API_KEY or GOOGLE_API_KEY not set");
   }
 
@@ -44,39 +36,45 @@ export async function chatWithGemini(
     body.systemInstruction = { parts: [{ text: systemInstruction }] };
   }
 
-  // Try each model in order until one works
+  // Try each (key × model) combination — a quota-exhausted key rotates to
+  // the next configured key before we give up.
   let lastError: Error | null = null;
-  for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify(body),
-      });
+  for (let k = 0; k < keys.length; k++) {
+    const apiKey = keys[k];
+    for (const model of GEMINI_MODELS) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+          body: JSON.stringify(body),
+        });
 
-      if (!res.ok) {
-        const errText = await res.text().catch(() => "");
-        lastError = new Error(`Gemini ${model} error ${res.status}: ${errText.slice(0, 200)}`);
-        console.warn(`[gemini] ${model} failed:`, errText.slice(0, 100));
-        continue; // Try next model
-      }
+        if (!res.ok) {
+          const errText = await res.text().catch(() => "");
+          lastError = new Error(`Gemini ${model} error ${res.status}: ${errText.slice(0, 200)}`);
+          console.warn(`[gemini] key#${k + 1} ${model} failed:`, errText.slice(0, 100));
+          // On quota, skip this key's remaining models and rotate keys.
+          if (isQuotaError(res.status, errText)) break;
+          continue; // Try next model
+        }
 
-      const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) {
-        lastError = new Error(`Gemini ${model} returned no text`);
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) {
+          lastError = new Error(`Gemini ${model} returned no text`);
+          continue;
+        }
+        console.log(`[gemini] key#${k + 1} ${model} responded successfully`);
+        return text.trim();
+      } catch (err) {
+        lastError = err as Error;
         continue;
       }
-      console.log(`[gemini] ${model} responded successfully`);
-      return text.trim();
-    } catch (err) {
-      lastError = err as Error;
-      continue;
     }
   }
 
-  throw lastError || new Error("All Gemini models failed");
+  throw lastError || new Error("All Gemini keys/models failed");
 }
 
 /**
@@ -149,5 +147,5 @@ ${fullContext}`;
 }
 
 export function isGeminiAvailable(): boolean {
-  return !!getApiKey();
+  return getGeminiApiKeys().length > 0;
 }

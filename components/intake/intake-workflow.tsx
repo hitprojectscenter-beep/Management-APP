@@ -344,8 +344,8 @@ function formatIntakeError(err: unknown, locale: string): string {
   const isQuota = /\b429\b|quota|RESOURCE_EXHAUSTED|exceeded.*quota/i.test(raw);
   if (isQuota) {
     return locale === "en"
-      ? "⚠️ Gemini daily free-tier quota exhausted. The PDF extractor will retry with the local text parser when possible; for image-only PDFs or other AI features, either wait until tomorrow (Pacific midnight) or set a new GEMINI_API_KEY in Vercel Environment Variables."
-      : "⚠️ מכסת ה-Free Tier היומית של Gemini התמלאה. עבור PDF דיגיטלי המערכת תנסה לחלץ מקומית; עבור PDF סרוק או שירותי AI אחרים — חכה לאיפוס המכסה (חצות לפי שעון פסיפי) או הגדר GEMINI_API_KEY חדש ב-Vercel Environment Variables.";
+      ? "⚠️ Gemini's daily free-tier quota is exhausted (this key has been used up for today). Video/audio transcription is heavy on quota.\n\nThe durable fix: add one or two BACKUP keys. Create extra free keys at aistudio.google.com/apikey (each in a different Google account/project) and set them in Vercel as GEMINI_API_KEY_2 and GEMINI_API_KEY_3 — the system rotates to them automatically when the first is spent. Otherwise wait for the daily reset (~10:00 Israel time) or upgrade to the paid tier."
+      : "⚠️ מכסת ה-Free Tier היומית של Gemini אזלה (המפתח הזה מוצה להיום). תמלול וידאו/שמע צורך הרבה מכסה.\n\nהפתרון היציב: הוסף מפתח גיבוי אחד-שניים. צור מפתחות חינמיים נוספים ב-aistudio.google.com/apikey (כל אחד בחשבון/פרויקט Google אחר) והגדר אותם ב-Vercel בשמות GEMINI_API_KEY_2 ו-GEMINI_API_KEY_3 — המערכת תעבור אליהם אוטומטית כשהראשון מתמלא. לחלופין, חכה לאיפוס היומי (בערך 10:00 שעון ישראל) או שדרג ל-Paid tier.";
   }
   // Generic error — keep the original message so debugging is still possible.
   const prefix = locale === "en" ? "Processing failed" : "כשל בעיבוד";

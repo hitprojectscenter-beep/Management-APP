@@ -14,16 +14,13 @@
 
 import mammoth from "mammoth";
 import JSZip from "jszip";
+import { getGeminiApiKeys, getGeminiApiKey, isQuotaError } from "./gemini-keys";
 
 const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash"];
 
+/** First configured key — for one-shot calls (file upload, status polls). */
 function getApiKey(): string | null {
-  const k =
-    process.env.GEMINI_API_KEY ||
-    process.env["GEMINI_API_KEY "] ||
-    process.env.GOOGLE_API_KEY ||
-    null;
-  return k?.trim() || null;
+  return getGeminiApiKey();
 }
 
 /** Categorize a mime type into one of the source-handling buckets. */
@@ -50,10 +47,12 @@ interface GeminiPart {
   inline_data?: { mime_type: string; data: string };
 }
 
-/** POST a generateContent call with optional inline_data parts. */
+/** POST a generateContent call with optional inline_data parts.
+ *  Tries every (key × model) combination so a quota-exhausted key
+ *  rotates to the next one before giving up. */
 async function geminiGenerate(parts: GeminiPart[], instruction?: string): Promise<string> {
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
+  const keys = getGeminiApiKeys();
+  if (keys.length === 0) throw new Error("GEMINI_API_KEY not set");
 
   const body: any = {
     contents: [{ role: "user", parts }],
@@ -62,32 +61,37 @@ async function geminiGenerate(parts: GeminiPart[], instruction?: string): Promis
   if (instruction) body.systemInstruction = { parts: [{ text: instruction }] };
 
   let lastErr: Error | null = null;
-  for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        lastErr = new Error(`Gemini ${model} ${res.status}: ${text.slice(0, 200)}`);
-        console.warn(`[source-ingest] ${model} failed:`, text.slice(0, 100));
-        continue;
+  for (let k = 0; k < keys.length; k++) {
+    const apiKey = keys[k];
+    for (const model of GEMINI_MODELS) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          lastErr = new Error(`Gemini ${model} ${res.status}: ${text.slice(0, 200)}`);
+          console.warn(`[source-ingest] key#${k + 1} ${model} failed:`, text.slice(0, 100));
+          // On quota, stop trying this key's other models — rotate keys.
+          if (isQuotaError(res.status, text)) break;
+          continue;
+        }
+        const data = await res.json();
+        const out = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n");
+        if (!out) {
+          lastErr = new Error(`Gemini ${model} returned no text`);
+          continue;
+        }
+        return out.trim();
+      } catch (err) {
+        lastErr = err as Error;
       }
-      const data = await res.json();
-      const out = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n");
-      if (!out) {
-        lastErr = new Error(`Gemini ${model} returned no text`);
-        continue;
-      }
-      return out.trim();
-    } catch (err) {
-      lastErr = err as Error;
     }
   }
-  throw lastErr ?? new Error("All Gemini models failed");
+  throw lastErr ?? new Error("All Gemini keys/models failed");
 }
 
 export interface IngestResult {
@@ -293,9 +297,14 @@ export async function ingestAudioByUri(
   fileUri: string,
   mime: string,
   filename = "",
-  fileSizeBytes = 0
+  fileSizeBytes = 0,
+  /** The key the file was uploaded with. Files API files are scoped to
+   *  the uploading key, so transcription MUST use the same one (we don't
+   *  rotate keys here — the dispatcher re-uploads with the next key on a
+   *  quota error). */
+  uploadKey?: string,
 ): Promise<IngestResult> {
-  const apiKey = getApiKey();
+  const apiKey = uploadKey || getApiKey();
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
   // The file is in PROCESSING state right after upload — wait for ACTIVE
@@ -487,16 +496,39 @@ export async function ingest(buf: Buffer, mime: string, filename = ""): Promise<
       return ingestVisual(buf, mime, filename);
     case "audio": {
       // Small clips can ride inline_data — one HTTP call, simplest path.
+      // geminiGenerate already rotates across keys.
       if (buf.length <= INLINE_AUDIO_MAX_BYTES) {
         return ingestAudio(buf, mime, filename);
       }
       // Larger recordings: upload to Files API and reference by URI. This
       // is the ONLY way a 200 MB Zoom recording can reach Gemini without
       // blowing through Vercel's memory and Gemini's inline cap.
-      const apiKey = getApiKey();
-      if (!apiKey) throw new Error("GEMINI_API_KEY not set");
-      const fileUri = await uploadBufferToGeminiFiles(buf, mime, filename, apiKey);
-      return ingestAudioByUri(fileUri, mime, filename, buf.length);
+      //
+      // Files API files are scoped to the uploading key, so to use a
+      // BACKUP key we must re-upload. We rotate keys here: try upload +
+      // transcribe with key #1; on a quota error, re-upload with key #2,
+      // etc. This is what lets a second free key rescue a video import
+      // when the first key's daily quota is spent.
+      const keys = getGeminiApiKeys();
+      if (keys.length === 0) throw new Error("GEMINI_API_KEY not set");
+      let lastErr: Error | null = null;
+      for (let k = 0; k < keys.length; k++) {
+        try {
+          const fileUri = await uploadBufferToGeminiFiles(buf, mime, filename, keys[k]);
+          return await ingestAudioByUri(fileUri, mime, filename, buf.length, keys[k]);
+        } catch (err) {
+          lastErr = err as Error;
+          const msg = lastErr.message || "";
+          // Rotate to the next key only on quota errors; for anything else
+          // (bad file, network) re-uploading with another key won't help.
+          if (isQuotaError(/\b429\b/.test(msg) ? 429 : 0, msg) && k < keys.length - 1) {
+            console.warn(`[ingest] key#${k + 1} quota-exhausted on video; retrying with key#${k + 2}`);
+            continue;
+          }
+          throw lastErr;
+        }
+      }
+      throw lastErr ?? new Error("All Gemini keys failed video transcription");
     }
     default:
       throw new Error(`Unsupported source type: ${mime} (${filename})`);
