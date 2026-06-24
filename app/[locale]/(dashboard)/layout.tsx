@@ -6,11 +6,20 @@ import { HelpBot } from "@/components/help/help-bot";
 import { HelpFloatingButton } from "@/components/help/help-trigger";
 import { PersonalAssistant } from "@/components/assistant/personal-assistant";
 import { RoleProvider } from "@/lib/auth/role-context";
+import { AuthGate } from "@/components/auth/auth-gate";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
   return (
     <TooltipProvider>
+    <AuthGate locale={locale}>
     <RoleProvider>
     <HelpProvider>
       <div className="min-h-screen flex bg-muted/20">
@@ -26,6 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <PersonalAssistant />
     </HelpProvider>
     </RoleProvider>
+    </AuthGate>
     </TooltipProvider>
   );
 }

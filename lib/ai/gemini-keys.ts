@@ -115,6 +115,34 @@ export async function geminiCall(model: string, apiKey: string, body: unknown): 
 }
 
 /**
+ * Cheap quota probe: is this key usable on ANY model right now? Sends a
+ * 1-token request per model (no 503-retry, so it's fast). Returns false
+ * only when EVERY model 429s (key fully quota-exhausted). On 503/other
+ * it returns true — "maybe busy, let the real call try". Used by the
+ * video path to avoid re-uploading a 200 MB file to a dead key.
+ */
+export async function probeKeyAvailable(apiKey: string): Promise<boolean> {
+  const body = JSON.stringify({
+    contents: [{ role: "user", parts: [{ text: "hi" }] }],
+    generationConfig: { maxOutputTokens: 1 },
+  });
+  for (const model of GEMINI_MODELS) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body },
+      );
+      if (res.ok) return true;
+      const t = await res.text().catch(() => "");
+      if (!isQuotaError(res.status, t)) return true; // 503/other — let the real call try
+    } catch {
+      return true; // network blip — don't write off the key
+    }
+  }
+  return false; // every model returned 429 — this key is exhausted
+}
+
+/**
  * Run a generateContent body across every (key × model) combination with
  * 503-retry, returning the first successful text. This is the single
  * resilient entry point — used for extraction, OCR, and inline audio.

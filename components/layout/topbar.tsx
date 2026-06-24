@@ -2,7 +2,8 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/routing";
-import { Search, Bell, Sun, Moon, Globe, Menu, ChevronDown, Crown, Shield, User as UserIcon, Eye, UserX } from "lucide-react";
+import { Search, Bell, Sun, Moon, Globe, Menu, ChevronDown, Crown, Shield, User as UserIcon, Eye, UserX, LogOut } from "lucide-react";
+import { logout } from "@/lib/auth/session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
@@ -142,6 +143,13 @@ export function Topbar() {
                 <div className="px-3 py-2 border-t bg-muted/20 text-[10px] text-muted-foreground">
                   {txt(locale, { he: "💡 הממשק ישתנה בהתאם להרשאות התפקיד", en: "💡 UI adapts to the selected role's permissions" })}
                 </div>
+                <button
+                  onClick={() => { logout(); window.location.href = `/${locale}/login`; }}
+                  className="w-full px-3 py-2.5 text-sm flex items-center gap-3 min-h-[44px] border-t text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                >
+                  <LogOut className="size-4" />
+                  {txt(locale, { he: "התנתקות", en: "Sign out" })}
+                </button>
               </div>
             </>
           )}

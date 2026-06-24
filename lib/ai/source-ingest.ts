@@ -14,7 +14,7 @@
 
 import mammoth from "mammoth";
 import JSZip from "jszip";
-import { getGeminiApiKeys, getGeminiApiKey, isQuotaError, geminiCall, geminiExtractText, geminiGenerateText } from "./gemini-keys";
+import { getGeminiApiKeys, getGeminiApiKey, isQuotaError, geminiCall, geminiExtractText, geminiGenerateText, probeKeyAvailable } from "./gemini-keys";
 
 const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash"];
 
@@ -273,8 +273,10 @@ export async function ingestAudioByUri(
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
   // The file is in PROCESSING state right after upload — wait for ACTIVE
-  // before asking Gemini to transcribe.
-  await waitForFileActive(fileUri, apiKey, 30_000);
+  // before asking Gemini to transcribe. Large videos can take >30 s to
+  // process server-side; the logs showed a 400 "not in ACTIVE state"
+  // when we gave up too early, so allow up to 90 s.
+  await waitForFileActive(fileUri, apiKey, 90_000);
 
   const instruction =
     "Transcribe this audio recording word-for-word. Preserve the spoken language (Hebrew/English/Russian/etc). " +
@@ -459,14 +461,21 @@ export async function ingest(buf: Buffer, mime: string, filename = ""): Promise<
       if (keys.length === 0) throw new Error("GEMINI_API_KEY not set");
       let lastErr: Error | null = null;
       for (let k = 0; k < keys.length; k++) {
+        // Cheap probe FIRST — don't waste a 200 MB upload on a key whose
+        // quota is already spent. (Bug from the logs: we were re-uploading
+        // the whole video to every exhausted key, ~2 min of dead work.)
+        const available = await probeKeyAvailable(keys[k]);
+        if (!available) {
+          lastErr = new Error(`Gemini key#${k + 1} quota exhausted`);
+          console.warn(`[ingest] key#${k + 1} probe: quota exhausted — skipping video upload`);
+          continue;
+        }
         try {
           const fileUri = await uploadBufferToGeminiFiles(buf, mime, filename, keys[k]);
           return await ingestAudioByUri(fileUri, mime, filename, buf.length, keys[k]);
         } catch (err) {
           lastErr = err as Error;
           const msg = lastErr.message || "";
-          // Rotate to the next key only on quota errors; for anything else
-          // (bad file, network) re-uploading with another key won't help.
           if (isQuotaError(/\b429\b/.test(msg) ? 429 : 0, msg) && k < keys.length - 1) {
             console.warn(`[ingest] key#${k + 1} quota-exhausted on video; retrying with key#${k + 2}`);
             continue;
