@@ -87,6 +87,53 @@ function kindIcon(kind: IntakeResponse["kind"]) {
 }
 
 /**
+ * Build a rich, multi-sentence description for an extracted task.
+ *
+ * The user asked that the description NOT be a single sentence identical
+ * to the title — it should explain the task's context from the source
+ * (up to ~5 sentences) plus useful details. We start with whatever the
+ * extractor captured (the source paragraph) and append the provenance we
+ * have: which document/meeting it came from, its date, the suggested
+ * assignee, the due date, and the work type. Deduped, capped at 5
+ * sentences / 300 chars (the form's description limit).
+ */
+function buildRichDescription(
+  task: ExtractedTask,
+  ctx: { documentTitle?: string; documentDate?: string; filename?: string },
+  locale: string,
+): string {
+  const sentences: string[] = [];
+  const push = (s?: string) => {
+    const t = (s || "").trim().replace(/\s+/g, " ");
+    if (t && !sentences.some((x) => x.toLowerCase() === t.toLowerCase())) sentences.push(t);
+  };
+
+  const raw = (task.description || "").trim();
+  const titleNorm = (task.title || "").trim().toLowerCase();
+  // Only use the raw description if it adds something beyond the title.
+  if (raw && raw.toLowerCase() !== titleNorm) push(raw);
+
+  const src = ctx.documentTitle || ctx.filename;
+  if (src) {
+    const dateStr = ctx.documentDate ? ` (${formatDateDDMMYYYY(ctx.documentDate)})` : "";
+    push(txt(locale, { he: `מקור: ${src}${dateStr}.`, en: `Source: ${src}${dateStr}.` }) as string);
+  }
+  if (task.assigneeHint) {
+    push(txt(locale, { he: `אחראי מוצע מהמקור: ${task.assigneeHint}.`, en: `Suggested owner from source: ${task.assigneeHint}.` }) as string);
+  }
+  if (task.dueDate) {
+    push(txt(locale, { he: `יעד מהמקור: ${formatDateDDMMYYYY(task.dueDate)}.`, en: `Due per source: ${formatDateDDMMYYYY(task.dueDate)}.` }) as string);
+  }
+  if (task.workTypeLabel) {
+    push(txt(locale, { he: `סוג עבודה: ${task.workTypeLabel}.`, en: `Work type: ${task.workTypeLabel}.` }) as string);
+  }
+  // Terse source with no meta — fall back to raw so the field isn't empty.
+  if (sentences.length === 0 && raw) push(raw);
+
+  return sentences.slice(0, 5).join(" ").slice(0, 300);
+}
+
+/**
  * Read /api/intake's response robustly.
  *
  * The previous code did `await res.json()` blindly — but a large upload
@@ -663,17 +710,29 @@ export function IntakeWorkflow() {
         const t = result.tasks[idx];
         if (!t) return;
         const resolved = resolveAssignee(t.assigneeHint) || autoFallback?.user;
+        // A task can't start and end the same day. Use the explicit due
+        // date only when it's actually after the start; otherwise default
+        // to a one-week window.
+        const bulkStart = result.documentDate || new Date().toISOString().slice(0, 10);
+        // Timezone-safe +7 days (pure UTC math — avoids dropping a day).
+        const [by, bm, bd] = bulkStart.split("-").map(Number);
+        const weekOut = new Date(Date.UTC(by, bm - 1, bd) + 7 * 86_400_000).toISOString().slice(0, 10);
+        const bulkEnd = t.dueDate && t.dueDate > bulkStart ? t.dueDate : weekOut;
         mockTasks.push({
           id: `intake-${startStamp}-${i}`,
           wbsNodeId: wbsLeaf,
           parentTaskId: null,
           title: t.title,
-          description: t.description,
+          description: buildRichDescription(t, {
+            documentTitle: result.documentTitle,
+            documentDate: result.documentDate,
+            filename: result.meta.filename,
+          }, locale),
           status: "not_started",
           priority: "medium",
           assigneeId: resolved?.id ?? null,
-          plannedStart: result.documentDate || new Date().toISOString().slice(0, 10),
-          plannedEnd: t.dueDate || result.documentDate || new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10),
+          plannedStart: bulkStart,
+          plannedEnd: bulkEnd,
           actualStart: null,
           actualEnd: null,
           estimateHours: t.estimateHours ?? 4,
@@ -1203,11 +1262,18 @@ function ExtractedTasksTable({
   const today = new Date().toISOString().slice(0, 10);
   const defaultEnd = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
 
+  // Document context shared by both create paths for rich descriptions.
+  const descContext = {
+    documentTitle: result.documentTitle,
+    documentDate: result.documentDate,
+    filename: result.meta.filename,
+  };
+
   const openEditor = (task: ExtractedTask, index: number) => {
     const resolved = resolveAssignee(task.assigneeHint) || autoFallback?.user;
     setEditorInit({
       title: task.title,
-      description: task.description,
+      description: buildRichDescription(task, descContext, locale),
       workTypeLabel: task.workTypeLabel,
       assigneeHint: task.assigneeHint,
       assigneeUserId: resolved?.id,

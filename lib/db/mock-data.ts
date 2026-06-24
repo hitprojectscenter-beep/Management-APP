@@ -76,6 +76,9 @@ export interface MockTask {
   progressPercent: number;
   tags: string[];
   dependencies: string[];
+  /** Required resources / effort categories for the task (e.g. כוח אדם,
+   *  תקציב, רישוי תוכנה). Multi-select on the create form. */
+  resources?: string[];
   /** Files attached when the task was created — typically the source
    *  document/recording for tasks extracted via the intake center. */
   attachments?: MockTaskAttachment[];

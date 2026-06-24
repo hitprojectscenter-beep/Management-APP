@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,11 +14,46 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { X, AlertTriangle, CalendarClock } from "lucide-react";
 import type { MockUser, MockWbsNode, MockTaskAttachment } from "@/lib/db/mock-data";
 import { mockItemTypes, mockTasks, mockWbsNodes } from "@/lib/db/mock-data";
+import { computeTeamWorkload } from "@/lib/ai/workload";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
+
+/** One week, in ms — the default gap between start and end when the
+ *  source doesn't give an explicit due date. */
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Add `days` to a YYYY-MM-DD string, timezone-safe (pure UTC math — no
+ *  local-offset drift that would otherwise drop a day via toISOString). */
+function addDaysISO(iso: string, days: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(Date.UTC(y, m - 1, d) + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/** Ensure end is strictly after start: a task can't start and end the same
+ *  day. If end is missing or <= start, push it a week past start. */
+function ensureEndAfterStart(start: string, end: string): string {
+  if (!start) return end;
+  if (end && end > start) return end;
+  return addDaysISO(start, 7);
+}
+
+// Required-resources / effort categories — multi-select on the form.
+const RESOURCE_OPTIONS = [
+  { value: "manpower", he: "כוח אדם", en: "Manpower" },
+  { value: "budget", he: "תקציב", en: "Budget" },
+  { value: "equipment", he: "ציוד / חומרה", en: "Equipment / Hardware" },
+  { value: "software_license", he: "רישוי תוכנה", en: "Software license" },
+  { value: "external_consulting", he: "ייעוץ חיצוני", en: "External consulting" },
+  { value: "cloud_compute", he: "מחשוב / ענן", en: "Cloud / Compute" },
+  { value: "data_gis", he: "נתונים / GIS", en: "Data / GIS" },
+  { value: "expert_time", he: "זמן מומחה", en: "Expert time" },
+  { value: "training", he: "הדרכה", en: "Training" },
+  { value: "vendor", he: "ספק חיצוני", en: "External vendor" },
+] as const;
 
 // ============================================
 // Task source options (per spec)
@@ -46,6 +81,8 @@ interface AddTaskFormData {
   methodology: string; // waterfall | agile | kanban
   description: string;
   teamMembers: string[];
+  /** Required resources / effort categories (multi-select). */
+  resources: string[];
   plannedStart: string;
   plannedEnd: string;
   source: string;
@@ -177,8 +214,11 @@ export function AddTaskDialog({
     methodology: (initialValues?.defaultMethodology || "") as any,
     description: initialValues?.description || "",
     teamMembers: initialAssigneeId ? [initialAssigneeId] : [],
+    resources: [],
     plannedStart: initialValues?.plannedStart || "",
-    plannedEnd: initialValues?.plannedEnd || "",
+    // Never let end == start: if the source gave the same (or no) end,
+    // default to a one-week window.
+    plannedEnd: ensureEndAfterStart(initialValues?.plannedStart || "", initialValues?.plannedEnd || ""),
     // When a source-extracted task is opened, source="other" and the source
     // label (e.g. "סיכום פגישה Salesforce · 2026-06-27") is the free-text.
     // For a manual New Task it stays empty so the user has to choose.
@@ -209,7 +249,11 @@ export function AddTaskDialog({
       description: initialValues.description ?? prev.description,
       teamMembers: initialAssigneeId ? [initialAssigneeId] : prev.teamMembers,
       plannedStart: initialValues.plannedStart ?? prev.plannedStart,
-      plannedEnd: initialValues.plannedEnd ?? prev.plannedEnd,
+      // Guarantee a real window — never start == end.
+      plannedEnd: ensureEndAfterStart(
+        initialValues.plannedStart ?? prev.plannedStart,
+        initialValues.plannedEnd ?? prev.plannedEnd,
+      ),
       source: initialValues.sourceLabel ? ("other" as any) : prev.source,
       sourceOther: initialValues.sourceLabel ?? prev.sourceOther,
       attachments: initialValues.sourceFile ? [initialValues.sourceFile] : prev.attachments,
@@ -235,8 +279,8 @@ export function AddTaskDialog({
     if (!form.plannedEnd) errs.plannedEnd = txt(locale, { he: "חובה", en: "Required" });
     if (!form.priority) errs.priority = txt(locale, { he: "חובה לבחור עדיפות", en: "Priority required" });
     if (!form.source) errs.source = txt(locale, { he: "חובה לבחור מקור", en: "Source required" });
-    if (form.plannedEnd && form.plannedStart && form.plannedEnd < form.plannedStart) {
-      errs.plannedEnd = txt(locale, { he: "תאריך סיום לפני ההתחלה", en: "End before start" });
+    if (form.plannedEnd && form.plannedStart && form.plannedEnd <= form.plannedStart) {
+      errs.plannedEnd = txt(locale, { he: "תאריך הסיום חייב להיות אחרי ההתחלה", en: "End must be after start" });
     }
     if (form.description.length > 300) {
       errs.description = txt(locale, { he: `עד 300 תווים (${form.description.length})`, en: `Max 300 chars (${form.description.length})` });
@@ -368,6 +412,7 @@ export function AddTaskDialog({
       progressPercent: 0,
       tags: taskType?.nameHe ? [taskType.nameHe] : [],
       dependencies: [],
+      resources: form.resources.length > 0 ? form.resources : undefined,
       attachments: attachments.length > 0 ? attachments : undefined,
     });
     onCreated?.();
@@ -393,6 +438,7 @@ export function AddTaskDialog({
       title: "",
       description: "",
       teamMembers: [],
+      resources: [],
       sourceOther: "",
       attachments: [],
     });
@@ -401,6 +447,18 @@ export function AddTaskDialog({
 
   const parentOptions =
     form.parentType === "project" ? projectsOnly : programs;
+
+  /** Live workload check for the selected team members across the task
+   *  window. Warns (never blocks) when any member is over-allocated or
+   *  has overlapping tasks in the same dates — exactly what the operator
+   *  asked for when assigning people. Recomputed only when the inputs
+   *  change. */
+  const workload = useMemo(() => {
+    if (form.teamMembers.length === 0 || !form.plannedStart || !form.plannedEnd) return [];
+    return computeTeamWorkload(form.teamMembers, form.plannedStart, form.plannedEnd);
+  }, [form.teamMembers, form.plannedStart, form.plannedEnd]);
+  const overloadedMembers = workload.filter((w) => w.overloaded);
+  const membersWithOverlaps = workload.filter((w) => w.overlapping.length > 0);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -582,6 +640,71 @@ export function AddTaskDialog({
               error={!!errors.teamMembers}
             />
             {errors.teamMembers && <p className="text-xs text-red-500">{errors.teamMembers}</p>}
+
+            {/* Workload / availability check — warns (never blocks) when an
+                assigned member is over-allocated or already has overlapping
+                tasks in the chosen window. */}
+            {overloadedMembers.length > 0 && (
+              <div className="flex items-start gap-2 p-2.5 rounded-md border border-red-300 bg-red-50/70 dark:bg-red-950/30 dark:border-red-800 text-xs">
+                <AlertTriangle className="size-4 text-red-600 shrink-0 mt-0.5" />
+                <div className="text-red-800 dark:text-red-200">
+                  <div className="font-semibold">
+                    {txt(locale, { he: "⚠️ עומס מעל 100%", en: "⚠️ Over 100% allocation" })}
+                  </div>
+                  {overloadedMembers.map((w) => (
+                    <div key={w.userId}>
+                      {txt(locale, {
+                        he: `${w.name} מוקצה כבר ל-${w.ftePercent}% משרה`,
+                        en: `${w.name} is already allocated ${w.ftePercent}%`,
+                      })}
+                    </div>
+                  ))}
+                  <div className="opacity-80 mt-0.5">
+                    {txt(locale, { he: "ניתן להמשיך, אך שקול לשייך מחדש או להאריך לו\"ז.", en: "You can proceed, but consider reassigning or extending the schedule." })}
+                  </div>
+                </div>
+              </div>
+            )}
+            {membersWithOverlaps.length > 0 && (
+              <div className="flex items-start gap-2 p-2.5 rounded-md border border-amber-300 bg-amber-50/70 dark:bg-amber-950/30 dark:border-amber-800 text-xs">
+                <CalendarClock className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-amber-900 dark:text-amber-100">
+                  <div className="font-semibold">
+                    {txt(locale, { he: "התנגשות ביומן בתקופה זו", en: "Calendar overlap in this window" })}
+                  </div>
+                  {membersWithOverlaps.map((w) => (
+                    <div key={w.userId}>
+                      {txt(locale, {
+                        he: `${w.name}: ${w.overlapping.length} משימות חופפות`,
+                        en: `${w.name}: ${w.overlapping.length} overlapping task(s)`,
+                      })}
+                      <span className="opacity-70"> — {w.overlapping.slice(0, 2).map((t) => t.title).join(" · ")}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Required resources / effort — multi-select dropdown */}
+          <div className="space-y-1.5">
+            <Label>
+              {txt(locale, { he: "משאבים / מאמץ נדרש", en: "Required Resources / Effort" })}{" "}
+              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "בחירה מרובה · רשות", en: "multi-select · optional" })})</span>
+            </Label>
+            <OptionMultiSelect
+              options={RESOURCE_OPTIONS.map((o) => ({ value: o.value, label: txt(locale, { he: o.he, en: o.en }) as string }))}
+              selected={form.resources}
+              onToggle={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  resources: prev.resources.includes(v)
+                    ? prev.resources.filter((x) => x !== v)
+                    : [...prev.resources, v],
+                }))
+              }
+              placeholder={txt(locale, { he: "בחר משאבים נדרשים", en: "Select required resources" }) as string}
+            />
           </div>
 
           {/* Dates */}
@@ -594,7 +717,16 @@ export function AddTaskDialog({
                 id="task-start"
                 type="date"
                 value={form.plannedStart}
-                onChange={(e) => setForm({ ...form, plannedStart: e.target.value })}
+                onChange={(e) => {
+                  const newStart = e.target.value;
+                  // Keep a valid window: if the end would now be on/before
+                  // the new start, push it a week out automatically.
+                  setForm((prev) => ({
+                    ...prev,
+                    plannedStart: newStart,
+                    plannedEnd: ensureEndAfterStart(newStart, prev.plannedEnd),
+                  }));
+                }}
                 className={cn("min-h-[44px]", errors.plannedStart ? "border-red-500" : "")}
               />
               {errors.plannedStart && <p className="text-xs text-red-500">{errors.plannedStart}</p>}
@@ -858,6 +990,108 @@ function TeamMultiSelect({
               );
             })
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Generic multi-select dropdown over {value,label} options. Same UX as
+ * TeamMultiSelect (closed pill summary + checkbox list) but decoupled from
+ * users — used for the required-resources picker.
+ */
+function OptionMultiSelect({
+  options,
+  selected,
+  onToggle,
+  placeholder,
+}: {
+  options: { value: string; label: string }[];
+  selected: string[];
+  onToggle: (value: string) => void;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const selectedLabels = options.filter((o) => selected.includes(o.value)).map((o) => o.label);
+  const summary = selectedLabels.length === 0 ? placeholder : selectedLabels.join(", ");
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className={cn(
+          "w-full flex items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[44px] text-start",
+          selectedLabels.length === 0 && "text-muted-foreground"
+        )}
+      >
+        <span className="line-clamp-1 flex-1 min-w-0">{summary}</span>
+        <span className="flex items-center gap-1 shrink-0">
+          {selectedLabels.length > 0 && (
+            <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
+              {selectedLabels.length}
+            </span>
+          )}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={cn("transition-transform", open && "rotate-180")}
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg max-h-64 overflow-y-auto">
+          {options.map((opt) => {
+            const isSel = selected.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onToggle(opt.value)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 text-sm text-start hover:bg-accent min-h-[40px]",
+                  isSel && "bg-primary/5"
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSel}
+                  readOnly
+                  className="size-4 shrink-0 pointer-events-none"
+                />
+                <span className="flex-1 min-w-0 line-clamp-1">{opt.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
