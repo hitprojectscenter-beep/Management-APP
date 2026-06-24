@@ -17,21 +17,38 @@
  */
 
 export function getGeminiApiKeys(): string[] {
-  const candidates = [
-    process.env.GEMINI_API_KEY,
-    process.env["GEMINI_API_KEY "], // tolerate a trailing space in the var name
-    process.env.GEMINI_API_KEY_2,
-    process.env.GEMINI_API_KEY_3,
-    process.env.GEMINI_API_KEY_4,
-    process.env.GOOGLE_API_KEY,
-  ]
-    .filter((v): v is string => !!v)
-    // Any single var may hold several comma/whitespace-separated keys.
-    .flatMap((v) => v.split(/[,\s]+/))
+  // Read EVERY env var named GEMINI_API_KEY* (plus GOOGLE_API_KEY), so the
+  // operator can name backup/paid keys however they like — GEMINI_API_KEY_2,
+  // GEMINI_API_KEY_P, GEMINI_API_KEY_PAID, etc. — without us hard-coding the
+  // suffix. (User named the paid key GEMINI_API_KEY_P, which the old fixed
+  // list missed.)
+  const env = process.env;
+  const found: Array<{ name: string; value: string }> = [];
+  for (const rawName of Object.keys(env)) {
+    const name = rawName.trim();
+    if (/^GEMINI_API_KEY/i.test(name) || /^GOOGLE_API_KEY$/i.test(name)) {
+      const value = env[rawName];
+      if (value && value.trim()) found.push({ name, value });
+    }
+  }
+  // Order so PAID keys are tried FIRST (no quota → no wasted 429s on the
+  // exhausted free key), then the primary, then numbered backups, then
+  // GOOGLE_API_KEY.
+  const rank = (name: string): number => {
+    const n = name.toUpperCase();
+    if (/PAID/.test(n) || /_P$/.test(n)) return 0; // paid → first
+    if (n === "GEMINI_API_KEY") return 1;
+    if (/^GEMINI_API_KEY_\d+$/.test(n)) return 2;
+    if (n === "GOOGLE_API_KEY") return 4;
+    return 3;
+  };
+  found.sort((a, b) => rank(a.name) - rank(b.name));
+  // Each var may itself hold several comma/whitespace-separated keys.
+  const keys = found
+    .flatMap((e) => e.value.split(/[,\s]+/))
     .map((k) => k.trim())
     .filter(Boolean);
-  // Dedupe, preserve order.
-  return [...new Set(candidates)];
+  return [...new Set(keys)]; // dedupe, preserve order
 }
 
 /** First configured key (or null) — for callers that only need one. */
