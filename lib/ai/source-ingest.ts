@@ -14,7 +14,7 @@
 
 import mammoth from "mammoth";
 import JSZip from "jszip";
-import { getGeminiApiKeys, getGeminiApiKey, isQuotaError } from "./gemini-keys";
+import { getGeminiApiKeys, getGeminiApiKey, isQuotaError, geminiCall, geminiExtractText, geminiGenerateText } from "./gemini-keys";
 
 const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash"];
 
@@ -47,51 +47,16 @@ interface GeminiPart {
   inline_data?: { mime_type: string; data: string };
 }
 
-/** POST a generateContent call with optional inline_data parts.
- *  Tries every (key × model) combination so a quota-exhausted key
- *  rotates to the next one before giving up. */
+/** POST a generateContent call with optional inline_data parts. Retries
+ *  transient 503s and tries every (key × model) combination — a
+ *  quota-exhausted model/key rotates to the next before giving up. */
 async function geminiGenerate(parts: GeminiPart[], instruction?: string): Promise<string> {
-  const keys = getGeminiApiKeys();
-  if (keys.length === 0) throw new Error("GEMINI_API_KEY not set");
-
   const body: any = {
     contents: [{ role: "user", parts }],
     generationConfig: { temperature: 0.3, topP: 0.9, maxOutputTokens: 4096 },
   };
   if (instruction) body.systemInstruction = { parts: [{ text: instruction }] };
-
-  let lastErr: Error | null = null;
-  for (let k = 0; k < keys.length; k++) {
-    const apiKey = keys[k];
-    for (const model of GEMINI_MODELS) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      try {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json; charset=utf-8" },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) {
-          const text = await res.text().catch(() => "");
-          lastErr = new Error(`Gemini ${model} ${res.status}: ${text.slice(0, 200)}`);
-          console.warn(`[source-ingest] key#${k + 1} ${model} failed:`, text.slice(0, 100));
-          // On quota, stop trying this key's other models — rotate keys.
-          if (isQuotaError(res.status, text)) break;
-          continue;
-        }
-        const data = await res.json();
-        const out = data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join("\n");
-        if (!out) {
-          lastErr = new Error(`Gemini ${model} returned no text`);
-          continue;
-        }
-        return out.trim();
-      } catch (err) {
-        lastErr = err as Error;
-      }
-    }
-  }
-  throw lastErr ?? new Error("All Gemini keys/models failed");
+  return geminiGenerateText(body, "source-ingest");
 }
 
 export interface IngestResult {
@@ -331,43 +296,24 @@ export async function ingestAudioByUri(
     generationConfig: { temperature: 0.2, topP: 0.9, maxOutputTokens: 8192 },
   };
 
+  // The file is scoped to `apiKey`, so we DON'T rotate keys here (the
+  // dispatcher re-uploads with the next key on quota). But we still try
+  // all models and retry transient 503s via geminiCall.
   let lastErr: Error | null = null;
   for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const errText = await res.text().catch(() => "");
-        lastErr = new Error(`Gemini ${model} ${res.status}: ${errText.slice(0, 200)}`);
-        console.warn(`[ingestAudioByUri] ${model} failed:`, errText.slice(0, 200));
-        continue;
-      }
-      const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts
-        ?.map((p: any) => p.text)
-        .filter(Boolean)
-        .join("\n");
-      if (!text) {
-        lastErr = new Error(`Gemini ${model} returned no transcript text`);
-        continue;
-      }
-      // Best-effort cleanup — Gemini files auto-expire after 48h anyway.
-      void deleteGeminiFile(fileUri, apiKey).catch(() => {});
-      const estimatedDurationSec = fileSizeBytes
-        ? Math.round(fileSizeBytes / 16_000)
-        : undefined;
-      return {
-        kind: "audio",
-        text: text.trim(),
-        meta: { bytes: fileSizeBytes, filename, mime, estimatedDurationSec },
-      };
-    } catch (err) {
-      lastErr = err as Error;
+    const r = await geminiCall(model, apiKey, body);
+    if (r.ok) {
+      const text = geminiExtractText(r.data);
+      if (!text) { lastErr = new Error(`Gemini ${model} returned no transcript text`); continue; }
+      void deleteGeminiFile(fileUri, apiKey).catch(() => {}); // auto-expires in 48h anyway
+      const estimatedDurationSec = fileSizeBytes ? Math.round(fileSizeBytes / 16_000) : undefined;
+      return { kind: "audio", text, meta: { bytes: fileSizeBytes, filename, mime, estimatedDurationSec } };
     }
+    lastErr = new Error(`Gemini ${model} ${r.status}: ${(r.errText || "").slice(0, 200)}`);
+    console.warn(`[ingestAudioByUri] ${model} failed (${r.status}):`, (r.errText || "").slice(0, 120));
+    // If THIS model is quota-exhausted, the others under the same key
+    // likely are too, but they're cheap 429s — keep trying. The caller
+    // rotates keys if all models fail.
   }
   throw lastErr ?? new Error("All Gemini models failed transcription");
 }
