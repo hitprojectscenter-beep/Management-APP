@@ -1,7 +1,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { mockTasks, mockUsers, mockWbsNodes } from "@/lib/db/mock-data";
-import { TaskList } from "@/components/projects/task-list";
+import { LiveTaskList } from "@/components/projects/live-task-list";
 import { TasksPageActions } from "@/components/landing/tasks-page-actions";
 
 export default async function TasksPage({
@@ -18,16 +18,17 @@ export default async function TasksPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground mt-1">
-            {locale === "he" ? `${mockTasks.length} משימות בסך הכל` : `${mockTasks.length} total tasks`}
-          </p>
+          {/* Count rendered inside LiveTaskList so it reflects tasks added
+              this session (no refresh). */}
         </div>
         <TasksPageActions projects={mockWbsNodes} users={mockUsers} locale={locale} />
       </div>
 
       <Card>
         <CardContent className="p-4">
-          <TaskList tasks={mockTasks} users={mockUsers} locale={locale} />
+          {/* LiveTaskList merges session-created tasks (localStorage) on top
+              of the server snapshot so they appear without a refresh. */}
+          <LiveTaskList serverTasks={mockTasks} users={mockUsers} locale={locale} />
         </CardContent>
       </Card>
     </div>

@@ -25,7 +25,8 @@ import {
 } from "lucide-react";
 import { txt } from "@/lib/utils/locale-text";
 import { cn, formatDateDDMMYYYY } from "@/lib/utils";
-import { mockUsers, mockWbsNodes, mockTasks, type MockTaskAttachment } from "@/lib/db/mock-data";
+import { mockUsers, mockWbsNodes, type MockTaskAttachment, type MockTask } from "@/lib/db/mock-data";
+import { persistAddedTask } from "@/lib/db/local-tasks";
 import { pickResponsible } from "@/lib/ai/role-hierarchy";
 import { AddTaskDialog, type AddTaskInitialValues } from "@/components/landing/add-task-dialog";
 import { LinkGuideDialog } from "@/components/intake/link-guide-dialog";
@@ -718,7 +719,7 @@ export function IntakeWorkflow() {
         const [by, bm, bd] = bulkStart.split("-").map(Number);
         const weekOut = new Date(Date.UTC(by, bm - 1, bd) + 7 * 86_400_000).toISOString().slice(0, 10);
         const bulkEnd = t.dueDate && t.dueDate > bulkStart ? t.dueDate : weekOut;
-        mockTasks.push({
+        const bulkTask: MockTask = {
           id: `intake-${startStamp}-${i}`,
           wbsNodeId: wbsLeaf,
           parentTaskId: null,
@@ -741,7 +742,10 @@ export function IntakeWorkflow() {
           tags: t.workTypeLabel ? [t.workTypeLabel] : [],
           dependencies: [],
           attachments: sharedAttachment ? [sharedAttachment] : undefined,
-        });
+        };
+        // Persist (module + localStorage + live event) so the bulk-created
+        // tasks show on /tasks and the home list without a refresh.
+        persistAddedTask(bulkTask);
         createdCount++;
       });
 

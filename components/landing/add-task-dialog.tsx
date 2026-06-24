@@ -15,8 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { X, AlertTriangle, CalendarClock } from "lucide-react";
-import type { MockUser, MockWbsNode, MockTaskAttachment } from "@/lib/db/mock-data";
-import { mockItemTypes, mockTasks, mockWbsNodes } from "@/lib/db/mock-data";
+import type { MockUser, MockWbsNode, MockTaskAttachment, MockTask } from "@/lib/db/mock-data";
+import { mockItemTypes, mockWbsNodes } from "@/lib/db/mock-data";
+import { persistAddedTask } from "@/lib/db/local-tasks";
 import { computeTeamWorkload } from "@/lib/ai/workload";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
@@ -337,6 +338,88 @@ export function AddTaskDialog({
     }));
   };
 
+  /**
+   * Notify the assigned team members that they were put on a task.
+   * Sends server-side via Gmail/Resend when configured; otherwise the
+   * toast offers one-click "open mail client" / WhatsApp fallbacks so
+   * the operator can send the heads-up from their own account. (Bug
+   * fix: previously NO notification was sent on assignment at all.)
+   */
+  const notifyAssignees = async (task: MockTask) => {
+    const assignees = task && form.teamMembers.length > 0
+      ? form.teamMembers
+          .map((id) => users.find((u) => u.id === id))
+          .filter((u): u is MockUser => !!u)
+          .map((u) => ({ name: u.name, email: u.email, phone: u.phone }))
+      : [];
+    if (assignees.length === 0) return;
+
+    let data: any = null;
+    try {
+      const res = await fetch("/api/tasks/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskTitle: task.title,
+          taskDescription: task.description,
+          plannedStart: task.plannedStart,
+          plannedEnd: task.plannedEnd,
+          assignees,
+          locale,
+        }),
+      });
+      data = await res.json().catch(() => null);
+    } catch {
+      data = null;
+    }
+
+    const sentCount = data?.results?.filter((r: any) => r.emailDeliveryStatus === "sent").length ?? 0;
+    if (sentCount > 0) {
+      toast.success(
+        txt(locale, {
+          he: `📧 נשלחה הודעה ל-${sentCount} חברי צוות`,
+          en: `📧 Notified ${sentCount} team member(s)`,
+        }),
+      );
+      return;
+    }
+
+    // No transport configured (or send failed) — offer manual channels.
+    const mailto: string | undefined = data?.mailtoAll;
+    const whatsapp: string | undefined = data?.whatsappFirst;
+    toast(
+      txt(locale, {
+        he: `הודעה לצוות (${assignees.length})`,
+        en: `Notify the team (${assignees.length})`,
+      }),
+      {
+        description: txt(locale, {
+          he: "שליחה אוטומטית לא מוגדרת. בחר ערוץ לשליחת ההודעה:",
+          en: "Auto-send isn't configured. Pick a channel to send the heads-up:",
+        }),
+        duration: 30_000,
+        action: mailto
+          ? {
+              label: txt(locale, { he: "📧 מייל לכולם", en: "📧 Email all" }),
+              onClick: () => { window.location.href = mailto; },
+            }
+          : undefined,
+      },
+    );
+    if (whatsapp) {
+      toast(
+        txt(locale, { he: "או דרך WhatsApp", en: "Or via WhatsApp" }),
+        {
+          duration: 30_000,
+          action: {
+            label: txt(locale, { he: "💬 WhatsApp", en: "💬 WhatsApp" }),
+            onClick: () => { window.open(whatsapp, "_blank"); },
+          },
+        },
+      );
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
@@ -394,7 +477,7 @@ export function AddTaskDialog({
     const wbsLeaf = mockWbsNodes.find((n) => n.level === "task")?.id
       ?? mockWbsNodes[0]?.id
       ?? "root";
-    mockTasks.push({
+    const newTask: MockTask = {
       id: `task-${Date.now()}`,
       wbsNodeId: wbsLeaf,
       parentTaskId: null,
@@ -414,7 +497,12 @@ export function AddTaskDialog({
       dependencies: [],
       resources: form.resources.length > 0 ? form.resources : undefined,
       attachments: attachments.length > 0 ? attachments : undefined,
-    });
+    };
+    // persistAddedTask pushes to the in-memory module AND localStorage AND
+    // fires "pmo:tasks-changed" so the task list updates live and survives
+    // reloads / server snapshots. (Bug fix: plain mockTasks.push didn't
+    // reach the server-rendered /tasks page.)
+    persistAddedTask(newTask);
     onCreated?.();
 
     toast.success(
@@ -431,6 +519,10 @@ export function AddTaskDialog({
             }) as string),
       }
     );
+
+    // Notify the assigned team members (email + WhatsApp fallback).
+    void notifyAssignees(newTask);
+
     setOpen(false);
     // Reset form
     setForm({

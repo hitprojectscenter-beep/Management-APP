@@ -10,6 +10,7 @@ import { MyTasksTabs } from "@/components/landing/my-tasks-tabs";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { txt } from "@/lib/utils/locale-text";
 import { useRole } from "@/lib/auth/role-context";
+import { useLiveTasks } from "@/lib/db/local-tasks";
 import type { MockUser, MockTask, MockWbsNode, MockProjectMember } from "@/lib/db/mock-data";
 
 /**
@@ -47,6 +48,9 @@ export function MyDashboardContent({
 }) {
   const { currentUser } = useRole();
   const userId = currentUser?.id || "u1";
+  // Merge in tasks created this session (localStorage) so a freshly-made
+  // task shows up here without a refresh.
+  const liveTasks = useLiveTasks(allTasks);
 
   // Derive everything the original server component computed, but from
   // the *active* user. Memoize so a re-render from any other source
@@ -56,7 +60,7 @@ export function MyDashboardContent({
     const myNodeIds = new Set(myMemberships.map((m) => m.wbsNodeId));
     const myNodes = allWbsNodes.filter((n) => myNodeIds.has(n.id));
     const myProjects = myNodes.filter((n) => n.level === "project");
-    const myOpenTasks = allTasks.filter(
+    const myOpenTasks = liveTasks.filter(
       (t) => t.assigneeId === userId && t.status !== "done" && t.status !== "cancelled",
     );
     const totalFte = myMemberships.reduce((sum, m) => sum + m.ftePercent, 0);
@@ -70,7 +74,7 @@ export function MyDashboardContent({
       return days >= 0 && days <= 7;
     }).length;
     return { myMemberships, myNodes, myProjects, myOpenTasks, totalFte, inProgress, overdue, dueThisWeek };
-  }, [userId, allTasks, allWbsNodes, allMembers]);
+  }, [userId, liveTasks, allWbsNodes, allMembers]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
