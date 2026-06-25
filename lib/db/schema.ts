@@ -75,7 +75,71 @@ export const users = pgTable("users", {
   image: text("image"),
   locale: text("locale").default("he").notNull(),
   role: userRoleEnum("role").default("member").notNull(),
+  // --- Profile / org ---
+  phone: text("phone"),
+  title: text("title"),
+  /** Direct manager (org hierarchy). Self-reference; FK added in migration. */
+  managerId: text("manager_id"),
+  // --- Credentials & account security (INCD / Privacy-Protection Regs) ---
+  /** bcrypt hash of the password. NULL for SSO-only accounts. Never the raw pw. */
+  passwordHash: text("password_hash"),
+  /** Force a password change on next login (admin-set initial passwords). */
+  mustChangePassword: boolean("must_change_password").default(false).notNull(),
+  /** When the password was last set — supports rotation policy. */
+  passwordChangedAt: timestamp("password_changed_at", { mode: "date" }),
+  /** Soft account state — disable without deleting (offboarding / least-privilege). */
+  isActive: boolean("is_active").default(true).notNull(),
+  /** Brute-force protection: consecutive failures + temporary lockout window. */
+  failedLoginAttempts: integer("failed_login_attempts").default(0).notNull(),
+  lockedUntil: timestamp("locked_until", { mode: "date" }),
+  lastLoginAt: timestamp("last_login_at", { mode: "date" }),
+  // --- MFA readiness (INCD recommends 2FA for sensitive systems) ---
+  mfaEnabled: boolean("mfa_enabled").default(false).notNull(),
+  mfaSecret: text("mfa_secret"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * Server-side, revocable sessions. We store only the SHA-256 HASH of the
+ * session token (never the raw token) so a DB leak can't be replayed as a
+ * live session. The raw token lives only in the user's httpOnly cookie.
+ * Each row carries IP + user-agent + timestamps for the security audit
+ * trail and supports remote revocation (logout-everywhere / incident
+ * response), as required for access control + monitoring.
+ */
+export const userSessions = pgTable("user_sessions", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at", { mode: "date" }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
+  revokedAt: timestamp("revoked_at", { mode: "date" }),
+  ip: text("ip"),
+  userAgent: text("user_agent"),
+});
+
+/**
+ * Security audit log for authentication events (login ok/fail, logout,
+ * lockout, password change, account disabled). Separate from the general
+ * auditLogs so security monitoring has a focused, append-only trail —
+ * required by the Privacy-Protection (Data Security) Regulations
+ * (תיעוד אירועי גישה) and INCD monitoring guidance. userId is nullable so
+ * failed logins for unknown emails are still recorded (without enabling
+ * user enumeration in responses).
+ */
+export const authAuditLog = pgTable("auth_audit_log", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id"),
+  email: text("email"),
+  event: text("event").notNull(), // login_success | login_failed | logout | lockout | password_changed | ...
+  success: boolean("success").default(false).notNull(),
+  ip: text("ip"),
+  userAgent: text("user_agent"),
+  detail: text("detail"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
 export const accounts = pgTable(
