@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/routing";
 import { Search, Bell, Sun, Moon, Globe, Menu, ChevronDown, Crown, Shield, User as UserIcon, Eye, UserX, LogOut } from "lucide-react";
 import { logout } from "@/lib/auth/session";
+import { apiLogout, fetchSession } from "@/lib/auth/client-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
@@ -48,10 +49,16 @@ export function Topbar() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const [realAuth, setRealAuth] = useState(false);
   const { currentUser, switchUser, role } = useRole();
   const isHe = locale === "he"; // kept for RTL sheet direction
 
   useEffect(() => setMounted(true), []);
+  // Real-auth (DB) mode → hide the user-switcher: each person is their own
+  // session and should see only their own view.
+  useEffect(() => {
+    fetchSession().then(({ dbConfigured }) => setRealAuth(dbConfigured));
+  }, []);
 
   const switchToLocale = (next: string) => {
     router.replace(pathname, { locale: next });
@@ -111,10 +118,12 @@ export function Topbar() {
               <div className="absolute z-50 mt-1 w-64 rounded-lg bg-card border shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 end-0">
                 <div className="px-3 py-2 border-b bg-muted/30">
                   <div className="text-[10px] text-muted-foreground uppercase font-semibold">
-                    {txt(locale, { he: "החלף תפקיד / משתמש", en: "Switch Role / User" })}
+                    {realAuth
+                      ? txt(locale, { he: "החשבון שלי", en: "My account" })
+                      : txt(locale, { he: "החלף תפקיד / משתמש", en: "Switch Role / User" })}
                   </div>
                 </div>
-                {mockUsers.map((user) => {
+                {!realAuth && mockUsers.map((user) => {
                   const Icon = ROLE_ICONS[user.role] || Shield;
                   const isActive = currentUser.id === user.id;
                   return (
@@ -140,11 +149,21 @@ export function Topbar() {
                     </button>
                   );
                 })}
-                <div className="px-3 py-2 border-t bg-muted/20 text-[10px] text-muted-foreground">
-                  {txt(locale, { he: "💡 הממשק ישתנה בהתאם להרשאות התפקיד", en: "💡 UI adapts to the selected role's permissions" })}
-                </div>
+                {realAuth ? (
+                  <div className="px-3 py-2.5 flex items-center gap-3 border-t">
+                    <Avatar src={currentUser.image} fallback={currentUser.name[0]} className="size-7" />
+                    <div className="flex-1 text-start min-w-0">
+                      <div className="text-xs font-medium truncate">{currentUser.name}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{ROLE_LABELS[currentUser.role]?.[locale] || currentUser.role}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-3 py-2 border-t bg-muted/20 text-[10px] text-muted-foreground">
+                    {txt(locale, { he: "💡 הממשק ישתנה בהתאם להרשאות התפקיד", en: "💡 UI adapts to the selected role's permissions" })}
+                  </div>
+                )}
                 <button
-                  onClick={() => { logout(); window.location.href = `/${locale}/login`; }}
+                  onClick={async () => { await apiLogout(); logout(); window.location.href = `/${locale}/login`; }}
                   className="w-full px-3 py-2.5 text-sm flex items-center gap-3 min-h-[44px] border-t text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                 >
                   <LogOut className="size-4" />

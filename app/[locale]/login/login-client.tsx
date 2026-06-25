@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogIn, Mail, Lock, AlertTriangle, ChevronDown, Sparkles } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { TopoBackdrop } from "@/components/brand/topo-backdrop";
 import { login, loginAsUser, DEMO_PASSWORD } from "@/lib/auth/session";
+import { fetchSession } from "@/lib/auth/client-auth";
 import { txt } from "@/lib/utils/locale-text";
 
 interface SeededUser {
@@ -27,6 +28,9 @@ export default function LoginClient({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showDemo, setShowDemo] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  // null = still checking; true = real DB auth; false = demo (no DB)
+  const [dbAuth, setDbAuth] = useState<boolean | null>(null);
 
   // Hard-navigate to the dashboard root so RoleProvider re-hydrates from
   // the freshly-written session.
@@ -34,19 +38,56 @@ export default function LoginClient({
     window.location.href = `/${locale}`;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Detect real-auth vs demo mode, and skip the form if already signed in.
+  useEffect(() => {
+    fetchSession().then(({ user, dbConfigured }) => {
+      setDbAuth(dbConfigured);
+      if (dbConfigured && user) goToApp();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const res = login(email, password);
-    if (res.ok) {
-      goToApp();
-      return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      if (res.status === 503) {
+        // No DB configured — fall back to the demo (localStorage) login.
+        const r = login(email, password);
+        if (r.ok) return goToApp();
+        setError(
+          r.reason === "no_user"
+            ? (txt(locale, { he: "המייל לא רשום במערכת. בקש ממנהל המערכת להוסיף אותך.", en: "Email not registered. Ask an admin to add you." }) as string)
+            : (txt(locale, { he: "סיסמה שגויה.", en: "Incorrect password." }) as string),
+        );
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.ok) {
+        // Server set the httpOnly session cookie; mirror the id so the
+        // role-context shows the right user immediately.
+        try {
+          window.localStorage.setItem("pmo_session_user_id", data.user.id);
+          window.localStorage.setItem("pmo_active_user_id", data.user.id);
+        } catch {
+          /* ignore */
+        }
+        return goToApp();
+      }
+      setError(data?.error || (txt(locale, { he: "פרטי התחברות שגויים.", en: "Incorrect credentials." }) as string));
+    } catch {
+      setError(txt(locale, { he: "שגיאת רשת. נסה שוב.", en: "Network error. Please try again." }) as string);
+    } finally {
+      setSubmitting(false);
     }
-    setError(
-      res.reason === "no_user"
-        ? (txt(locale, { he: "המייל לא רשום במערכת. בקש ממנהל המערכת להוסיף אותך.", en: "Email not registered. Ask an admin to add you." }) as string)
-        : (txt(locale, { he: "סיסמה שגויה.", en: "Incorrect password." }) as string),
-    );
   };
 
   const quickLogin = (userId: string) => {
@@ -118,14 +159,20 @@ export default function LoginClient({
 
             <button
               type="submit"
-              className="w-full min-h-[46px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-medium shadow-card hover:shadow-pop hover:-translate-y-0.5 active:translate-y-0 transition-all"
+              disabled={submitting}
+              className="w-full min-h-[46px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-medium shadow-card hover:shadow-pop hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-60 disabled:translate-y-0"
             >
-              <LogIn className="size-4" /> {txt(locale, { he: "כניסה", en: "Sign in" })}
+              <LogIn className="size-4" />
+              {submitting
+                ? txt(locale, { he: "מתחבר...", en: "Signing in..." })
+                : txt(locale, { he: "כניסה", en: "Sign in" })}
             </button>
           </form>
 
-          {/* Demo options — tucked behind a toggle so the default view stays
-              clean and product-like (no password on display). */}
+          {/* Demo options — ONLY in demo mode (no DB). In real-auth mode the
+              login is purely email+password (no shared password, no quick-login). */}
+          {dbAuth === false && (
+          <>
           <button
             type="button"
             onClick={() => setShowDemo((s) => !s)}
@@ -163,6 +210,8 @@ export default function LoginClient({
                 </div>
               </div>
             </div>
+          )}
+          </>
           )}
         </div>
 
