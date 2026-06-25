@@ -51,6 +51,15 @@
     --status-done: 152 64% 42%;
     --status-blocked: 0 78% 56%;
     --status-at-risk: 35 92% 52%;
+
+    /* Design Refresh v1 — secondary brand accent (teal): energy alongside
+       the navy, and on-brand for a mapping organisation (water/topography). */
+    --brand-accent: 172 66% 36%;
+    --brand-accent-foreground: 0 0% 100%;
+    --brand-accent-soft: 172 55% 94%;
+    /* Soft, brand-tinted elevation — the UI was flat; depth adds modernity. */
+    --shadow-card: 0 1px 2px hsl(218 45% 12% / 0.05), 0 6px 20px hsl(218 45% 12% / 0.06);
+    --shadow-pop: 0 10px 34px hsl(218 45% 12% / 0.14);
   }
 
   .dark {
@@ -87,6 +96,12 @@
     --sidebar-foreground: 218 25% 78%;
     --sidebar-accent: 218 75% 58%;
     --sidebar-border: 218 45% 14%;
+
+    --brand-accent: 172 58% 48%;
+    --brand-accent-foreground: 218 45% 7%;
+    --brand-accent-soft: 172 40% 16%;
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.3), 0 6px 20px hsl(0 0% 0% / 0.32);
+    --shadow-pop: 0 10px 34px hsl(0 0% 0% / 0.5);
   }
 
   * {
@@ -178,6 +193,21 @@
   .card-hover {
     @apply transition-all hover:shadow-lg hover:-translate-y-0.5;
   }
+
+  /* === Design Refresh v1 — accent, depth, motion === */
+  .bg-accent2 { background-color: hsl(var(--brand-accent)); color: hsl(var(--brand-accent-foreground)); }
+  .text-accent2 { color: hsl(var(--brand-accent)); }
+  .bg-accent2-soft { background-color: hsl(var(--brand-accent-soft)); }
+  .border-accent2 { border-color: hsl(var(--brand-accent)); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-pop { box-shadow: var(--shadow-pop); }
+  /* Gentle hover elevation for cards/rows — adds life without heaviness. */
+  .lift { transition: transform .2s ease, box-shadow .2s ease; }
+  .lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+  /* Topographic contour stroke — the brand motif (mapping organisation).
+     Uses currentColor so it adapts to its container: navy on light panels,
+     white on the brand hero. Caller sets text color + opacity. */
+  .topo-line { stroke: currentColor; stroke-opacity: 0.13; fill: none; }
 
   /* Status badges */
   .status-badge {

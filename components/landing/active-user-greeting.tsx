@@ -1,6 +1,8 @@
 "use client";
 
 import { Avatar } from "@/components/ui/avatar";
+import { Sparkles } from "lucide-react";
+import { TopoBackdrop } from "@/components/brand/topo-backdrop";
 import { txt } from "@/lib/utils/locale-text";
 import { useRole } from "@/lib/auth/role-context";
 import type { MockUser } from "@/lib/db/mock-data";
@@ -37,25 +39,32 @@ export function ActiveUserGreeting({
   const firstName = user.name?.split(" ")[0] || user.name;
 
   return (
-    <div className="flex items-center gap-3 sm:gap-4">
-      <Avatar
-        src={user.image}
-        fallback={user.name[0]}
-        className="size-12 sm:size-14 ring-2 ring-primary/20"
-      />
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          {txt(locale, { he: "שלום", en: "Hello", ru: "Здравствуйте", fr: "Bonjour", es: "Hola" })}, {firstName} 👋
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground mt-1">
-          {txt(locale, {
-            he: "כל המשימות שעדיין לא נסגרו - מסודרות לפי דחיפות",
-            en: "All tasks that are still open - sorted by urgency",
-            ru: "Все незакрытые задачи — по срочности",
-            fr: "Toutes les tâches ouvertes — par urgence",
-            es: "Todas las tareas abiertas — por urgencia",
-          })}
-        </p>
+    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border bg-gradient-to-br from-primary/[0.07] via-card to-card shadow-card">
+      <TopoBackdrop className="text-primary opacity-[0.06] dark:opacity-[0.1]" />
+      <div className="relative flex items-center gap-3 sm:gap-4 p-5 sm:p-6">
+        <Avatar
+          src={user.image}
+          fallback={user.name[0]}
+          className="size-12 sm:size-14 ring-2 ring-primary/20 shadow-card"
+        />
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            {txt(locale, { he: "שלום", en: "Hello", ru: "Здравствуйте", fr: "Bonjour", es: "Hola" })}, {firstName} 👋
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            {txt(locale, {
+              he: "כל המשימות שעדיין לא נסגרו - מסודרות לפי דחיפות",
+              en: "All tasks that are still open - sorted by urgency",
+              ru: "Все незакрытые задачи — по срочности",
+              fr: "Toutes les tâches ouvertes — par urgence",
+              es: "Todas las tareas abiertas — por urgencia",
+            })}
+          </p>
+        </div>
+        <div className="ms-auto hidden sm:flex items-center gap-1.5 text-accent2 self-start">
+          <Sparkles className="size-4" />
+          <span className="text-xs font-medium">{txt(locale, { he: "מרחב העבודה שלי", en: "My workspace" })}</span>
+        </div>
       </div>
     </div>
   );
