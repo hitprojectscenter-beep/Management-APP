@@ -16,7 +16,8 @@ import mammoth from "mammoth";
 import JSZip from "jszip";
 import { getGeminiApiKeys, getGeminiApiKey, isQuotaError, geminiCall, geminiExtractText, geminiGenerateText, probeKeyAvailable } from "./gemini-keys";
 
-const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash"];
+// 2.0-flash first — far more available than the often-503'd 2.5-flash.
+const GEMINI_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
 
 /** First configured key — for one-shot calls (file upload, status polls). */
 function getApiKey(): string | null {

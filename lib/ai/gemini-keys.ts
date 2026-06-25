@@ -68,7 +68,13 @@ export function isOverloadedError(status: number, bodyText = ""): boolean {
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash"];
+// Order matters: gemini-2.0-flash is the workhorse and is FAR more
+// available than the newest gemini-2.5-flash, which Google frequently
+// 503s with "high demand". Trying the stable model first dramatically
+// cuts the intermittent failures we saw in production (with a paid key,
+// 2.0-flash has quota and succeeds immediately). 2.5-flash stays as a
+// quality fallback, lite last.
+const GEMINI_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
 
 export interface GeminiCallResult {
   ok: boolean;
@@ -97,7 +103,8 @@ export function geminiExtractText(data: any): string {
  */
 export async function geminiCall(model: string, apiKey: string, body: unknown): Promise<GeminiCallResult> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  const MAX_ATTEMPTS = 4; // 1 try + 3 retries on transient overload
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     let res: Response;
     try {
       res = await fetch(url, {
@@ -106,16 +113,16 @@ export async function geminiCall(model: string, apiKey: string, body: unknown): 
         body: JSON.stringify(body),
       });
     } catch (e) {
-      if (attempt < 2) { await sleep(1500 * (attempt + 1)); continue; }
+      if (attempt < MAX_ATTEMPTS - 1) { await sleep(1500 * (attempt + 1)); continue; }
       return { ok: false, status: 0, errText: String(e) };
     }
     if (res.ok) return { ok: true, data: await res.json() };
     const errText = await res.text().catch(() => "");
     const overloaded = isOverloadedError(res.status, errText);
     // Retry the SAME model on transient overload (the model's quota may be
-    // fine — Google is just busy). Don't retry on quota.
-    if (overloaded && attempt < 2) {
-      await sleep(2000 * (attempt + 1));
+    // fine — Google is just busy). Backoff 1.5s, 3s, 6s. Don't retry on quota.
+    if (overloaded && attempt < MAX_ATTEMPTS - 1) {
+      await sleep(1500 * Math.pow(2, attempt));
       continue;
     }
     return { ok: false, status: res.status, errText, quota: isQuotaError(res.status, errText), overloaded };
