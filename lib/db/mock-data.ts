@@ -19,6 +19,14 @@ export interface MockUser {
   image: string;
   locale: "he" | "en";
   role: UserRole;
+  /** Direct manager (org hierarchy). Points at another user's id; undefined
+   *  for the top of the org (CEO). Set on the seeded team and chosen in the
+   *  "add team member" dialog so the org chart / reporting line is explicit. */
+  managerId?: string;
+  /** Per-user login password (demo identity layer). When set, login requires
+   *  THIS password (the shared demo password still works as an operator master
+   *  key). Invited users without one fall back to the shared demo password. */
+  password?: string;
   skills?: string[]; // for AI auto-routing and reassignment matching
   performanceScore?: number; // 0-100 derived from history (on-time delivery rate)
   hourlyCapacity?: number; // hours per week available (default 40)
@@ -150,6 +158,8 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Mark%20Israel",
     locale: "he",
     role: "admin",
+    managerId: "u2", // מדווח לניר ברלוביץ' (מנהל כלל הפעילויות)
+    password: "Mark2026",
     skills: ["salesforce", "pmo", "technical-pm", "architecture", "strategy", "integration"],
     performanceScore: 92,
     hourlyCapacity: 40,
@@ -163,6 +173,8 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Nir%20Berlowitz",
     locale: "he",
     role: "manager",
+    managerId: "u6", // מדווח לחגי רונן (מנכ"ל)
+    password: "Nir2026",
     skills: ["operations", "pmo", "management", "strategy", "planning"],
     performanceScore: 90,
     hourlyCapacity: 40,
@@ -176,6 +188,8 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Elad%20Asraf",
     locale: "he",
     role: "manager",
+    managerId: "u1", // מדווח למארק ישראל (מנהל הפרוגרמה)
+    password: "Elad2026",
     skills: ["salesforce", "marketing", "sales", "crm", "rfp", "procurement"],
     performanceScore: 87,
     hourlyCapacity: 40,
@@ -189,6 +203,8 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Ephraim%20Gian",
     locale: "he",
     role: "manager",
+    managerId: "u1", // מדווח למארק ישראל (מנהל הפרוגרמה)
+    password: "Ephraim2026",
     skills: ["salesforce", "crm", "apex", "lightning", "maintenance", "support"],
     performanceScore: 89,
     hourlyCapacity: 40,
@@ -202,6 +218,8 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Esther%20Maharato",
     locale: "he",
     role: "manager",
+    managerId: "u2", // מדווחת לניר ברלוביץ' (מנהל כלל הפעילויות)
+    password: "Esther2026",
     skills: ["pmo", "planning", "work-plans", "compliance", "reporting", "government"],
     performanceScore: 91,
     hourlyCapacity: 40,
@@ -215,6 +233,8 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Hagai%20Ronen",
     locale: "he",
     role: "manager",
+    // חגי רונן — מנכ"ל, בראש ההיררכיה (אין מנהל ישיר)
+    password: "Hagai2026",
     skills: ["leadership", "strategy", "stakeholder-management", "executive"],
     performanceScore: 95,
     hourlyCapacity: 40,

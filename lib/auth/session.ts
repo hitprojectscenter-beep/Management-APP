@@ -50,7 +50,14 @@ export type LoginResult =
 export function login(email: string, password: string): LoginResult {
   const user = findUserByEmail(email);
   if (!user) return { ok: false, reason: "no_user" };
-  if (password !== DEMO_PASSWORD) return { ok: false, reason: "bad_password" };
+  // Per-user identity: when the user has their OWN password, require it.
+  // The shared demo password is still accepted as an operator master key
+  // (handy for demos / resets). Invited users without a personal password
+  // fall back to the shared demo password.
+  const accepts = user.password
+    ? password === user.password || password === DEMO_PASSWORD
+    : password === DEMO_PASSWORD;
+  if (!accepts) return { ok: false, reason: "bad_password" };
   try {
     window.localStorage.setItem(SESSION_KEY, user.id);
     // The active user (greeting, task filters, etc.) follows the session.

@@ -46,6 +46,7 @@ interface InviteBody {
   role?: string;
   division?: string;
   department?: string;
+  managerId?: string;
   locale?: string;
 }
 
@@ -96,6 +97,7 @@ function buildInviteToken(user: MockUser): string {
     image: user.image,
     locale: user.locale,
     role: user.role,
+    managerId: user.managerId,
   });
   return Buffer.from(payload, "utf8").toString("base64url");
 }
@@ -201,6 +203,10 @@ export async function POST(req: Request) {
     image: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName)}`,
     locale: locale === "en" ? "en" : "he",
     role: "member",
+    // Direct manager (org hierarchy) — only keep a valid, known id.
+    managerId: body.managerId && mockUsers.some((u) => u.id === body.managerId)
+      ? body.managerId
+      : undefined,
     skills: [],
     performanceScore: 80,
     hourlyCapacity: 40,

@@ -581,6 +581,33 @@ export function AddTaskDialog({
             {errors.title && <p className="text-xs text-red-500">{errors.title}</p>}
           </div>
 
+          {/* Description — placed right under the title: per the requested
+              logical order it is the second-most important field a reader scans
+              (what the task IS), before classification/assignment. */}
+          <div className="space-y-1.5">
+            <Label htmlFor="task-desc">
+              {txt(locale, { he: "תיאור", en: "Description", ru: "Описание", fr: "Description", es: "Descripción" })}{" "}
+              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "עד 300 תווים", en: "max 300 chars" })})</span>
+            </Label>
+            <textarea
+              id="task-desc"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value.slice(0, 300) })}
+              placeholder={txt(locale, { he: "תיאור קצר של המשימה...", en: "Brief description..." })}
+              rows={3}
+              maxLength={300}
+              className={cn(
+                "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none",
+                errors.description ? "border-red-500" : ""
+              )}
+              style={{ fontSize: "16px" }}
+            />
+            <div className="text-[10px] text-muted-foreground text-end">
+              {form.description.length}/300
+            </div>
+            {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
+          </div>
+
           {/* Task Type */}
           <div className="space-y-1.5">
             <Label htmlFor="task-type">{txt(locale, { he: "סוג משימה", en: "Task Type" })}</Label>
@@ -693,32 +720,95 @@ export function AddTaskDialog({
             </div>
           )}
 
-          {/* Description (max 300) */}
-          <div className="space-y-1.5">
-            <Label htmlFor="task-desc">
-              {txt(locale, { he: "תיאור", en: "Description", ru: "Описание", fr: "Description", es: "Descripción" })}{" "}
-              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "עד 300 תווים", en: "max 300 chars" })})</span>
-            </Label>
-            <textarea
-              id="task-desc"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value.slice(0, 300) })}
-              placeholder={txt(locale, { he: "תיאור קצר של המשימה...", en: "Brief description..." })}
-              rows={3}
-              maxLength={300}
-              className={cn(
-                "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none",
-                errors.description ? "border-red-500" : ""
-              )}
-              style={{ fontSize: "16px" }}
-            />
-            <div className="text-[10px] text-muted-foreground text-end">
-              {form.description.length}/300
+          {/* Dates — "when": placed right after assignment per the requested order */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="task-start">
+                {txt(locale, { he: "תאריך התחלה", en: "Start Date" })} <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="task-start"
+                type="date"
+                value={form.plannedStart}
+                onChange={(e) => {
+                  const newStart = e.target.value;
+                  // Keep a valid window: if the end would now be on/before
+                  // the new start, push it a week out automatically.
+                  setForm((prev) => ({
+                    ...prev,
+                    plannedStart: newStart,
+                    plannedEnd: ensureEndAfterStart(newStart, prev.plannedEnd),
+                  }));
+                }}
+                className={cn("min-h-[44px]", errors.plannedStart ? "border-red-500" : "")}
+              />
+              {errors.plannedStart && <p className="text-xs text-red-500">{errors.plannedStart}</p>}
             </div>
-            {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
+            <div className="space-y-1.5">
+              <Label htmlFor="task-end">
+                {txt(locale, { he: "תאריך סיום משוער", en: "Est. End Date" })} <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="task-end"
+                type="date"
+                value={form.plannedEnd}
+                onChange={(e) => setForm({ ...form, plannedEnd: e.target.value })}
+                className={cn("min-h-[44px]", errors.plannedEnd ? "border-red-500" : "")}
+              />
+              {errors.plannedEnd && <p className="text-xs text-red-500">{errors.plannedEnd}</p>}
+            </div>
           </div>
 
-          {/* Team Members — collapsible multi-select dropdown */}
+          {/* Priority — grouped with scheduling */}
+          <div className="space-y-1.5">
+            <Label>{txt(locale, { he: "עדיפות", en: "Priority", ru: "Приоритет", fr: "Priorité", es: "Prioridad" })}</Label>
+            <div className="flex gap-1.5">
+              {[
+                { value: "low", he: "נמוכה", en: "Low", color: "bg-slate-100 text-slate-700 border-slate-300" },
+                { value: "medium", he: "בינונית", en: "Medium", color: "bg-blue-100 text-blue-700 border-blue-300" },
+                { value: "high", he: "גבוהה", en: "High", color: "bg-orange-100 text-orange-700 border-orange-300" },
+                { value: "critical", he: "קריטית", en: "Critical", color: "bg-red-100 text-red-700 border-red-300" },
+              ].map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, priority: p.value })}
+                  className={cn(
+                    "flex-1 px-2 py-1.5 rounded-md text-xs font-medium border min-h-[36px] transition-all",
+                    form.priority === p.value
+                      ? `${p.color} ring-2 ring-offset-1 ring-current`
+                      : "border-border bg-background hover:bg-accent"
+                  )}
+                >
+                  {txt(locale, { he: p.he, en: p.en })}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Required resources / effort — multi-select dropdown */}
+          <div className="space-y-1.5">
+            <Label>
+              {txt(locale, { he: "משאבים / מאמץ נדרש", en: "Required Resources / Effort" })}{" "}
+              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "בחירה מרובה · רשות", en: "multi-select · optional" })})</span>
+            </Label>
+            <OptionMultiSelect
+              options={RESOURCE_OPTIONS.map((o) => ({ value: o.value, label: txt(locale, { he: o.he, en: o.en }) as string }))}
+              selected={form.resources}
+              onToggle={(v) =>
+                setForm((prev) => ({
+                  ...prev,
+                  resources: prev.resources.includes(v)
+                    ? prev.resources.filter((x) => x !== v)
+                    : [...prev.resources, v],
+                }))
+              }
+              placeholder={txt(locale, { he: "בחר משאבים נדרשים", en: "Select required resources" }) as string}
+            />
+          </div>
+
+          {/* Team Members — "who" does it: placed after resources, with the
+              built-in workload / calendar-availability check (multi-select). */}
           <div className="space-y-1.5">
             <Label>
               {txt(locale, { he: "צוות", en: "Team" })} <span className="text-red-500">*</span>{" "}
@@ -776,93 +866,6 @@ export function AddTaskDialog({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Required resources / effort — multi-select dropdown */}
-          <div className="space-y-1.5">
-            <Label>
-              {txt(locale, { he: "משאבים / מאמץ נדרש", en: "Required Resources / Effort" })}{" "}
-              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "בחירה מרובה · רשות", en: "multi-select · optional" })})</span>
-            </Label>
-            <OptionMultiSelect
-              options={RESOURCE_OPTIONS.map((o) => ({ value: o.value, label: txt(locale, { he: o.he, en: o.en }) as string }))}
-              selected={form.resources}
-              onToggle={(v) =>
-                setForm((prev) => ({
-                  ...prev,
-                  resources: prev.resources.includes(v)
-                    ? prev.resources.filter((x) => x !== v)
-                    : [...prev.resources, v],
-                }))
-              }
-              placeholder={txt(locale, { he: "בחר משאבים נדרשים", en: "Select required resources" }) as string}
-            />
-          </div>
-
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="task-start">
-                {txt(locale, { he: "תאריך התחלה", en: "Start Date" })} <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="task-start"
-                type="date"
-                value={form.plannedStart}
-                onChange={(e) => {
-                  const newStart = e.target.value;
-                  // Keep a valid window: if the end would now be on/before
-                  // the new start, push it a week out automatically.
-                  setForm((prev) => ({
-                    ...prev,
-                    plannedStart: newStart,
-                    plannedEnd: ensureEndAfterStart(newStart, prev.plannedEnd),
-                  }));
-                }}
-                className={cn("min-h-[44px]", errors.plannedStart ? "border-red-500" : "")}
-              />
-              {errors.plannedStart && <p className="text-xs text-red-500">{errors.plannedStart}</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="task-end">
-                {txt(locale, { he: "תאריך סיום משוער", en: "Est. End Date" })} <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="task-end"
-                type="date"
-                value={form.plannedEnd}
-                onChange={(e) => setForm({ ...form, plannedEnd: e.target.value })}
-                className={cn("min-h-[44px]", errors.plannedEnd ? "border-red-500" : "")}
-              />
-              {errors.plannedEnd && <p className="text-xs text-red-500">{errors.plannedEnd}</p>}
-            </div>
-          </div>
-
-          {/* Priority */}
-          <div className="space-y-1.5">
-            <Label>{txt(locale, { he: "עדיפות", en: "Priority", ru: "Приоритет", fr: "Priorité", es: "Prioridad" })}</Label>
-            <div className="flex gap-1.5">
-              {[
-                { value: "low", he: "נמוכה", en: "Low", color: "bg-slate-100 text-slate-700 border-slate-300" },
-                { value: "medium", he: "בינונית", en: "Medium", color: "bg-blue-100 text-blue-700 border-blue-300" },
-                { value: "high", he: "גבוהה", en: "High", color: "bg-orange-100 text-orange-700 border-orange-300" },
-                { value: "critical", he: "קריטית", en: "Critical", color: "bg-red-100 text-red-700 border-red-300" },
-              ].map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  onClick={() => setForm({ ...form, priority: p.value })}
-                  className={cn(
-                    "flex-1 px-2 py-1.5 rounded-md text-xs font-medium border min-h-[36px] transition-all",
-                    form.priority === p.value
-                      ? `${p.color} ring-2 ring-offset-1 ring-current`
-                      : "border-border bg-background hover:bg-accent"
-                  )}
-                >
-                  {txt(locale, { he: p.he, en: p.en })}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Task Source */}

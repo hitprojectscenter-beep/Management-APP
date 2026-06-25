@@ -68,6 +68,9 @@ export function TeamGrid({
     };
   }, [initialUsers]);
 
+  // Resolve managerId → user for the "reports to" line (org hierarchy).
+  const usersById = new Map(users.map((u) => [u.id, u] as const));
+
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground -mt-2">
@@ -75,6 +78,7 @@ export function TeamGrid({
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {users.map((user) => {
+        const manager = user.managerId ? usersById.get(user.managerId) : undefined;
         const userTasks = mockTasks.filter((t) => t.assigneeId === user.id);
         const open = userTasks.filter((t) => t.status !== "done" && t.status !== "cancelled").length;
         const done = userTasks.filter((t) => t.status === "done").length;
@@ -90,6 +94,12 @@ export function TeamGrid({
                   </div>
                   {user.title && (
                     <p className="text-xs text-muted-foreground truncate mt-0.5">{user.title}</p>
+                  )}
+                  {manager && (
+                    <p className="text-[11px] text-muted-foreground/80 truncate mt-0.5">
+                      {txt(locale, { he: "מדווח/ת ל-", en: "Reports to " })}
+                      <span className="font-medium text-foreground/80">{manager.name}</span>
+                    </p>
                   )}
                   {user.phone && (
                     <a

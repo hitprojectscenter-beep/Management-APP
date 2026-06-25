@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Send, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
+import { allKnownUsers } from "@/lib/auth/session";
 import type { MockUser } from "@/lib/db/mock-data";
 
 /**
@@ -49,6 +50,8 @@ interface InviteFormData {
   departmentOther: string;
   phone: string;
   email: string;
+  /** Direct manager (org hierarchy). Empty = top of org / unspecified. */
+  managerId: string;
 }
 
 // Dropdown options with "Other" at the end
@@ -167,9 +170,14 @@ export function InviteMemberDialog({
   const [sending, setSending] = useState(false);
   const [form, setForm] = useState<InviteFormData>({
     fullName: "", role: "", roleOther: "", division: "", divisionOther: "",
-    department: "", departmentOther: "", phone: "", email: "",
+    department: "", departmentOther: "", phone: "", email: "", managerId: "",
   });
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
+  // Existing users to choose the new member's direct manager from (read once
+  // on mount — seeded + previously-invited). Builds the org hierarchy.
+  const [managers] = useState<MockUser[]>(() => {
+    try { return allKnownUsers(); } catch { return []; }
+  });
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -217,6 +225,7 @@ export function InviteMemberDialog({
           role: effectiveRole,
           division: effectiveDivision,
           department: effectiveDepartment,
+          managerId: form.managerId || undefined,
           locale,
         }),
       });
@@ -245,7 +254,7 @@ export function InviteMemberDialog({
         { description: data.message, duration: 8000 },
       );
       setOpen(false);
-      setForm({ fullName: "", role: "", roleOther: "", division: "", divisionOther: "", department: "", departmentOther: "", phone: "", email: "" });
+      setForm({ fullName: "", role: "", roleOther: "", division: "", divisionOther: "", department: "", departmentOther: "", phone: "", email: "", managerId: "" });
       setErrors({});
       return;
     }
@@ -312,7 +321,7 @@ export function InviteMemberDialog({
     }
 
     setOpen(false);
-    setForm({ fullName: "", role: "", roleOther: "", division: "", divisionOther: "", department: "", departmentOther: "", phone: "", email: "" });
+    setForm({ fullName: "", role: "", roleOther: "", division: "", divisionOther: "", department: "", departmentOther: "", phone: "", email: "", managerId: "" });
     setErrors({});
   };
 
@@ -384,6 +393,32 @@ export function InviteMemberDialog({
               locale={locale}
               error={errors.department}
             />
+          </div>
+
+          {/* Direct Manager — builds the org hierarchy */}
+          <div className="space-y-1.5">
+            <Label>{txt(locale, { he: "מנהל ישיר", en: "Direct Manager" })}</Label>
+            <div className="relative">
+              <select
+                value={form.managerId}
+                onChange={(e) => setForm({ ...form, managerId: e.target.value })}
+                className={cn(
+                  "w-full min-h-[44px] px-3 pe-8 rounded-md border bg-background text-sm appearance-none",
+                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                )}
+              >
+                <option value="">{txt(locale, { he: "— ללא / בראש ההיררכיה —", en: "— None / top of org —" })}</option>
+                {managers.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}{m.title ? ` — ${m.title}` : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute end-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              {txt(locale, { he: "למי חבר הצוות מדווח. יוצר את היררכיית הארגון.", en: "Who this member reports to. Builds the org hierarchy." })}
+            </p>
           </div>
 
           {/* Phone * */}
