@@ -1,10 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Users, ShieldCheck, Tag, GitBranch, Table2, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
+import { fetchSession } from "@/lib/auth/client-auth";
 import { UsersManager } from "./users-manager";
+import { DbUsersManager } from "./db-users-manager";
 import { RolesManager } from "./roles-manager";
 import { TypesManager } from "./types-manager";
 import { HierarchyManager } from "./hierarchy-manager";
@@ -15,6 +17,11 @@ type Tab = "users" | "roles" | "types" | "hierarchy" | "permissions" | "activity
 
 export function AdminTabs({ locale }: { locale: string }) {
   const [tab, setTab] = useState<Tab>("users");
+  // When a database is configured, user management is the real DB-backed panel.
+  const [dbConfigured, setDbConfigured] = useState(false);
+  useEffect(() => {
+    fetchSession().then(({ dbConfigured }) => setDbConfigured(dbConfigured));
+  }, []);
 
   const tabs: { key: Tab; labelHe: string; labelEn: string; icon: typeof Users; descHe: string; descEn: string }[] = [
     {
@@ -83,7 +90,7 @@ export function AdminTabs({ locale }: { locale: string }) {
 
       {/* Tab content */}
       <div className="p-6">
-        {tab === "users" && <UsersManager locale={locale} />}
+        {tab === "users" && (dbConfigured ? <DbUsersManager locale={locale} /> : <UsersManager locale={locale} />)}
         {tab === "roles" && <RolesManager locale={locale} />}
         {tab === "types" && <TypesManager locale={locale} />}
         {tab === "hierarchy" && <HierarchyManager locale={locale} />}

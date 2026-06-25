@@ -69,6 +69,39 @@ export const HELP_ENTRIES: HelpEntry[] = [
     },
   },
   // ============================================================
+  // AUTH & ACCOUNTS
+  // ============================================================
+  {
+    id: "login-auth",
+    category: "general",
+    keywords: { he: ["כניסה", "התחברות", "הזדהות", "סיסמה", "מתחבר", "להיכנס", "שכחתי סיסמה", "יציאה", "התנתקות"], en: ["login", "sign in", "password", "authenticate", "log in", "forgot password", "sign out", "logout"] },
+    question: { he: "איך מתחברים למערכת?", en: "How do I sign in?" },
+    answer: {
+      he: "כל משתמש נכנס בעמוד הכניסה עם המייל והסיסמה האישית שלו (אין יותר סיסמה משותפת — כל אחד רואה רק את עצמו). הסיסמאות מאוחסנות מוצפנות (bcrypt), עם session מאובטח ונעילת חשבון אחרי 5 ניסיונות כושלים. ליציאה: תפריט החשבון בסרגל העליון ← 'התנתקות'. שכחת סיסמה? פנה למנהל המערכת לאיפוס.",
+      en: "Each user signs in with their own email + personal password (no shared password — everyone sees only their own view). Passwords are stored hashed (bcrypt), with a secure session and account lockout after 5 failed attempts. To sign out: account menu in the top bar → 'Sign out'. Forgot your password? Ask an admin to reset it.",
+    },
+  },
+  {
+    id: "manage-users",
+    category: "admin",
+    keywords: { he: ["ניהול משתמשים", "להוסיף משתמש", "משתמש חדש", "איפוס סיסמה", "השבתת חשבון", "שינוי תפקיד", "למחוק משתמש", "הרשאות", "לנהל"], en: ["manage users", "add user", "new user", "reset password", "disable account", "change role", "delete user", "permissions"] },
+    question: { he: "איך מנהלים משתמשים והרשאות?", en: "How do I manage users and permissions?" },
+    answer: {
+      he: "מנהל מערכת (Admin) בלבד: היכנס ל'ניהול מערכת' (/admin) ← טאב 'משתמשים'. שם אפשר להוסיף משתמש (מקבל סיסמה זמנית + חיוב החלפה), לשנות תפקיד, להגדיר מנהל ישיר, לאפס סיסמה (🔑), להשבית/להפעיל חשבון, ולמחוק. כל שינוי נשמר מיד בבסיס הנתונים ונרשם ביומן הביקורת. מנהל אינו יכול להשבית או לשנמך את עצמו.",
+      en: "Admins only: open 'System Administration' (/admin) → 'Users' tab. There you can add a user (gets a temp password + force-change), change role, set a direct manager, reset password (🔑), disable/enable an account, and delete. Every change saves to the database immediately and is logged to the audit trail. An admin can't disable or demote themselves.",
+    },
+  },
+  {
+    id: "direct-manager",
+    category: "team",
+    keywords: { he: ["מנהל ישיר", "היררכיה", "כפיפות", "מדווח ל", "מבנה ארגוני", "מי מנהל"], en: ["direct manager", "hierarchy", "reports to", "org chart", "reporting line"] },
+    question: { he: "מהו 'מנהל ישיר' ואיך נקבעת ההיררכיה?", en: "What is 'direct manager' and how is the hierarchy set?" },
+    answer: {
+      he: "לכל משתמש אפשר להגדיר 'מנהל ישיר' — כך נבנית היררכיית הארגון. מגדירים זאת בעת הוספת חבר צוות, או ב'ניהול מערכת' ← 'משתמשים'. בכרטיס הצוות מוצג 'מדווח/ת ל-'. ההיררכיה הנוכחית: חגי רונן (מנכ\"ל) ← ניר ברלוביץ' ← מארק ישראל; אלעד, אפרים ואסתר מדווחים לניר.",
+      en: "Each user can have a 'direct manager' — this builds the org hierarchy. Set it when adding a team member, or in 'System Administration' → 'Users'. The team card shows 'Reports to'. Current hierarchy: Hagai (CEO) ← Nir ← Mark; Elad, Ephraim and Esther report to Nir.",
+    },
+  },
+  // ============================================================
   // NAVIGATION
   // ============================================================
   {

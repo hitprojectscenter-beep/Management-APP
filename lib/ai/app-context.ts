@@ -97,7 +97,14 @@ Roll-up אוטומטי: שעות, התקדמות, תאריכים ועלויות 
 תפקידים והרשאות (RBAC דינמי):
 5 תפקידים מובנים — Admin / Manager / Member / Viewer / Guest + תפקידים מותאמים.
 מטריצת 12 הרשאות אינטראקטיבית. החלפת תפקיד דרך כפתור בסרגל העליון — הממשק משתנה מיידית.
-מנכ"ל (u6) הוא Manager: צופה ומעדכן בכל, אך לא מוסיף/מוחק משתמשים.
+מנכ"ל (u6) הוא Manager: צופה ומעדכן בכל, אך לא מוסיף/מוחק משתמשים. רק Admin (מארק ישראל, u1) מנהל משתמשים.
+
+הזדהות ואבטחת מידע (PostgreSQL — חדש ופעיל):
+- כל משתמש נכנס במסך /login עם **מייל + סיסמה אישית** משלו. אין יותר סיסמה משותפת — בהזדהות האמיתית כל אחד רואה רק את עצמו.
+- אבטחה: סיסמאות מוצפנות bcrypt+pepper · sessions צד-שרת הניתנים לביטול (עוגיית httpOnly+SameSite=Strict) · נעילת חשבון אחרי 5 ניסיונות כושלים · audit log מלא — בהתאם לתקנות הגנת הפרטיות (אבטחת מידע) התשע"ז ומתודולוגיית מערך הסייבר.
+- **ניהול משתמשים (אדמין בלבד)**: /admin → טאב "משתמשים" → הוספת משתמש (מקבל סיסמה זמנית + חיוב החלפה בכניסה ראשונה), שינוי תפקיד, שינוי מנהל ישיר, איפוס סיסמה, השבתה/הפעלה, מחיקה — כל שינוי נשמר מיד ב-Neon ונרשם ב-audit. אדמין אינו יכול להשבית/לשנמך את עצמו.
+- **מנהל ישיר** (היררכיית ארגון): חגי רונן (מנכ"ל) ← ניר ברלוביץ' ← מארק ישראל; אלעד/אפרים/אסתר מדווחים לניר.
+- יציאה: תפריט החשבון בסרגל העליון → "התנתקות".
 
 עוזר אישי קולי (PMO++ Assistant):
 - כפתור צף סגול בפינה. תמיכה ב-STT (Web Speech API + MediaRecorder fallback) ו-TTS חכם.
@@ -121,7 +128,7 @@ PMO: Strategic Alignment, ROI, Capacity vs Demand, Risk Trend, Decision Latency,
 Next.js 15 App Router (React 19), TypeScript strict, Tailwind CSS, shadcn/ui (יד), Drizzle ORM (schema מוכן ל-Postgres), CASL לRBAC, next-intl (5 שפות + RTL), Radix UI, dnd-kit (Kanban), recharts (גרפים), pptxgenjs (מצגות), Sonner (toasts), Google Gemini API, מנוע Gantt מותאם אישית (לא ספרייה).
 
 בסיס נתונים:
-סכמת Drizzle עם 18 טבלאות מוכנה ב-lib/db/schema.ts. בייצור — Neon Postgres / Supabase / Vercel Postgres. כרגע רץ על Mock data layer (lib/db/mock-data.ts) — נתונים אמיתיים מהאקסל של פרויקט Salesforce.
+**מחובר Neon PostgreSQL** — הטבלאות users / user_sessions / auth_audit_log פעילות, וההזדהות והמשתמשים אמיתיים ב-DB. שאר הנתונים (משימות/פרויקטים/WBS) עדיין על Mock data layer (lib/db/mock-data.ts, נתונים מהאקסל של פרויקט Salesforce) ויעברו ל-DB בהדרגה.
 
 פריסה:
 Vercel Production. URL: https://management-app-...vercel.app. כל push ל-main מפעיל deploy אוטומטי.`,
@@ -154,7 +161,14 @@ Navigation menu (15 pages):
 Roles & permissions (Dynamic RBAC):
 5 built-in roles — Admin / Manager / Member / Viewer / Guest + custom roles.
 Interactive 12-permission matrix. Role switch via top-bar button — UI changes instantly.
-CEO (u6) is a Manager: views and updates everything, but doesn't add/remove users.
+CEO (u6) is a Manager: views and updates everything, but doesn't add/remove users. Only Admin (Mark Israel, u1) manages users.
+
+Authentication & security (PostgreSQL — new and live):
+- Each user signs in at /login with their OWN email + personal password. No shared password — in real auth each person sees only their own view.
+- Security: bcrypt+pepper hashed passwords · revocable server-side sessions (httpOnly+SameSite=Strict cookie) · account lockout after 5 failed attempts · full audit log — aligned with the Privacy-Protection (Data Security) Regulations and the National Cyber Directorate methodology.
+- **User management (admin only)**: /admin → "Users" tab → add user (gets a temp password + must-change-on-first-login), change role, change direct manager, reset password, enable/disable, delete — every change persists to Neon and is audited. An admin can't disable/demote themselves.
+- **Direct manager** (org hierarchy): Hagai (CEO) ← Nir ← Mark; Elad/Ephraim/Esther report to Nir.
+- Sign out: account menu in the top bar → "Sign out".
 
 Voice Personal Assistant:
 - Floating purple button in corner. STT (Web Speech API + MediaRecorder fallback) and smart TTS.
@@ -178,7 +192,7 @@ Stack:
 Next.js 15 App Router (React 19), TypeScript strict, Tailwind CSS, shadcn/ui (hand-built), Drizzle ORM (schema ready for Postgres), CASL for RBAC, next-intl (5 languages + RTL), Radix UI, dnd-kit (Kanban), recharts (charts), pptxgenjs (presentations), Sonner (toasts), Google Gemini API, custom Gantt engine (not a library).
 
 Database:
-Drizzle schema with 18 tables ready in lib/db/schema.ts. In production — Neon Postgres / Supabase / Vercel Postgres. Currently runs on Mock data layer (lib/db/mock-data.ts) — real data from the Salesforce project Excel.
+**Connected to Neon PostgreSQL** — the users / user_sessions / auth_audit_log tables are live, and authentication + users are real in the DB. The rest of the data (tasks/projects/WBS) still runs on the Mock data layer (lib/db/mock-data.ts, data from the Salesforce project Excel) and will migrate to the DB gradually.
 
 Deployment:
 Vercel Production. Every push to main triggers automatic deploy.`,
@@ -196,7 +210,9 @@ Vercel Production. Every push to main triggers automatic deploy.`,
 
 17 KPI (10 базовых + 7 продвинутых), 5 типов рисков, голосовой помощник на 5 языках, динамическая система ролей RBAC, конструктор автоматизаций без кода.
 
-Технологии: Next.js 15, React 19, TypeScript, Tailwind, Drizzle ORM, next-intl, Google Gemini API. БД готова к Neon Postgres.`,
+Аутентификация (PostgreSQL/Neon — активна): вход через /login по личному email + паролю (bcrypt, серверные сессии, блокировка после 5 неудач, аудит). Управление пользователями на /admin (только админ): создание, смена роли и руководителя, сброс пароля, отключение/удаление — всё сохраняется в БД.
+
+Технологии: Next.js 15, React 19, TypeScript, Tailwind, Drizzle ORM, next-intl, Google Gemini API. БД: Neon Postgres (подключена).`,
 
   fr: `PMO++ en bref:
 Plateforme interne de gestion de projets du Centre de Cartographie d'Israël.
@@ -210,7 +226,9 @@ Mes tâches, Tableaux de bord et KPI, Gantt, WBS, Gestion des risques, Portefeui
 
 17 KPI, 5 types de risques, assistant vocal en 5 langues, RBAC dynamique, constructeur d'automatisations sans code.
 
-Stack: Next.js 15, React 19, TypeScript, Tailwind, Drizzle ORM, next-intl, Google Gemini API. BD prête pour Neon Postgres.`,
+Authentification (PostgreSQL/Neon — active): connexion via /login avec email + mot de passe personnel (bcrypt, sessions serveur, verrouillage après 5 échecs, audit). Gestion des utilisateurs sur /admin (admin seulement): création, changement de rôle et de responsable, réinitialisation du mot de passe, désactivation/suppression — tout est enregistré en BD.
+
+Stack: Next.js 15, React 19, TypeScript, Tailwind, Drizzle ORM, next-intl, Google Gemini API. BD: Neon Postgres (connectée).`,
 
   es: `PMO++ en breve:
 Plataforma interna de gestión de proyectos del Centro de Cartografía de Israel.
@@ -224,7 +242,9 @@ Mis tareas, Paneles y KPI, Gantt, WBS, Gestión de riesgos, Portafolios, Proyect
 
 17 KPI, 5 tipos de riesgo, asistente de voz en 5 idiomas, RBAC dinámico, constructor de automatizaciones sin código.
 
-Stack: Next.js 15, React 19, TypeScript, Tailwind, Drizzle ORM, next-intl, Google Gemini API. BD lista para Neon Postgres.`,
+Autenticación (PostgreSQL/Neon — activa): inicio de sesión en /login con email + contraseña personal (bcrypt, sesiones de servidor, bloqueo tras 5 intentos, auditoría). Gestión de usuarios en /admin (solo admin): crear, cambiar rol y responsable, restablecer contraseña, desactivar/eliminar — todo se guarda en la BD.
+
+Stack: Next.js 15, React 19, TypeScript, Tailwind, Drizzle ORM, next-intl, Google Gemini API. BD: Neon Postgres (conectada).`,
 };
 
 /** Get app facts in the requested language, with safe fallback to Hebrew. */
