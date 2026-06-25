@@ -34,7 +34,7 @@ function hashToken(token: string): string {
 /** Create a session row and return the RAW token (to put in the cookie). */
 export async function createSession(
   userId: string,
-  meta?: { ip?: string; userAgent?: string },
+  meta?: { ip?: string | null; userAgent?: string | null },
 ): Promise<{ token: string; expiresAt: Date }> {
   const token = randomBytes(32).toString("base64url"); // 256-bit
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
