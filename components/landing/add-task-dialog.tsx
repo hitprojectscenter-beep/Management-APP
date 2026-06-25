@@ -644,83 +644,47 @@ export function AddTaskDialog({
             )}
           </div>
 
-          {/* Assignment: Project or Program */}
+          {/* Task Source */}
           <div className="space-y-1.5">
             <Label>
-              {txt(locale, { he: "שיוך", en: "Assignment" })}{" "}
-              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "רשות", en: "optional" })})</span>
+              {txt(locale, { he: "מקור המשימה", en: "Task Source" })} <span className="text-red-500">*</span>
             </Label>
-            <div className="flex gap-2 mb-2">
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, parentType: "project", parentId: "" })}
-                className={cn(
-                  "flex-1 px-3 py-2 rounded-md text-sm font-medium border min-h-[44px]",
-                  form.parentType === "project"
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border hover:bg-accent"
-                )}
-              >
-                {txt(locale, { he: "פרויקט", en: "Project" })}
-              </button>
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, parentType: "program", parentId: "" })}
-                className={cn(
-                  "flex-1 px-3 py-2 rounded-md text-sm font-medium border min-h-[44px]",
-                  form.parentType === "program"
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border hover:bg-accent"
-                )}
-              >
-                {txt(locale, { he: "פרוגרמה", en: "Program" })}
-              </button>
-            </div>
-            <select
-              value={form.parentId}
-              onChange={(e) => setForm({ ...form, parentId: e.target.value })}
-              className={cn(
-                "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[44px]",
-                errors.parentId ? "border-red-500" : ""
-              )}
-            >
-              <option value="">{txt(locale, { he: "-- בחר --", en: "-- Select --" })}</option>
-              {parentOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {txt(locale, { he: p.name, en: p.nameEn || p.name })}
-                </option>
+            <div className="flex flex-wrap gap-1.5">
+              {TASK_SOURCES.map((src) => (
+                <button
+                  key={src.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, source: src.value, sourceOther: "" })}
+                  className={cn(
+                    "px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all min-h-[36px]",
+                    form.source === src.value
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-accent"
+                  )}
+                >
+                  {txt(locale, { he: src.labelHe, en: src.labelEn })}
+                </button>
               ))}
-            </select>
-            {errors.parentId && <p className="text-xs text-red-500">{errors.parentId}</p>}
+            </div>
+            {/* "Other" free text (max 100 chars) */}
+            {form.source === "other" && (
+              <div className="mt-2">
+                <Input
+                  value={form.sourceOther}
+                  onChange={(e) => setForm({ ...form, sourceOther: e.target.value.slice(0, 100) })}
+                  placeholder={txt(locale, { he: "הזן מקור משימה...", en: "Enter task source..." })}
+                  maxLength={100}
+                  className={cn("min-h-[44px]", errors.sourceOther ? "border-red-500" : "")}
+                />
+                <div className="text-[10px] text-muted-foreground text-end mt-0.5">
+                  {form.sourceOther.length}/100
+                </div>
+                {errors.sourceOther && <p className="text-xs text-red-500">{errors.sourceOther}</p>}
+              </div>
+            )}
           </div>
 
-          {/* Project Methodology selector */}
-          {form.parentType === "project" && (
-            <div className="space-y-1.5">
-              <Label>{txt(locale, { he: "שיטת ניהול", en: "Methodology" })}</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {METHODOLOGY_OPTIONS.map((m) => (
-                  <button
-                    key={m.value}
-                    type="button"
-                    onClick={() => setForm({ ...form, methodology: m.value })}
-                    className={cn(
-                      "flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all min-h-[44px]",
-                      form.methodology === m.value
-                        ? "border-primary bg-primary/10 text-primary shadow-md ring-2 ring-primary/20"
-                        : "border-border hover:bg-accent hover:border-primary/30"
-                    )}
-                  >
-                    <span className="text-lg">{m.icon}</span>
-                    <span className="text-xs font-semibold">{txt(locale, { he: m.he.split(" — ")[0], en: m.en })}</span>
-                    <span className="text-[9px] text-muted-foreground leading-tight">{txt(locale, m.desc)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Dates — "when": placed right after assignment per the requested order */}
+          {/* Dates — "when" (scheduling group) */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="task-start">
@@ -868,45 +832,81 @@ export function AddTaskDialog({
             )}
           </div>
 
-          {/* Task Source */}
+          {/* Assignment: Project or Program */}
           <div className="space-y-1.5">
             <Label>
-              {txt(locale, { he: "מקור המשימה", en: "Task Source" })} <span className="text-red-500">*</span>
+              {txt(locale, { he: "שיוך", en: "Assignment" })}{" "}
+              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "רשות", en: "optional" })})</span>
             </Label>
-            <div className="flex flex-wrap gap-1.5">
-              {TASK_SOURCES.map((src) => (
-                <button
-                  key={src.value}
-                  type="button"
-                  onClick={() => setForm({ ...form, source: src.value, sourceOther: "" })}
-                  className={cn(
-                    "px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all min-h-[36px]",
-                    form.source === src.value
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background hover:bg-accent"
-                  )}
-                >
-                  {txt(locale, { he: src.labelHe, en: src.labelEn })}
-                </button>
-              ))}
+            <div className="flex gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, parentType: "project", parentId: "" })}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-md text-sm font-medium border min-h-[44px]",
+                  form.parentType === "project"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:bg-accent"
+                )}
+              >
+                {txt(locale, { he: "פרויקט", en: "Project" })}
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, parentType: "program", parentId: "" })}
+                className={cn(
+                  "flex-1 px-3 py-2 rounded-md text-sm font-medium border min-h-[44px]",
+                  form.parentType === "program"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:bg-accent"
+                )}
+              >
+                {txt(locale, { he: "פרוגרמה", en: "Program" })}
+              </button>
             </div>
-            {/* "Other" free text (max 100 chars) */}
-            {form.source === "other" && (
-              <div className="mt-2">
-                <Input
-                  value={form.sourceOther}
-                  onChange={(e) => setForm({ ...form, sourceOther: e.target.value.slice(0, 100) })}
-                  placeholder={txt(locale, { he: "הזן מקור משימה...", en: "Enter task source..." })}
-                  maxLength={100}
-                  className={cn("min-h-[44px]", errors.sourceOther ? "border-red-500" : "")}
-                />
-                <div className="text-[10px] text-muted-foreground text-end mt-0.5">
-                  {form.sourceOther.length}/100
-                </div>
-                {errors.sourceOther && <p className="text-xs text-red-500">{errors.sourceOther}</p>}
-              </div>
-            )}
+            <select
+              value={form.parentId}
+              onChange={(e) => setForm({ ...form, parentId: e.target.value })}
+              className={cn(
+                "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[44px]",
+                errors.parentId ? "border-red-500" : ""
+              )}
+            >
+              <option value="">{txt(locale, { he: "-- בחר --", en: "-- Select --" })}</option>
+              {parentOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {txt(locale, { he: p.name, en: p.nameEn || p.name })}
+                </option>
+              ))}
+            </select>
+            {errors.parentId && <p className="text-xs text-red-500">{errors.parentId}</p>}
           </div>
+
+          {/* Project Methodology selector */}
+          {form.parentType === "project" && (
+            <div className="space-y-1.5">
+              <Label>{txt(locale, { he: "שיטת ניהול", en: "Methodology" })}</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {METHODOLOGY_OPTIONS.map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, methodology: m.value })}
+                    className={cn(
+                      "flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all min-h-[44px]",
+                      form.methodology === m.value
+                        ? "border-primary bg-primary/10 text-primary shadow-md ring-2 ring-primary/20"
+                        : "border-border hover:bg-accent hover:border-primary/30"
+                    )}
+                  >
+                    <span className="text-lg">{m.icon}</span>
+                    <span className="text-xs font-semibold">{txt(locale, { he: m.he.split(" — ")[0], en: m.en })}</span>
+                    <span className="text-[9px] text-muted-foreground leading-tight">{txt(locale, m.desc)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* File Attachments (max 5MB each) */}
           <div className="space-y-1.5">
