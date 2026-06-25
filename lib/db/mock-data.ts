@@ -158,7 +158,7 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Mark%20Israel",
     locale: "he",
     role: "admin",
-    managerId: "u2", // מדווח לניר ברלוביץ' (מנהל כלל הפעילויות)
+    managerId: "u6", // מדווח ישירות לחגי רונן (מנכ"ל) — חריג, לא תחת ניר
     password: "Mark@4100",
     skills: ["salesforce", "pmo", "technical-pm", "architecture", "strategy", "integration"],
     performanceScore: 92,
@@ -188,7 +188,7 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Elad%20Asraf",
     locale: "he",
     role: "manager",
-    managerId: "u1", // מדווח למארק ישראל (מנהל הפרוגרמה)
+    managerId: "u2", // מדווח לניר ברלוביץ' (מנהל כלל הפעילויות)
     password: "Elad2026",
     skills: ["salesforce", "marketing", "sales", "crm", "rfp", "procurement"],
     performanceScore: 87,
@@ -203,7 +203,7 @@ export const mockUsers: MockUser[] = [
     image: "https://api.dicebear.com/7.x/initials/svg?seed=Ephraim%20Gian",
     locale: "he",
     role: "manager",
-    managerId: "u1", // מדווח למארק ישראל (מנהל הפרוגרמה)
+    managerId: "u2", // מדווח לניר ברלוביץ' (מנהל כלל הפעילויות)
     password: "Ephraim2026",
     skills: ["salesforce", "crm", "apex", "lightning", "maintenance", "support"],
     performanceScore: 89,
