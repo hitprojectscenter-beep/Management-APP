@@ -336,6 +336,77 @@ export const attachments = pgTable("attachments", {
 });
 
 // ============================================
+// App Tasks — user-created tasks (form + intake extraction)
+// ============================================
+/**
+ * Tasks created through the application UI (the "add task" dialog and the
+ * intake/extraction center). These previously lived ONLY in the browser's
+ * localStorage (lib/db/local-tasks.ts), so a task was visible only on the
+ * device that created it and never crossed browsers — the source of the
+ * "task opens as 404 on another device" problem. This table is their durable,
+ * per-user, cross-device home.
+ *
+ * Deliberately separate from the heavy `tasks` table above (which is wired to
+ * the uuid WBS→workspace→organization chain for the seeded demo data). This
+ * one mirrors the `MockTask` shape the client actually produces: a text id,
+ * ISO **string** dates (text, so no timezone shift on round-trip — the app
+ * stores/reads "yyyy-mm-dd"), and jsonb for the array/object fields.
+ *
+ * creatorId / assigneeId are plain text (the seeded users have ids "u1".."u6",
+ * but invited members may exist only client-side) — NOT FK-constrained, so a
+ * write never fails on an unseeded user id. Per-user access is enforced in the
+ * repo/API layer by text equality + the manager hierarchy, not by FK.
+ */
+export const appTasks = pgTable(
+  "app_tasks",
+  {
+    id: text("id").primaryKey(), // client-generated, e.g. "task-1782484335963"
+    title: text("title").notNull(),
+    titleEn: text("title_en"),
+    description: text("description"),
+    status: taskStatusEnum("status").default("not_started").notNull(),
+    priority: taskPriorityEnum("priority").default("medium").notNull(),
+    /** Mock WBS node id this task hangs under (string ref, may be ""). */
+    wbsNodeId: text("wbs_node_id").default("").notNull(),
+    parentTaskId: text("parent_task_id"),
+    /** Owning user (the session that created it). Used for per-user listing. */
+    creatorId: text("creator_id"),
+    /** Responsible user (mock id "u1".. or an invited member). Nullable. */
+    assigneeId: text("assignee_id"),
+    /** ISO yyyy-mm-dd kept as text — exact round-trip, no Date() timezone shift. */
+    plannedStart: text("planned_start").default("").notNull(),
+    plannedEnd: text("planned_end").default("").notNull(),
+    actualStart: text("actual_start"),
+    actualEnd: text("actual_end"),
+    estimateHours: integer("estimate_hours").default(0).notNull(),
+    actualHours: integer("actual_hours").default(0).notNull(),
+    progressPercent: integer("progress_percent").default(0).notNull(),
+    tags: jsonb("tags").$type<string[]>().default([]).notNull(),
+    dependencies: jsonb("dependencies").$type<string[]>().default([]).notNull(),
+    resources: jsonb("resources").$type<string[]>().default([]).notNull(),
+    attachments: jsonb("attachments")
+      .$type<{ name: string; size: number; type: string; blobUrl?: string; source?: string }[]>()
+      .default([])
+      .notNull(),
+    /** Provenance: original document/recording the task was extracted from. */
+    sourceFile: jsonb("source_file").$type<{
+      name: string;
+      size?: number;
+      type?: string;
+      blobUrl?: string;
+      source?: string;
+    } | null>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    creatorIdx: index("app_tasks_creator_idx").on(table.creatorId),
+    assigneeIdx: index("app_tasks_assignee_idx").on(table.assigneeId),
+    statusIdx: index("app_tasks_status_idx").on(table.status),
+  })
+);
+
+// ============================================
 // RBAC: Roles & Board-level Permissions
 // ============================================
 export const roles = pgTable("roles", {
@@ -517,6 +588,8 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
 export type User = typeof users.$inferSelect;
 export type WbsNode = typeof wbsNodes.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
+export type AppTask = typeof appTasks.$inferSelect;
+export type NewAppTask = typeof appTasks.$inferInsert;
 export type Board = typeof boards.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type AiRisk = typeof aiRisks.$inferSelect;

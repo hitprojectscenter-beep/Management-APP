@@ -26,7 +26,7 @@ import {
 import { txt } from "@/lib/utils/locale-text";
 import { cn, formatDateDDMMYYYY } from "@/lib/utils";
 import { mockUsers, mockWbsNodes, type MockTaskAttachment, type MockTask } from "@/lib/db/mock-data";
-import { persistAddedTask } from "@/lib/db/local-tasks";
+import { persistAddedTasks } from "@/lib/db/local-tasks";
 import { pickResponsible } from "@/lib/ai/role-hierarchy";
 import { AddTaskDialog, type AddTaskInitialValues } from "@/components/landing/add-task-dialog";
 import { LinkGuideDialog } from "@/components/intake/link-guide-dialog";
@@ -711,7 +711,7 @@ export function IntakeWorkflow() {
       ?? "root";
     const startStamp = Date.now();
 
-    let createdCount = 0;
+    const bulkTasks: MockTask[] = [];
     Array.from(selected)
       .sort((a, b) => a - b)
       .forEach((idx, i) => {
@@ -750,11 +750,14 @@ export function IntakeWorkflow() {
           dependencies: [],
           attachments: sharedAttachment ? [sharedAttachment] : undefined,
         };
-        // Persist (module + localStorage + live event) so the bulk-created
-        // tasks show on /tasks and the home list without a refresh.
-        persistAddedTask(bulkTask);
-        createdCount++;
+        bulkTasks.push(bulkTask);
       });
+
+    // Persist all at once: optimistic cache (module + localStorage + live
+    // event so they show on /tasks and the home list with no refresh) AND a
+    // single durable write to the database (cross-device, per-user).
+    persistAddedTasks(bulkTasks);
+    const createdCount = bulkTasks.length;
 
     toast.success(
       txt(locale, {
@@ -768,8 +771,8 @@ export function IntakeWorkflow() {
               en: `Source file "${sharedAttachment.name}" attached to each task.`,
             }) as string)
           : (txt(locale, {
-              he: "במצב הדגמה — נשמר ב-mockTasks בלבד עד חיבור DB.",
-              en: "Demo mode — saved to mockTasks only until DB is wired.",
+              he: "נשמר בבסיס הנתונים — המשימות זמינות מכל מכשיר.",
+              en: "Saved to the database — available on every device.",
             }) as string),
       }
     );

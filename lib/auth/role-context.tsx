@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { mockUsers, type MockUser } from "@/lib/db/mock-data";
-import { rehydrateAddedTasksIntoModule } from "@/lib/db/local-tasks";
+import { rehydrateAddedTasksIntoModule, syncTasksFromDb } from "@/lib/db/local-tasks";
 import type { UserRole } from "@/lib/db/types";
 
 /**
@@ -103,8 +103,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
       // Re-inject tasks created in earlier sessions so module-level readers
       // (e.g. the workload calculator) and any client-side mockTasks reads
-      // are complete after a hard reload.
+      // are complete after a hard reload. Instant from the local cache, then
+      // reconcile against the database (cross-device) — a no-op in mock mode.
       rehydrateAddedTasksIntoModule();
+      void syncTasksFromDb();
 
       // ?invite=<token> — recipient opened the invite email link. Decode
       // the member, register them, persist them, and make them the active

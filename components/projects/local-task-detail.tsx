@@ -9,7 +9,7 @@ import { Calendar, Clock, User as UserIcon, Tag, Paperclip, FileText, Loader2, A
 import { Link } from "@/lib/i18n/routing";
 import { cn, formatDateDDMMYYYY } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
-import { loadAddedTasks } from "@/lib/db/local-tasks";
+import { loadAddedTasks, fetchTaskFromDb } from "@/lib/db/local-tasks";
 import { mockUsers, type MockTask } from "@/lib/db/mock-data";
 
 const STATUS_LABELS: Record<string, Record<string, string>> = {
@@ -22,17 +22,32 @@ const STATUS_LABELS: Record<string, Record<string, string>> = {
 };
 
 /**
- * Client-side task detail for tasks created in-session (intake extraction,
- * add-task dialog). Those live in localStorage, not in the server-rendered
- * mockTasks snapshot — so the server page can't find them and would 404.
- * This renders them from localStorage instead.
+ * Client-side task detail for user-created tasks (intake extraction, add-task
+ * dialog). These aren't in the server-rendered mockTasks snapshot, so the
+ * server page can't find them and would 404. This loads the task from the
+ * database (durable, cross-device) and falls back to the local cache when the
+ * DB isn't configured or is offline.
  */
 export function LocalTaskDetail({ id, locale }: { id: string; locale: string }) {
   const [task, setTask] = useState<MockTask | null | undefined>(undefined); // undefined = loading
 
   useEffect(() => {
-    const found = loadAddedTasks().find((t) => t.id === id) || null;
-    setTask(found);
+    let cancelled = false;
+    (async () => {
+      // DB first (durable, cross-device); fall back to the local cache when the
+      // DB isn't configured or is unreachable (mock/offline mode).
+      const fromDb = await fetchTaskFromDb(id);
+      if (cancelled) return;
+      if (fromDb) {
+        setTask(fromDb);
+        return;
+      }
+      const local = loadAddedTasks().find((t) => t.id === id) || null;
+      if (!cancelled) setTask(local);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   if (task === undefined) {
