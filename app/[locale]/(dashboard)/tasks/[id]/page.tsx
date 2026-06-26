@@ -1,5 +1,5 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
+import { LocalTaskDetail } from "@/components/projects/local-task-detail";
 import {
   getTaskById,
   getCommentsByTask,
@@ -38,7 +38,10 @@ export default async function TaskDetailPage({
   setRequestLocale(locale);
 
   const task = getTaskById(id);
-  if (!task) notFound();
+  // Tasks created in-session (intake extraction / add-task dialog) live in the
+  // client's localStorage, not in this server-rendered mockTasks snapshot — so
+  // fall back to a client view that loads them from localStorage instead of 404.
+  if (!task) return <LocalTaskDetail id={id} locale={locale} />;
 
   const assignee = task.assigneeId ? getUserById(task.assigneeId) : null;
   const comments = getCommentsByTask(task.id);
