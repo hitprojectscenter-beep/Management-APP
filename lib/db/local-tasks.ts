@@ -24,6 +24,7 @@ import { mockTasks, type MockTask } from "@/lib/db/mock-data";
 export const TASKS_CHANGED_EVENT = "pmo:tasks-changed";
 const LEGACY_KEY = "pmo_added_tasks"; // pre-namespacing key (single-user era)
 const ACTIVE_USER_KEY = "pmo_active_user_id";
+const SYNCED_IDS_KEY = "pmo_synced_task_ids"; // per-user: task ids ever confirmed present in the DB
 
 // --- cache key (per active user) --------------------------------------------
 
@@ -72,6 +73,26 @@ function saveAddedTasks(list: MockTask[], uid: string = activeUserId()): void {
     window.localStorage.setItem(cacheKey(uid), JSON.stringify(list));
   } catch {
     /* private-mode — module copy still works this session */
+  }
+}
+
+/** Ids the DB has confirmed for this user. Lets a sync tell a never-synced
+ *  task (→ backfill) from one that was synced and later deleted elsewhere
+ *  (→ drop, don't resurrect). */
+function loadSyncedIds(uid: string): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(`${SYNCED_IDS_KEY}::${uid}`);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? (arr as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+function saveSyncedIds(uid: string, ids: Set<string>): void {
+  try {
+    window.localStorage.setItem(`${SYNCED_IDS_KEY}::${uid}`, JSON.stringify([...ids]));
+  } catch {
+    /* ignore */
   }
 }
 
@@ -165,10 +186,23 @@ export async function syncTasksFromDb(): Promise<boolean> {
 
   const uid = activeUserId();
   const dbIds = new Set(dbTasks.map((t) => t.id));
-  // Keep only cache entries the DB hasn't acknowledged yet (in-flight creates).
-  const pending = loadAddedTasks().filter((t) => t?.id && !dbIds.has(t.id));
-  const merged = [...dbTasks, ...pending];
+  const known = loadSyncedIds(uid);
+  for (const id of dbIds) known.add(id); // everything currently in the DB is confirmed
+
+  const cache = loadAddedTasks();
+  // A cache task missing from the DB is one of two things:
+  //   • never confirmed before  → a genuine create (made pre-DB, or whose
+  //     original write failed) → BACKFILL it so it becomes durable + cross-device.
+  //   • confirmed before, now gone → it was DELETED (or unshared) elsewhere →
+  //     drop it; do NOT resurrect it.
+  const trulyNew = cache.filter((t) => t?.id && !dbIds.has(t.id) && !known.has(t.id));
+  if (trulyNew.length > 0) void postTasksToDb({ tasks: trulyNew });
+
+  // The cache becomes exactly what the user may see now: the DB set + the
+  // not-yet-acknowledged new ones. Deleted-elsewhere tasks fall away.
+  const merged = [...dbTasks, ...trulyNew];
   saveAddedTasks(merged, uid);
+  saveSyncedIds(uid, known);
   injectIntoModule(merged);
   try {
     window.dispatchEvent(new CustomEvent(TASKS_CHANGED_EVENT, { detail: merged }));
