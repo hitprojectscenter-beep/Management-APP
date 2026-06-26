@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Briefcase } from "lucide-react";
 import { mockWbsNodes } from "@/lib/db/mock-data";
+import { persistAddedProject, type LiveProject } from "@/lib/db/local-projects";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 
@@ -94,6 +95,26 @@ export function AddProjectDialog({ children }: { children: React.ReactNode }) {
     }
 
     const program = programs.find((p) => p.id === form.programId);
+
+    // Persist the project: optimistic cache (so it shows immediately) AND a
+    // durable write to PostgreSQL (cross-device, per-user). Previously this
+    // dialog only toasted and saved nothing.
+    const newProject: LiveProject = {
+      id: `proj-${Date.now()}`,
+      parentId: form.programId || null,
+      level: "project",
+      name: form.name.trim(),
+      nameEn: form.nameEn.trim() || undefined,
+      description: form.description.trim() || undefined,
+      position: 0,
+      methodology: form.methodology,
+      plannedStart: form.plannedStart,
+      plannedEnd: form.plannedEnd,
+      budget: form.budget ? Math.round(parseFloat(form.budget)) : null,
+      status: "active",
+    };
+    persistAddedProject(newProject);
+
     toast.success(
       txt(locale, {
         he: `הפרויקט "${form.name}" נוצר בהצלחה!`,

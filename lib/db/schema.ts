@@ -407,6 +407,44 @@ export const appTasks = pgTable(
 );
 
 // ============================================
+// App Projects — user-created projects (the "new project" dialog)
+// ============================================
+/**
+ * Projects created through the application UI. Until now the "create project"
+ * dialog only showed a success toast and persisted nothing; this table is its
+ * real, durable, per-user, cross-device home — the same pattern as app_tasks.
+ * A created project is a WBS "project" node hanging under a (seeded) program;
+ * the seeded WBS tree itself stays in mock-data.
+ *
+ * creator_id is plain text (session user id), NOT FK-constrained for the same
+ * reason as app_tasks (invited members may be client-only). Access is enforced
+ * in the repo/API layer.
+ */
+export const appProjects = pgTable(
+  "app_projects",
+  {
+    id: text("id").primaryKey(), // client-generated, e.g. "proj-1782484335963"
+    name: text("name").notNull(),
+    nameEn: text("name_en"),
+    description: text("description"),
+    /** Parent program id (string ref into the mock WBS). */
+    programId: text("program_id").default("").notNull(),
+    methodology: text("methodology").default("waterfall").notNull(), // waterfall | agile | kanban
+    plannedStart: text("planned_start").default("").notNull(), // ISO yyyy-mm-dd as text
+    plannedEnd: text("planned_end").default("").notNull(),
+    budget: integer("budget"),
+    status: text("status").default("active").notNull(),
+    creatorId: text("creator_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    creatorIdx: index("app_projects_creator_idx").on(table.creatorId),
+    programIdx: index("app_projects_program_idx").on(table.programId),
+  })
+);
+
+// ============================================
 // RBAC: Roles & Board-level Permissions
 // ============================================
 export const roles = pgTable("roles", {
@@ -590,6 +628,8 @@ export type WbsNode = typeof wbsNodes.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type AppTask = typeof appTasks.$inferSelect;
 export type NewAppTask = typeof appTasks.$inferInsert;
+export type AppProject = typeof appProjects.$inferSelect;
+export type NewAppProject = typeof appProjects.$inferInsert;
 export type Board = typeof boards.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type AiRisk = typeof aiRisks.$inferSelect;

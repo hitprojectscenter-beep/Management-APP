@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { mockUsers, type MockUser } from "@/lib/db/mock-data";
 import { rehydrateAddedTasksIntoModule, syncTasksFromDb } from "@/lib/db/local-tasks";
+import { rehydrateAddedProjectsIntoModule, syncProjectsFromDb } from "@/lib/db/local-projects";
 import type { UserRole } from "@/lib/db/types";
 
 /**
@@ -107,6 +108,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       // reconcile against the database (cross-device) — a no-op in mock mode.
       rehydrateAddedTasksIntoModule();
       void syncTasksFromDb();
+      rehydrateAddedProjectsIntoModule();
+      void syncProjectsFromDb();
 
       // ?invite=<token> — recipient opened the invite email link. Decode
       // the member, register them, persist them, and make them the active

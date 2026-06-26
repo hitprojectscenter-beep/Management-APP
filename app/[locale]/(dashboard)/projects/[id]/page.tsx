@@ -1,5 +1,4 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import { ProjectMembers } from "@/components/members/project-members";
 import { ProjectHeaderActions } from "@/components/projects/project-header-actions";
 import { StaffPanel } from "@/components/projects/staff-panel";
 import { ActivitiesPanel } from "@/components/projects/activities-panel";
+import { LocalProjectDetail } from "@/components/projects/local-project-detail";
 
 export default async function ProjectDetailPage({
   params,
@@ -31,7 +31,9 @@ export default async function ProjectDetailPage({
   const tCommon = await getTranslations("common");
 
   const project = getWbsNodeById(id);
-  if (!project) notFound();
+  // Created projects aren't in the seeded server snapshot — render them from
+  // the DB/cache instead of 404ing (mirrors the task deep-link fix).
+  if (!project) return <LocalProjectDetail id={id} locale={locale} />;
 
   const tasks = getTasksByProject(id);
   const health = calculateProjectHealth(tasks);
