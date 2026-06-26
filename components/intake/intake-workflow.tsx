@@ -27,7 +27,7 @@ import { txt } from "@/lib/utils/locale-text";
 import { cn, formatDateDDMMYYYY } from "@/lib/utils";
 import { mockUsers, mockWbsNodes, type MockTaskAttachment, type MockTask } from "@/lib/db/mock-data";
 import { persistAddedTasks } from "@/lib/db/local-tasks";
-import { pickResponsible } from "@/lib/ai/role-hierarchy";
+import { useRole } from "@/lib/auth/role-context";
 import { AddTaskDialog, type AddTaskInitialValues } from "@/components/landing/add-task-dialog";
 import { LinkGuideDialog } from "@/components/intake/link-guide-dialog";
 
@@ -354,6 +354,9 @@ function formatIntakeError(err: unknown, locale: string): string {
 
 export function IntakeWorkflow() {
   const locale = useLocale();
+  // The user running the extraction — the default assignee when the source
+  // doesn't name a responsible person from the user list.
+  const { currentUser } = useRole();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<Mode>("file");
@@ -705,7 +708,6 @@ export function IntakeWorkflow() {
     // Mutate mockTasks so the new tasks show up on /tasks. In production
     // this is where we'd POST to /api/tasks; here we keep parity with how
     // the rest of the demo handles task creation.
-    const autoFallback = pickResponsible(mockUsers, { excludeCEO: true });
     const wbsLeaf = mockWbsNodes.find((n) => n.level === "task")?.id
       ?? mockWbsNodes[0]?.id
       ?? "root";
@@ -717,7 +719,9 @@ export function IntakeWorkflow() {
       .forEach((idx, i) => {
         const t = result.tasks[idx];
         if (!t) return;
-        const resolved = resolveAssignee(t.assigneeHint) || autoFallback?.user;
+        // Assignee rule: an explicit name from the user list wins; otherwise
+        // default to the current user (the one who ran the extraction).
+        const resolved = resolveAssignee(t.assigneeHint) || currentUser;
         // A task can't start and end the same day. Use the explicit due
         // date only when it's actually after the start; otherwise default
         // to a one-week window.
@@ -1239,8 +1243,9 @@ function ExtractedTasksTable({
   onCreate: () => void;
 }) {
   const locale = useLocale();
-  // Compute the org-wide auto-pick: most senior non-CEO from mockUsers, as fallback
-  const autoFallback = pickResponsible(mockUsers, { excludeCEO: true });
+  // Fallback assignee = the current user (the one running the extraction):
+  // when the source names no owner from the user list, assign to them.
+  const { currentUser } = useRole();
 
   // Controlled-open dialog that gets pre-filled when the user clicks a row.
   const [editorOpen, setEditorOpen] = useState(false);
@@ -1284,7 +1289,7 @@ function ExtractedTasksTable({
   };
 
   const openEditor = (task: ExtractedTask, index: number) => {
-    const resolved = resolveAssignee(task.assigneeHint) || autoFallback?.user;
+    const resolved = resolveAssignee(task.assigneeHint) || currentUser;
     setEditorInit({
       title: task.title,
       description: buildRichDescription(task, descContext, locale),
@@ -1341,7 +1346,7 @@ function ExtractedTasksTable({
           result.tasks.map((task, i) => {
             const isSel = selected.has(i);
             const resolved = resolveAssignee(task.assigneeHint);
-            const chosenAssignee = resolved || autoFallback?.user;
+            const chosenAssignee = resolved || currentUser;
             return (
               <div
                 key={i}
