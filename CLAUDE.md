@@ -1045,3 +1045,31 @@ create→200 (creatorId מהסשן), list/get→200, **בידוד per-user** (נ
 
 ### ⚠️ הבא בתור (להמשך)
 פרויקטים + WBS עדיין mock-data. אם רוצים שגם הם יהיו cross-device — אותה תבנית (טבלה + repo + API + sync).
+
+---
+
+## 🆕 סבב פיתוח 30 — חילוץ מחמיר, Backfill, ניהול סיסמאות, פרויקטים ל-DB
+
+### חלק א': הגדרת משימה מחמירה בחילוץ (`lib/ai/meeting-extractor.ts`)
+- **בעיה**: מסמך רפלקציה/סקירה ייצר "משימות" שהן בעצם נושאים/אבחנות (9 פריטים שגויים).
+- **הכלל החדש (החלטת מפעיל)**: פריט = משימה רק אם יש בו **פעולה** (עתיד/ציווי/התחייבות) **+ עוגן** — מבצע בשם, תאריך יעד, או תוצר בעל-שם. אמירה נורמטיבית-סתמית ("יש לבחון את התהליך") בלי עוגן → לא משימה. הכותרת = הפעולה, לא הנושא. 0 משימות → empty-state כן.
+- **שיוך (כלל 2)**: שם מרשימת המשתמשים → אותו משתמש; אחרת → **המשתמש המחובר שהריץ חילוץ** (`useRole().currentUser`, החליף את `pickResponsible`).
+- אומת: מסמך רפלקטיבי → 0, סיכום אמיתי → 4 (עם שמות/יעדים/התחייבות, תיאור נזרק).
+
+### חלק ב': Backfill + propagate-deletes (`lib/db/local-tasks.ts`)
+- משימות שהיו רק ב-localStorage (לפני ה-DB) עולות ל-DB ב-sync.
+- **ledger** `pmo_synced_task_ids::<uid>` מבדיל "מעולם לא סונכרן" (backfill) מ"סונכרן ונמחק במקום אחר" (drop, בלי resurrection). מחיקה במכשיר אחד מתפשטת.
+
+### חלק ג': ניהול סיסמאות (#68)
+- **אכיפת החלפה בכניסה ראשונה**: `mustChangePassword=true` → `AuthGate` חוסם את כל היישום מאחורי מסך החלפת-סיסמה.
+- **שינוי עצמי**: תפריט המשתמש ב-topbar → דיאלוג `ChangePasswordForm` (checklist מדיניות חי).
+- שרת: `changeOwnPassword` (אימות נוכחית + policy + איסור reuse), `POST /api/auth/change-password`, `revokeOtherUserSessions` (משאיר את המכשיר הנוכחי, מבטל את השאר).
+- אומת מול Neon (u3, שוחזר): flag→true → invalid_current → weak+errors → 200 → flag=false; סיסמה ישנה נדחית, חדשה עובדת; היישום חסום עד ההחלפה.
+
+### חלק ד': פרויקטים ל-PostgreSQL (`app_projects`)
+- **יצירת פרויקט הייתה no-op** (toast בלבד). עכשיו נשמרת ל-DB — אותה תבנית כמו משימות.
+- `app-projects-repo.ts` (per-user: admin הכל / manager תת-עץ / אחר שלו), `/api/projects[/id]`, `local-projects.ts` (cache+sync+ledger), `LiveProjectsGrid` (מיזוג בגריד), `LocalProjectDetail` (דף פרטים בלי 404).
+- אומת: create→200, בידוד per-user (ניר 0+403, חגי 1+200), מופיע בגריד + דף פרטים, delete→200/404.
+
+### גבול הנתונים הנוכחי
+ב-PostgreSQL: auth + `app_tasks` + `app_projects` (ישויות שנוצרות במשתמש). עדיין mock-data: עץ ה-WBS הזרוע, הפרויקטים הזרועים, המשימות הזרועות. עץ WBS מלא ל-DB = מאמץ נפרד גדול.
