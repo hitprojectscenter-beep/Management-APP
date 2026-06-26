@@ -11,6 +11,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -318,11 +319,11 @@ export function ActivitiesPanel({ projectId, locale }: { projectId: string; loca
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
           <Label>{txt(locale, LABELS.plannedStart)}</Label>
-          <Input type="date" value={values.start} onChange={(e) => setters.setStart(e.target.value)} />
+          <DateField value={values.start} onChange={(iso) => setters.setStart(iso)} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>{txt(locale, LABELS.plannedEnd)}</Label>
-          <Input type="date" value={values.end} onChange={(e) => setters.setEnd(e.target.value)} />
+          <DateField value={values.end} onChange={(iso) => setters.setEnd(iso)} />
         </div>
       </div>
 

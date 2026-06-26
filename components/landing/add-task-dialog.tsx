@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -690,21 +691,19 @@ export function AddTaskDialog({
               <Label htmlFor="task-start">
                 {txt(locale, { he: "תאריך התחלה", en: "Start Date" })} <span className="text-red-500">*</span>
               </Label>
-              <Input
+              <DateField
                 id="task-start"
-                type="date"
                 value={form.plannedStart}
-                onChange={(e) => {
-                  const newStart = e.target.value;
-                  // Keep a valid window: if the end would now be on/before
-                  // the new start, push it a week out automatically.
+                error={!!errors.plannedStart}
+                onChange={(iso) =>
                   setForm((prev) => ({
                     ...prev,
-                    plannedStart: newStart,
-                    plannedEnd: ensureEndAfterStart(newStart, prev.plannedEnd),
-                  }));
-                }}
-                className={cn("min-h-[44px]", errors.plannedStart ? "border-red-500" : "")}
+                    plannedStart: iso,
+                    // Keep a valid window: push the end a week out if it would
+                    // now fall on/before the new start.
+                    plannedEnd: ensureEndAfterStart(iso, prev.plannedEnd),
+                  }))
+                }
               />
               {errors.plannedStart && <p className="text-xs text-red-500">{errors.plannedStart}</p>}
             </div>
@@ -712,12 +711,11 @@ export function AddTaskDialog({
               <Label htmlFor="task-end">
                 {txt(locale, { he: "תאריך סיום משוער", en: "Est. End Date" })} <span className="text-red-500">*</span>
               </Label>
-              <Input
+              <DateField
                 id="task-end"
-                type="date"
                 value={form.plannedEnd}
-                onChange={(e) => setForm({ ...form, plannedEnd: e.target.value })}
-                className={cn("min-h-[44px]", errors.plannedEnd ? "border-red-500" : "")}
+                error={!!errors.plannedEnd}
+                onChange={(iso) => setForm({ ...form, plannedEnd: iso })}
               />
               {errors.plannedEnd && <p className="text-xs text-red-500">{errors.plannedEnd}</p>}
             </div>

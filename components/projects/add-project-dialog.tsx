@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Briefcase } from "lucide-react";
@@ -237,13 +238,11 @@ export function AddProjectDialog({ children }: { children: React.ReactNode }) {
               <Label htmlFor="proj-start">
                 {txt(locale, { he: "תאריך התחלה", en: "Start date" })} <span className="text-red-500">*</span>
               </Label>
-              <Input
+              <DateField
                 id="proj-start"
-                type="date"
                 value={form.plannedStart}
-                onChange={(e) => setForm({ ...form, plannedStart: e.target.value })}
-                aria-invalid={!!errors.plannedStart}
-                className={cn("min-h-[44px]", errors.plannedStart && "border-red-500")}
+                error={!!errors.plannedStart}
+                onChange={(iso) => setForm({ ...form, plannedStart: iso })}
               />
               {errors.plannedStart && <p className="text-xs text-red-500">{errors.plannedStart}</p>}
             </div>
@@ -251,13 +250,11 @@ export function AddProjectDialog({ children }: { children: React.ReactNode }) {
               <Label htmlFor="proj-end">
                 {txt(locale, { he: "תאריך סיום", en: "End date" })} <span className="text-red-500">*</span>
               </Label>
-              <Input
+              <DateField
                 id="proj-end"
-                type="date"
                 value={form.plannedEnd}
-                onChange={(e) => setForm({ ...form, plannedEnd: e.target.value })}
-                aria-invalid={!!errors.plannedEnd}
-                className={cn("min-h-[44px]", errors.plannedEnd && "border-red-500")}
+                error={!!errors.plannedEnd}
+                onChange={(iso) => setForm({ ...form, plannedEnd: iso })}
               />
               {errors.plannedEnd && <p className="text-xs text-red-500">{errors.plannedEnd}</p>}
             </div>
