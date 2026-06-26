@@ -19,7 +19,7 @@
 import "server-only";
 import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
-import { eq, and, isNull, gt } from "drizzle-orm";
+import { eq, and, isNull, gt, ne } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { userSessions } from "@/lib/db/schema";
 
@@ -90,6 +90,25 @@ export async function revokeAllUserSessions(userId: string): Promise<void> {
     .update(userSessions)
     .set({ revokedAt: new Date() })
     .where(and(eq(userSessions.userId, userId), isNull(userSessions.revokedAt)));
+}
+
+/**
+ * Revoke all of a user's OTHER sessions, keeping the one whose raw token is
+ * `keepToken`. Used on a self-service password change: the device that changed
+ * the password stays signed in, every other session is invalidated so a leaked
+ * old credential can't keep a session alive.
+ */
+export async function revokeOtherUserSessions(userId: string, keepToken: string): Promise<void> {
+  await getDb()
+    .update(userSessions)
+    .set({ revokedAt: new Date() })
+    .where(
+      and(
+        eq(userSessions.userId, userId),
+        isNull(userSessions.revokedAt),
+        ne(userSessions.tokenHash, hashToken(keepToken)),
+      ),
+    );
 }
 
 // ---- Cookie helpers (Next 15: cookies() is async) ----

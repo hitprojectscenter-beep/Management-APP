@@ -20,7 +20,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
-import { verifyPassword } from "./password";
+import { verifyPassword, hashPassword, checkPasswordPolicy } from "./password";
 import { createSession } from "./server-session";
 import { logAuthEvent } from "./audit";
 import type { UserRole } from "@/lib/db/types";
@@ -131,4 +131,50 @@ export async function authenticate(input: AuthInput): Promise<AuthResult> {
 export async function getPublicUserById(id: string): Promise<PublicUser | null> {
   const rows = await getDb().select().from(users).where(eq(users.id, id)).limit(1);
   return rows[0] ? toPublicUser(rows[0]) : null;
+}
+
+export type ChangePasswordResult =
+  | { ok: true }
+  | { ok: false; reason: "invalid_current" | "weak"; errors?: string[] };
+
+/**
+ * Self-service password change. Verifies the CURRENT password, enforces the
+ * password policy on the new one (and forbids reusing the same password),
+ * then stores the new bcrypt hash, stamps passwordChangedAt, clears the
+ * must-change flag and resets the lockout counters. Session revocation of the
+ * other devices is handled by the caller (it holds the current token).
+ */
+export async function changeOwnPassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<ChangePasswordResult> {
+  const db = getDb();
+  const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  const u = rows[0];
+  if (!u) return { ok: false, reason: "invalid_current" };
+
+  const currentOk = u.passwordHash ? await verifyPassword(currentPassword, u.passwordHash) : false;
+  if (!currentOk) return { ok: false, reason: "invalid_current" };
+
+  const policy = checkPasswordPolicy(newPassword, { name: u.name ?? undefined, email: u.email });
+  if (!policy.ok) return { ok: false, reason: "weak", errors: policy.errors };
+
+  // Forbid reusing the exact same password.
+  if (u.passwordHash && (await verifyPassword(newPassword, u.passwordHash))) {
+    return { ok: false, reason: "weak", errors: ["הסיסמה החדשה חייבת להיות שונה מהנוכחית"] };
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+  await db
+    .update(users)
+    .set({
+      passwordHash,
+      passwordChangedAt: new Date(),
+      mustChangePassword: false,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    })
+    .where(eq(users.id, userId));
+  return { ok: true };
 }

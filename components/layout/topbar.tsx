@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/routing";
-import { Search, Bell, Sun, Moon, Globe, Menu, ChevronDown, Crown, Shield, User as UserIcon, Eye, UserX, LogOut } from "lucide-react";
+import { Search, Bell, Sun, Moon, Globe, Menu, ChevronDown, Crown, Shield, User as UserIcon, Eye, UserX, LogOut, KeyRound } from "lucide-react";
 import { logout } from "@/lib/auth/session";
 import { apiLogout, fetchSession } from "@/lib/auth/client-auth";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ import { mockUsers } from "@/lib/db/mock-data";
 import { ROLE_LABELS } from "@/lib/rbac/abilities";
 import { locales, localeNames, localeFlags, type Locale } from "@/lib/i18n/config";
 import { useRole } from "@/lib/auth/role-context";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ChangePasswordForm } from "@/components/auth/change-password-form";
 import type { UserRole } from "@/lib/db/types";
 
 const ROLE_ICONS: Record<UserRole, typeof Crown> = {
@@ -49,6 +51,7 @@ export function Topbar() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
   const [realAuth, setRealAuth] = useState(false);
   const { currentUser, switchUser, role } = useRole();
   const isHe = locale === "he"; // kept for RTL sheet direction
@@ -162,6 +165,15 @@ export function Topbar() {
                     {txt(locale, { he: "💡 הממשק ישתנה בהתאם להרשאות התפקיד", en: "💡 UI adapts to the selected role's permissions" })}
                   </div>
                 )}
+                {realAuth && (
+                  <button
+                    onClick={() => { setRoleMenuOpen(false); setPwOpen(true); }}
+                    className="w-full px-3 py-2.5 text-sm flex items-center gap-3 min-h-[44px] border-t hover:bg-accent transition-colors"
+                  >
+                    <KeyRound className="size-4" />
+                    {txt(locale, { he: "שינוי סיסמה", en: "Change password" })}
+                  </button>
+                )}
                 <button
                   onClick={async () => { await apiLogout(); logout(); window.location.href = `/${locale}/login`; }}
                   className="w-full px-3 py-2.5 text-sm flex items-center gap-3 min-h-[44px] border-t text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
@@ -255,6 +267,20 @@ export function Topbar() {
           </div>
         </div>
       </div>
+
+      {/* Self-service change-password dialog (real-auth mode only) */}
+      <Dialog open={pwOpen} onOpenChange={setPwOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{txt(locale, { he: "שינוי סיסמה", en: "Change password" })}</DialogTitle>
+          </DialogHeader>
+          <ChangePasswordForm
+            locale={locale}
+            onDone={() => setPwOpen(false)}
+            onCancel={() => setPwOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

@@ -16,6 +16,8 @@ export interface SessionUser {
   locale: string;
   title: string | null;
   managerId: string | null;
+  /** True when an admin set an initial password the user must replace. */
+  mustChangePassword?: boolean;
 }
 
 export interface SessionInfo {
@@ -38,5 +40,32 @@ export async function apiLogout(): Promise<void> {
     await fetch("/api/auth/logout", { method: "POST" });
   } catch {
     // ignore — the caller still clears local state + redirects
+  }
+}
+
+export interface ChangePasswordResponse {
+  ok: boolean;
+  /** "invalid_current" | "weak" | "network" | ... when ok is false. */
+  error?: string;
+  /** Hebrew policy violations to show under the field, when error === "weak". */
+  errors?: string[];
+}
+
+/** Self-service password change (also used for the forced first-login change). */
+export async function apiChangePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<ChangePasswordResponse> {
+  try {
+    const res = await fetch("/api/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) return { ok: true };
+    return { ok: false, error: data.error || "failed", errors: data.errors };
+  } catch {
+    return { ok: false, error: "network" };
   }
 }

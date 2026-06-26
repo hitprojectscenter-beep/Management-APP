@@ -17,6 +17,7 @@ export type AuthEvent =
   | "login_locked"
   | "logout"
   | "password_changed"
+  | "password_change_failed"
   | "password_set"
   | "account_disabled"
   | "account_enabled"
