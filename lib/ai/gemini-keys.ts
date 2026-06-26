@@ -68,13 +68,15 @@ export function isOverloadedError(status: number, bodyText = ""): boolean {
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-// Order matters: gemini-2.0-flash is the workhorse and is FAR more
-// available than the newest gemini-2.5-flash, which Google frequently
-// 503s with "high demand". Trying the stable model first dramatically
-// cuts the intermittent failures we saw in production (with a paid key,
-// 2.0-flash has quota and succeeds immediately). 2.5-flash stays as a
-// quality fallback, lite last.
-const GEMINI_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
+// Model fallback chain — ONLY models verified live against the API (HTTP 200):
+//   • gemini-2.5-flash         — best quality, GA, stable. Primary.
+//   • gemini-flash-latest      — alias Google keeps pointed at the latest flash.
+//   • gemini-flash-lite-latest — alias to the latest lite (cheapest, most
+//     available) — the last-resort "just get a response".
+// REMOVED (return 404 "no longer available" on our keys): gemini-2.0-flash AND
+// gemini-2.0-flash-lite. The *-latest ALIASES future-proof us — Google keeps
+// them pointed at a live model, so they can't 404 for being retired.
+const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"];
 
 export interface GeminiCallResult {
   ok: boolean;
@@ -171,6 +173,7 @@ export async function geminiGenerateText(body: unknown, label = "gemini"): Promi
   const keys = getGeminiApiKeys();
   if (keys.length === 0) throw new Error("GEMINI_API_KEY not set");
   let lastErr: Error | null = null;
+  let lastRealErr: Error | null = null; // non-404 — preferred for the user-facing message
   for (let k = 0; k < keys.length; k++) {
     for (const model of GEMINI_MODELS) {
       const r = await geminiCall(model, keys[k], body);
@@ -178,12 +181,16 @@ export async function geminiGenerateText(body: unknown, label = "gemini"): Promi
         const text = geminiExtractText(r.data);
         if (text) return text;
         lastErr = new Error(`${label} ${model} returned no text`);
+        lastRealErr = lastErr;
         continue;
       }
       lastErr = new Error(`${label} ${model} ${r.status}: ${(r.errText || "").slice(0, 200)}`);
+      // A 404 means the model was retired (code issue, not the user's quota) —
+      // don't let it mask a real quota/overload error in the surfaced message.
+      if (r.status !== 404) lastRealErr = lastErr;
       console.warn(`[${label}] key#${k + 1} ${model} failed (${r.status}):`, (r.errText || "").slice(0, 90));
       // Always continue to the next model/key — never give up on one error.
     }
   }
-  throw lastErr ?? new Error(`${label}: all keys/models failed`);
+  throw lastRealErr ?? lastErr ?? new Error(`${label}: all keys/models failed`);
 }

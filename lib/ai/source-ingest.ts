@@ -16,8 +16,9 @@ import mammoth from "mammoth";
 import JSZip from "jszip";
 import { getGeminiApiKeys, getGeminiApiKey, isQuotaError, geminiCall, geminiExtractText, geminiGenerateText, probeKeyAvailable } from "./gemini-keys";
 
-// 2.0-flash first — far more available than the often-503'd 2.5-flash.
-const GEMINI_MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-lite"];
+// Only models verified live (HTTP 200). gemini-2.0-flash AND -flash-lite return
+// 404 ("no longer available") — removed. The *-latest aliases are future-proof.
+const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"];
 
 /** First configured key — for one-shot calls (file upload, status polls). */
 function getApiKey(): string | null {
@@ -54,7 +55,7 @@ interface GeminiPart {
 async function geminiGenerate(parts: GeminiPart[], instruction?: string): Promise<string> {
   const body: any = {
     contents: [{ role: "user", parts }],
-    generationConfig: { temperature: 0.3, topP: 0.9, maxOutputTokens: 4096 },
+    generationConfig: { temperature: 0.3, topP: 0.9, maxOutputTokens: 4096, thinkingConfig: { thinkingBudget: 0 } },
   };
   if (instruction) body.systemInstruction = { parts: [{ text: instruction }] };
   return geminiGenerateText(body, "source-ingest");
@@ -296,7 +297,7 @@ export async function ingestAudioByUri(
       },
     ],
     systemInstruction: { parts: [{ text: instruction }] },
-    generationConfig: { temperature: 0.2, topP: 0.9, maxOutputTokens: 8192 },
+    generationConfig: { temperature: 0.2, topP: 0.9, maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 0 } },
   };
 
   // The file is scoped to `apiKey`, so we DON'T rotate keys here (the

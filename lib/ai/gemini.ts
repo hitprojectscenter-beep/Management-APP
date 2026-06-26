@@ -21,6 +21,10 @@ export async function chatWithGemini(
       topP: 0.95,
       topK: 40,
       maxOutputTokens: 1024,
+      // Disable "thinking" — gemini-2.5-flash (and the *-latest aliases) are
+      // thinking models that otherwise spend the whole output budget on internal
+      // reasoning tokens and truncate the real answer (finishReason MAX_TOKENS).
+      thinkingConfig: { thinkingBudget: 0 },
     },
   };
   if (systemInstruction) {
