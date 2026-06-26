@@ -11,7 +11,7 @@ import {
   ChevronDown, ChevronRight, Zap, ZoomIn, ZoomOut, Flag, Target,
   Activity, CheckSquare, Folder, X, Calendar, Clock, User as UserIcon,
 } from "lucide-react";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, formatDateDDMMYYYY } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 import { Link } from "@/lib/i18n/routing";
 
@@ -213,8 +213,8 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
                   <span className="truncate">{isWbs ? (isHe ? n!.name : n!.nameEn || n!.name) : (isHe ? t!.title : t!.titleEn || t!.title)}</span>
                 </div>
                 <div className="w-16 px-1 text-center text-[10px] text-muted-foreground border-e hidden sm:block shrink-0">{getDuration(start || null, end || null)}</div>
-                <div className="w-20 px-1 text-center text-[10px] text-muted-foreground border-e hidden sm:block shrink-0">{start ? new Date(start).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }) : "—"}</div>
-                <div className="w-20 px-1 text-center text-[10px] text-muted-foreground border-e hidden sm:block shrink-0">{end ? new Date(end).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }) : "—"}</div>
+                <div className="w-20 px-1 text-center text-[10px] text-muted-foreground border-e hidden sm:block shrink-0">{start ? formatDateDDMMYYYY(start) : "—"}</div>
+                <div className="w-20 px-1 text-center text-[10px] text-muted-foreground border-e hidden sm:block shrink-0">{end ? formatDateDDMMYYYY(end) : "—"}</div>
                 <div className="w-20 px-1 text-[10px] text-muted-foreground truncate hidden sm:block shrink-0">{assignee?.name?.split(" ")[0] || "—"}</div>
               </div>
             );
@@ -393,7 +393,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
             const depTasks = t.dependencies.map((dId) => scopeTasks.find((st) => st.id === dId)).filter(Boolean);
             const successors = scopeTasks.filter((st) => st.dependencies.includes(t.id));
             const durDays = t.plannedStart && t.plannedEnd ? Math.ceil((new Date(t.plannedEnd).getTime() - new Date(t.plannedStart).getTime()) / 86400000) : null;
-            const fmtD = (d: string) => new Date(d).toLocaleDateString(isHe ? "he-IL" : "en-US", { day: "2-digit", month: "2-digit", year: "2-digit" });
+            const fmtD = (d: string) => formatDateDDMMYYYY(d);
             return (
               <div className="space-y-2.5">
                 <div>
@@ -485,7 +485,7 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
           })() : "node" in selectedData && selectedData.node ? (() => {
             const n = selectedData.node!;
             const r = selectedData.rollup;
-            const fmtD = (d: string) => new Date(d).toLocaleDateString(isHe ? "he-IL" : "en-US", { day: "2-digit", month: "2-digit", year: "2-digit" });
+            const fmtD = (d: string) => formatDateDDMMYYYY(d);
             return (
               <div className="space-y-2.5">
                 <div>

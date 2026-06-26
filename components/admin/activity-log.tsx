@@ -12,7 +12,7 @@ import {
 import { mockUsers } from "@/lib/db/mock-data";
 import { getAllActivity, computeUserStats, getUserActivity, type ActivityEntry } from "@/lib/db/activity-log";
 import { ROLE_LABELS } from "@/lib/rbac/abilities";
-import { cn } from "@/lib/utils";
+import { cn, formatDateDDMMYYYY } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 
 const ACTION_ICONS: Record<string, typeof LogIn> = {
@@ -59,7 +59,7 @@ export function ActivityLog({ locale }: { locale: string }) {
     if (diffMins < 60) return txt(locale, { he: `לפני ${diffMins} דקות`, en: `${diffMins}m ago` });
     if (diffHours < 24) return txt(locale, { he: `לפני ${diffHours} שעות`, en: `${diffHours}h ago` });
     if (diffDays < 7) return txt(locale, { he: `לפני ${diffDays} ימים`, en: `${diffDays}d ago` });
-    return d.toLocaleDateString(locale === "he" ? "he-IL" : "en-US", { day: "2-digit", month: "2-digit", year: "2-digit" });
+    return formatDateDDMMYYYY(d);
   };
 
   return (

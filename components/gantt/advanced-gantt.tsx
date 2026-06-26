@@ -22,7 +22,7 @@ import {
   Target,
   Clock,
 } from "lucide-react";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, formatDateTime } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 
 const HEALTH_COLORS = {
@@ -767,7 +767,7 @@ export function AdvancedGantt({ tasks, users, allWbsNodes, rootNodeId, locale }:
         </div>
         <div className="hidden md:flex items-center gap-2">
           <Clock className="size-3" />
-          {txt(locale, { he: "עדכון אחרון:", en: "Updated:" })} {new Date().toLocaleString(isHe ? "he-IL" : "en-US")}
+          {txt(locale, { he: "עדכון אחרון:", en: "Updated:" })} {formatDateTime(new Date())}
         </div>
       </div>
     </div>

@@ -9,13 +9,11 @@ const INTL_LOCALES: Record<string, string> = {
   he: "he-IL", en: "en-US", ru: "ru-RU", fr: "fr-FR", es: "es-ES",
 };
 
-export function formatDate(date: string | Date, locale: string = "he"): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat(INTL_LOCALES[locale] || "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(d);
+export function formatDate(date: string | Date, _locale: string = "he"): string {
+  // Team standard: a single universal numeric date format — dd/mm/yyyy —
+  // in EVERY UI language. (The `locale` arg is kept for call-site
+  // compatibility but no longer changes the format.)
+  return formatDateDDMMYYYY(date);
 }
 
 /**
@@ -35,15 +33,13 @@ export function formatDateDDMMYYYY(date: string | Date | null | undefined): stri
   return `${dd}/${mm}/${yyyy}`;
 }
 
-export function formatDateTime(date: string | Date, locale: string = "he"): string {
+export function formatDateTime(date: string | Date, _locale: string = "he"): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat(INTL_LOCALES[locale] || "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
+  if (isNaN(d.getTime())) return "";
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  // dd/mm/yyyy HH:MM — universal numeric format in every UI language.
+  return `${formatDateDDMMYYYY(d)} ${hh}:${min}`;
 }
 
 export function daysBetween(start: string | Date, end: string | Date): number {

@@ -36,7 +36,7 @@ import {
   Clock,
   Zap,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDateDDMMYYYY } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 
 // ─── Severity helpers ─────────────────────────────────────────
@@ -197,19 +197,8 @@ export function RiskDashboard({ locale }: { locale: string }) {
     return grid;
   }, [allRisks]);
 
-  // Format date
-  const fmt = (d: string) => {
-    if (!d) return "-";
-    try {
-      return new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }).format(new Date(d));
-    } catch {
-      return d;
-    }
-  };
+  // Format date — universal dd/mm/yyyy.
+  const fmt = (d: string) => (d ? formatDateDDMMYYYY(d) : "-");
 
   // ─── Render ───────────────────────────────────────────────────
   return (

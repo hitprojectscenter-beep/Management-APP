@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Calendar, Target, Info, Sparkles, Activity } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDateDDMMYYYY } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 import type { ProjectForecast } from "@/lib/ai/risk-engine";
 
@@ -74,7 +74,7 @@ export function PredictiveForecast({
               {txt(locale, { he: "תאריך מתוכנן", en: "Planned end" })}
             </div>
             <div className="text-xl font-bold">
-              {forecast.plannedEnd.toLocaleDateString(locale === "he" ? "he-IL" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+              {formatDateDDMMYYYY(forecast.plannedEnd)}
             </div>
           </div>
 
@@ -85,7 +85,7 @@ export function PredictiveForecast({
               <span className={accent}>{txt(locale, { he: "צפוי AI", en: "AI Forecast" })}</span>
             </div>
             <div className={cn("text-xl font-bold", accent)}>
-              {forecast.forecastEnd.toLocaleDateString(locale === "he" ? "he-IL" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+              {formatDateDDMMYYYY(forecast.forecastEnd)}
             </div>
           </div>
 

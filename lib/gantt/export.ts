@@ -5,6 +5,7 @@
  */
 import type { MockTask, MockWbsNode } from "@/lib/db/mock-data";
 import type { WbsRollup } from "./rollup";
+import { formatDateDDMMYYYY } from "@/lib/utils";
 
 interface ExportRow {
   number: string;
@@ -23,9 +24,7 @@ interface ExportRow {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleDateString("he-IL");
+  return iso ? formatDateDDMMYYYY(iso) : "";
 }
 
 export function exportToCsv(rows: ExportRow[], filename: string): void {

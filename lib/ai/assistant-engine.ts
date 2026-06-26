@@ -13,6 +13,7 @@
 import type { MockTask, MockUser, MockWbsNode, MockProjectMember } from "../db/mock-data";
 import type { TaskStatus, TaskPriority, UserRole } from "../db/types";
 import { defineAbilitiesFor } from "../rbac/abilities";
+import { formatDateDDMMYYYY } from "../utils";
 
 // ============================================================
 // Types
@@ -391,11 +392,11 @@ export function buildConfirmationSummary(
     if (assignee) parts.push(`• ${isHe ? "אחראי" : "Assignee"}: ${assignee.name}`);
     if (e.plannedStart)
       parts.push(
-        `• ${isHe ? "התחלה" : "Start"}: ${new Date(e.plannedStart).toLocaleDateString(isHe ? "he-IL" : "en-US")}`
+        `• ${isHe ? "התחלה" : "Start"}: ${formatDateDDMMYYYY(e.plannedStart)}`
       );
     if (e.plannedEnd)
       parts.push(
-        `• ${isHe ? "סיום" : "End"}: ${new Date(e.plannedEnd).toLocaleDateString(isHe ? "he-IL" : "en-US")}`
+        `• ${isHe ? "סיום" : "End"}: ${formatDateDDMMYYYY(e.plannedEnd)}`
       );
     if (e.priority) parts.push(`• ${isHe ? "עדיפות" : "Priority"}: ${e.priority}`);
     if (e.estimateHours) parts.push(`• ${isHe ? "הערכת שעות" : "Hours"}: ${e.estimateHours}`);

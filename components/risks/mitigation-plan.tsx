@@ -24,7 +24,7 @@ import {
   Eye,
   AlertOctagon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 import type { MitigationPlan, MitigationStrategy, MitigationAction } from "@/lib/ai/mitigation-engine";
 import type { MockUser } from "@/lib/db/mock-data";
@@ -386,7 +386,7 @@ export function MitigationPlanCard({
         <div className="border-t pt-3 flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Sparkles className="size-3 text-purple-600" />
-            <span>{txt(locale, { he: "תוכנית נוצרה ב-", en: "Plan generated at" })} {new Date(plan.generatedAt).toLocaleString(locale === "he" ? "he-IL" : "en-US")}</span>
+            <span>{txt(locale, { he: "תוכנית נוצרה ב-", en: "Plan generated at" })} {formatDateTime(plan.generatedAt)}</span>
           </div>
           <Button variant="outline" size="sm">
             <Sparkles className="size-3" />

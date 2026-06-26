@@ -4,7 +4,7 @@ import type { MockTask, MockUser } from "@/lib/db/mock-data";
 import { ChevronLeft, ChevronRight, X, User, Calendar as CalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatDateDDMMYYYY } from "@/lib/utils";
 import { STATUS_COLORS } from "@/lib/db/types";
 import { txt, WEEKDAYS_ML, INTL_LOCALE, COMMON_LABELS, STATUS_LABELS_ML } from "@/lib/utils/locale-text";
 import { Link } from "@/lib/i18n/routing";
@@ -161,12 +161,7 @@ function TaskDetailPopup({
   const intlLocale = INTL_LOCALE[locale] || "en-US";
   const title = locale === "he" ? task.title : task.titleEn || task.title;
 
-  const formatD = (d: string) =>
-    new Date(d).toLocaleDateString(intlLocale, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+  const formatD = (d: string) => formatDateDDMMYYYY(d);
 
   return (
     <div className="border rounded-lg p-4 bg-card shadow-lg space-y-3 animate-in slide-in-from-top-2 duration-200">
