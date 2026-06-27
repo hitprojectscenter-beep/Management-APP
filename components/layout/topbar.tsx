@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/routing";
-import { Search, Bell, Sun, Moon, Globe, Menu, ChevronDown, Crown, Shield, User as UserIcon, Eye, UserX, LogOut, KeyRound } from "lucide-react";
+import { Search, Sun, Moon, Globe, Menu, ChevronDown, Crown, Shield, User as UserIcon, Eye, UserX, LogOut, KeyRound } from "lucide-react";
 import { logout } from "@/lib/auth/session";
 import { apiLogout, fetchSession } from "@/lib/auth/client-auth";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { locales, localeNames, localeFlags, type Locale } from "@/lib/i18n/confi
 import { useRole } from "@/lib/auth/role-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChangePasswordForm } from "@/components/auth/change-password-form";
+import { NotificationsBell } from "@/components/layout/notifications-bell";
 import type { UserRole } from "@/lib/db/types";
 
 const ROLE_ICONS: Record<UserRole, typeof Crown> = {
@@ -241,16 +242,7 @@ export function Topbar() {
 
         <HelpTrigger />
 
-        <SimpleTooltip content={txt(locale, { he: "התראות — הודעות על שינויים, עדכונים ואירועים חשובים", en: "Notifications — alerts about changes, updates and important events" })}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative min-w-[44px] min-h-[44px] hidden sm:inline-flex"
-          >
-            <Bell className="size-4" />
-            <span className="absolute top-1.5 end-1.5 size-2 rounded-full bg-red-500" />
-          </Button>
-        </SimpleTooltip>
+        <NotificationsBell />
 
         {/* User avatar */}
         <div className="ms-1 sm:ms-2 flex items-center gap-2 px-1.5 sm:px-2 py-1 rounded-md hover:bg-accent cursor-pointer">

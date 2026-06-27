@@ -506,7 +506,7 @@ export function AddTaskDialog({
     // fires "pmo:tasks-changed" so the task list updates live and survives
     // reloads / server snapshots. (Bug fix: plain mockTasks.push didn't
     // reach the server-rendered /tasks page.)
-    persistAddedTask(newTask);
+    persistAddedTask(newTask, true); // notify the team (in-app bell)
     onCreated?.();
 
     toast.success(

@@ -21,6 +21,7 @@ export interface TaskParticipants {
   creatorId: string | null;
   ids: string[]; // creator + assignee + team, de-duped
   isCreatedTask: boolean; // false → seeded/unknown task (shared demo content)
+  title: string | null; // task title (for notifications), null for seeded/unknown
 }
 
 /** [viewerId, ...reporting subtree]. */
@@ -47,17 +48,17 @@ async function subtreeIds(viewerId: string): Promise<string[]> {
  *  id isn't a created task (a seeded one). */
 export async function getTaskParticipants(taskId: string): Promise<TaskParticipants> {
   const rows = await getDb()
-    .select({ creatorId: appTasks.creatorId, assigneeId: appTasks.assigneeId, team: appTasks.team })
+    .select({ creatorId: appTasks.creatorId, assigneeId: appTasks.assigneeId, team: appTasks.team, title: appTasks.title })
     .from(appTasks)
     .where(eq(appTasks.id, taskId))
     .limit(1);
   const r = rows[0];
-  if (!r) return { creatorId: null, ids: [], isCreatedTask: false };
+  if (!r) return { creatorId: null, ids: [], isCreatedTask: false, title: null };
   const set = new Set<string>();
   if (r.creatorId) set.add(r.creatorId);
   if (r.assigneeId) set.add(r.assigneeId);
   for (const m of r.team ?? []) if (m) set.add(m);
-  return { creatorId: r.creatorId ?? null, ids: [...set], isCreatedTask: true };
+  return { creatorId: r.creatorId ?? null, ids: [...set], isCreatedTask: true, title: r.title };
 }
 
 /** Whether the viewer may read/post in a task's thread + the participant set. */

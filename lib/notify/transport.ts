@@ -68,6 +68,33 @@ export async function sendEmail(toEmail: string, subject: string, body: string):
   }
 }
 
+/**
+ * Send a WhatsApp message via a configured provider webhook. Provider-agnostic:
+ * set WHATSAPP_WEBHOOK_URL (and optionally WHATSAPP_API_TOKEN) to a Twilio /
+ * Meta Cloud API / custom endpoint that accepts { to, message }. Without it,
+ * there is no programmatic WhatsApp send (a wa.me deep link is the manual
+ * fallback) — honest "no_transport".
+ */
+export async function sendWhatsApp(phone: string, message: string): Promise<DeliveryResult> {
+  const webhook = process.env.WHATSAPP_WEBHOOK_URL;
+  if (!webhook) return { status: "no_transport" };
+  const token = process.env.WHATSAPP_API_TOKEN;
+  const digits = (phone || "").replace(/\D/g, "");
+  if (!digits) return { status: "no_transport" };
+  const to = digits.startsWith("0") ? "972" + digits.slice(1) : digits;
+  try {
+    const res = await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ to, message }),
+    });
+    if (!res.ok) return { status: "failed", error: `whatsapp ${res.status}` };
+    return { status: "sent" };
+  } catch (err) {
+    return { status: "failed", error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 /** mailto: link to one or many recipients. */
 export function buildMailto(emails: string | string[], subject: string, body: string): string {
   const to = Array.isArray(emails) ? emails.join(",") : emails;

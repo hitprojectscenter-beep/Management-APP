@@ -9,6 +9,8 @@ import {
   recordSeen,
   type ThreadViewer,
 } from "@/lib/db/task-thread-repo";
+import { dispatchToUsers } from "@/lib/notify/dispatch";
+import { mockUsers } from "@/lib/db/mock-data";
 
 export const runtime = "nodejs";
 
@@ -54,7 +56,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const viewer: ThreadViewer = { id: user.id, role: user.role };
 
-  const { ok } = await canAccessThread(viewer, id);
+  const { ok, participants } = await canAccessThread(viewer, id);
   if (!ok) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const body = await req.json().catch(() => null);
@@ -62,5 +64,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!text) return NextResponse.json({ error: "empty" }, { status: 400 });
 
   const message = await postMessage(id, viewer.id, text);
+
+  // Notify the OTHER participants — in-app bell + email + WhatsApp (best-effort,
+  // fire-and-forget so it never delays the response). Only created tasks have a
+  // real participant set; seeded/shared tasks notify no one.
+  const recipients = participants.ids.filter((uid) => uid !== viewer.id);
+  if (recipients.length > 0) {
+    const author = mockUsers.find((u) => u.id === viewer.id)?.name || "";
+    const taskTitle = participants.title || "";
+    void dispatchToUsers({
+      recipientIds: recipients,
+      type: "task_message",
+      taskId: id,
+      title: taskTitle ? `הודעה חדשה במשימה: ${taskTitle}` : "הודעה חדשה במשימה",
+      body: author ? `${author}: ${text}` : text,
+      actorId: viewer.id,
+    });
+  }
+
   return NextResponse.json({ ok: true, message });
 }

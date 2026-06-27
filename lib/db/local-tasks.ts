@@ -110,7 +110,7 @@ function injectIntoModule(tasks: MockTask[]): void {
  * parallel, durably to the database (best-effort; if the DB is absent/offline
  * the cache still covers this device). Idempotent on id.
  */
-export function persistAddedTask(task: MockTask): void {
+export function persistAddedTask(task: MockTask, notify = false): void {
   if (!mockTasks.some((t) => t.id === task.id)) mockTasks.push(task);
   const list = loadAddedTasks();
   if (!list.some((t) => t.id === task.id)) {
@@ -123,7 +123,8 @@ export function persistAddedTask(task: MockTask): void {
     /* ignore */
   }
   // Durable write (cross-device). creatorId is taken from the session server-side.
-  void postTasksToDb({ task });
+  // `notify` (set on genuine creation) triggers the team's in-app bell.
+  void postTasksToDb({ task, notify });
 }
 
 /** Persist many tasks at once (intake extraction). One DB round-trip. */
@@ -143,7 +144,7 @@ export function persistAddedTasks(tasks: MockTask[]): void {
   void postTasksToDb({ tasks });
 }
 
-async function postTasksToDb(body: { task: MockTask } | { tasks: MockTask[] }): Promise<void> {
+async function postTasksToDb(body: { task: MockTask; notify?: boolean } | { tasks: MockTask[] }): Promise<void> {
   try {
     await fetch("/api/tasks", {
       method: "POST",

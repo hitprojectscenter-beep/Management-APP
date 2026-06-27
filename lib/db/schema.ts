@@ -454,6 +454,31 @@ export const taskReceipts = pgTable(
   })
 );
 
+/**
+ * In-app notifications (the topbar bell). One row per recipient per event —
+ * new chat message, task assignment, etc. Email + WhatsApp are dispatched
+ * alongside these but live in transport, not here; this table is the durable,
+ * in-app feed with an unread count.
+ */
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id").notNull(), // recipient
+    type: text("type").notNull(), // task_message | task_assigned | task_ack | ...
+    taskId: text("task_id"), // deep-link target
+    title: text("title").notNull(),
+    body: text("body"),
+    actorId: text("actor_id"), // who triggered it
+    read: boolean("read").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index("notifications_user_idx").on(t.userId),
+    userReadIdx: index("notifications_user_read_idx").on(t.userId, t.read),
+  })
+);
+
 // ============================================
 // App Projects — user-created projects (the "new project" dialog)
 // ============================================
@@ -680,6 +705,7 @@ export type AppProject = typeof appProjects.$inferSelect;
 export type NewAppProject = typeof appProjects.$inferInsert;
 export type TaskMessage = typeof taskMessages.$inferSelect;
 export type TaskReceipt = typeof taskReceipts.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;
 export type Board = typeof boards.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type AiRisk = typeof aiRisks.$inferSelect;
