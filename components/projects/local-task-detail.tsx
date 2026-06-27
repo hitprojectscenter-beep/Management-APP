@@ -11,6 +11,7 @@ import { cn, formatDateDDMMYYYY } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 import { loadAddedTasks, fetchTaskFromDb } from "@/lib/db/local-tasks";
 import { mockUsers, type MockTask } from "@/lib/db/mock-data";
+import { TaskThread } from "@/components/projects/task-thread";
 
 const STATUS_LABELS: Record<string, Record<string, string>> = {
   not_started: { he: "לא התחיל", en: "Not started" },
@@ -130,6 +131,9 @@ export function LocalTaskDetail({ id, locale }: { id: string; locale: string }) 
               </CardContent>
             </Card>
           )}
+
+          {/* Internal chat + delivery/acknowledgment receipts. */}
+          <TaskThread taskId={task.id} locale={locale} />
         </div>
 
         <div className="space-y-4">

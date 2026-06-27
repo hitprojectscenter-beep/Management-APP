@@ -16,7 +16,7 @@
  */
 
 import "server-only";
-import { eq, or, inArray, desc } from "drizzle-orm";
+import { eq, or, inArray, desc, arrayOverlaps } from "drizzle-orm";
 import { getDb } from "./client";
 import { appTasks, users, type AppTask, type NewAppTask } from "./schema";
 import type { TaskStatus, TaskPriority } from "./types";
@@ -58,6 +58,7 @@ export function rowToMockTask(r: AppTask): AppMockTask {
     status: (STATUSES.has(r.status as TaskStatus) ? r.status : "not_started") as TaskStatus,
     priority: (PRIORITIES.has(r.priority as TaskPriority) ? r.priority : "medium") as TaskPriority,
     assigneeId: r.assigneeId ?? null,
+    team: Array.isArray(r.team) ? r.team : undefined,
     plannedStart: r.plannedStart ?? "",
     plannedEnd: r.plannedEnd ?? "",
     actualStart: r.actualStart ?? null,
@@ -89,6 +90,7 @@ function toRow(t: Partial<AppMockTask> & { id: string; title: string }, creatorI
     parentTaskId: t.parentTaskId ?? null,
     creatorId,
     assigneeId: t.assigneeId ?? null,
+    team: Array.isArray(t.team) && t.team.length ? t.team.filter((x) => typeof x === "string") : t.assigneeId ? [t.assigneeId] : [],
     plannedStart: t.plannedStart ?? "",
     plannedEnd: t.plannedEnd ?? "",
     actualStart: t.actualStart ?? null,
@@ -145,7 +147,13 @@ export async function listAppTasksForViewer(viewer: Viewer): Promise<AppMockTask
   const rows = await db
     .select()
     .from(appTasks)
-    .where(or(inArray(appTasks.creatorId, ids), inArray(appTasks.assigneeId, ids)))
+    .where(
+      or(
+        inArray(appTasks.creatorId, ids),
+        inArray(appTasks.assigneeId, ids),
+        arrayOverlaps(appTasks.team, ids),
+      ),
+    )
     .orderBy(desc(appTasks.createdAt));
   return rows.map(rowToMockTask);
 }
@@ -161,7 +169,11 @@ export async function canViewerAccess(viewer: Viewer, task: AppMockTask): Promis
   if (viewer.role === "admin") return true;
   const ids = viewer.role === "manager" ? await visibleUserIds(viewer.id) : [viewer.id];
   const set = new Set(ids);
-  return (!!task.creatorId && set.has(task.creatorId)) || (!!task.assigneeId && set.has(task.assigneeId));
+  return (
+    (!!task.creatorId && set.has(task.creatorId)) ||
+    (!!task.assigneeId && set.has(task.assigneeId)) ||
+    (Array.isArray(task.team) && task.team.some((m) => set.has(m)))
+  );
 }
 
 /** Insert or update one task. On update keeps the original creator + createdAt. */

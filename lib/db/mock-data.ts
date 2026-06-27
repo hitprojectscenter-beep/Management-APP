@@ -75,6 +75,9 @@ export interface MockTask {
   status: TaskStatus;
   priority: TaskPriority;
   assigneeId: string | null;
+  /** Full team on the task (user ids). assigneeId is typically team[0]; every
+   *  member is a participant in the task chat + receipts and sees the task. */
+  team?: string[];
   plannedStart: string;
   plannedEnd: string;
   actualStart: string | null;

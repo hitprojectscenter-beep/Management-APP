@@ -2,7 +2,6 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { LocalTaskDetail } from "@/components/projects/local-task-detail";
 import {
   getTaskById,
-  getCommentsByTask,
   getRisksByTask,
   getUserById,
   getWbsNodeById,
@@ -10,6 +9,7 @@ import {
   mockUsers,
 } from "@/lib/db/mock-data";
 import { ProjectMembers } from "@/components/members/project-members";
+import { TaskThread } from "@/components/projects/task-thread";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -21,13 +21,12 @@ import {
   AlertTriangle,
   Tag,
   User as UserIcon,
-  MessageSquare,
   Paperclip,
   History,
   GitBranch,
   Sparkles,
 } from "lucide-react";
-import { cn, formatDate, formatDateTime, calculateVariance } from "@/lib/utils";
+import { cn, formatDate, calculateVariance } from "@/lib/utils";
 
 export default async function TaskDetailPage({
   params,
@@ -44,7 +43,6 @@ export default async function TaskDetailPage({
   if (!task) return <LocalTaskDetail id={id} locale={locale} />;
 
   const assignee = task.assigneeId ? getUserById(task.assigneeId) : null;
-  const comments = getCommentsByTask(task.id);
   const risks = getRisksByTask(task.id);
   const wbsNode = getWbsNodeById(task.wbsNodeId);
   const variance = calculateVariance(task.plannedEnd, task.actualEnd);
@@ -127,41 +125,8 @@ export default async function TaskDetailPage({
             </Card>
           )}
 
-          {/* Comments */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare className="size-4" />
-                {locale === "he" ? "תגובות" : "Comments"} ({comments.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {comments.length === 0 && (
-                <div className="text-sm text-muted-foreground text-center py-4">
-                  {locale === "he" ? "אין תגובות עדיין" : "No comments yet"}
-                </div>
-              )}
-              {comments.map((c) => {
-                const author = getUserById(c.authorId);
-                return (
-                  <div key={c.id} className="flex gap-3">
-                    {author && (
-                      <Avatar src={author.image} fallback={author.name[0]} className="size-9 shrink-0" />
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-sm font-semibold">{author?.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDateTime(c.createdAt, locale)}
-                        </span>
-                      </div>
-                      <p className="text-sm mt-1 leading-relaxed">{c.body}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
+          {/* Internal chat + delivery/acknowledgment receipts (DB-backed). */}
+          <TaskThread taskId={task.id} locale={locale} />
         </div>
 
         {/* Side column - metadata */}

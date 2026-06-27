@@ -487,6 +487,9 @@ export function AddTaskDialog({
       status: "not_started",
       priority: (form.priority as any) || "medium",
       assigneeId: form.teamMembers[0] || null,
+      // Persist the FULL team (was dropped before) — every member is a
+      // participant in the task's chat + receipts and sees the task.
+      team: form.teamMembers.length > 0 ? form.teamMembers : undefined,
       plannedStart: form.plannedStart,
       plannedEnd: form.plannedEnd,
       actualStart: null,

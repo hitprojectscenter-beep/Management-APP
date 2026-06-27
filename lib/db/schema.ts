@@ -9,6 +9,7 @@ import {
   pgEnum,
   uuid,
   index,
+  unique,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -373,6 +374,10 @@ export const appTasks = pgTable(
     creatorId: text("creator_id"),
     /** Responsible user (mock id "u1".. or an invited member). Nullable. */
     assigneeId: text("assignee_id"),
+    /** Full team assigned to the task (user ids); assigneeId is typically team[0].
+     *  Every team member is a participant for the per-task chat + receipts, and
+     *  sees the task in their list. */
+    team: text("team").array(),
     /** ISO yyyy-mm-dd kept as text — exact round-trip, no Date() timezone shift. */
     plannedStart: text("planned_start").default("").notNull(),
     plannedEnd: text("planned_end").default("").notNull(),
@@ -403,6 +408,49 @@ export const appTasks = pgTable(
     creatorIdx: index("app_tasks_creator_idx").on(table.creatorId),
     assigneeIdx: index("app_tasks_assignee_idx").on(table.assigneeId),
     statusIdx: index("app_tasks_status_idx").on(table.status),
+  })
+);
+
+// ============================================
+// Per-task internal chat + delivery/acknowledgment receipts
+// ============================================
+/**
+ * Internal chat under a task. Keyed by the task's string id (works for both
+ * created `app_tasks` and seeded mock tasks) — NOT FK-constrained. Every
+ * message is authored by a session user; access (who may read/post) is the
+ * task's participant set (creator + team), enforced in the API layer.
+ */
+export const taskMessages = pgTable(
+  "task_messages",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    taskId: text("task_id").notNull(),
+    authorId: text("author_id").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    taskIdx: index("task_messages_task_idx").on(t.taskId),
+  })
+);
+
+/**
+ * Delivery/acknowledgment receipts: one row per (task, user). `seenAt` is
+ * stamped when a participant first opens the task; `acknowledgedAt` when they
+ * explicitly confirm receipt. Lets the task creator see who received/accepted.
+ */
+export const taskReceipts = pgTable(
+  "task_receipts",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    taskId: text("task_id").notNull(),
+    userId: text("user_id").notNull(),
+    seenAt: timestamp("seen_at").defaultNow().notNull(),
+    acknowledgedAt: timestamp("acknowledged_at"),
+  },
+  (t) => ({
+    taskUserUnq: unique("task_receipts_task_user_unq").on(t.taskId, t.userId),
+    taskIdx: index("task_receipts_task_idx").on(t.taskId),
   })
 );
 
@@ -630,6 +678,8 @@ export type AppTask = typeof appTasks.$inferSelect;
 export type NewAppTask = typeof appTasks.$inferInsert;
 export type AppProject = typeof appProjects.$inferSelect;
 export type NewAppProject = typeof appProjects.$inferInsert;
+export type TaskMessage = typeof taskMessages.$inferSelect;
+export type TaskReceipt = typeof taskReceipts.$inferSelect;
 export type Board = typeof boards.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type AiRisk = typeof aiRisks.$inferSelect;
