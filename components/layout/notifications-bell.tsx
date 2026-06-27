@@ -21,6 +21,7 @@ interface Notif {
 const TYPE_ICON: Record<string, typeof Bell> = {
   task_message: MessageSquare,
   task_assigned: UserPlus,
+  task_ack: CheckCheck,
 };
 
 /**

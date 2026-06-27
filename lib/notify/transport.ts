@@ -68,20 +68,69 @@ export async function sendEmail(toEmail: string, subject: string, body: string):
   }
 }
 
-/**
- * Send a WhatsApp message via a configured provider webhook. Provider-agnostic:
- * set WHATSAPP_WEBHOOK_URL (and optionally WHATSAPP_API_TOKEN) to a Twilio /
- * Meta Cloud API / custom endpoint that accepts { to, message }. Without it,
- * there is no programmatic WhatsApp send (a wa.me deep link is the manual
- * fallback) — honest "no_transport".
- */
-export async function sendWhatsApp(phone: string, message: string): Promise<DeliveryResult> {
-  const webhook = process.env.WHATSAPP_WEBHOOK_URL;
-  if (!webhook) return { status: "no_transport" };
-  const token = process.env.WHATSAPP_API_TOKEN;
+/** Normalize a phone to bare international digits (Israeli 0NN → 972NN). */
+function normalizePhone(phone: string): string | null {
   const digits = (phone || "").replace(/\D/g, "");
-  if (!digits) return { status: "no_transport" };
-  const to = digits.startsWith("0") ? "972" + digits.slice(1) : digits;
+  if (!digits) return null;
+  if (digits.startsWith("0")) return "972" + digits.slice(1);
+  return digits; // assume it already carries a country code
+}
+
+/** Twilio WhatsApp (Messages API). Free trial + sandbox for testing. */
+async function sendViaTwilio(to: string, message: string): Promise<DeliveryResult | null> {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_WHATSAPP_FROM; // e.g. "whatsapp:+14155238886" (sandbox) or your number
+  if (!sid || !token || !from) return null;
+  const fromAddr = from.startsWith("whatsapp:") ? from : `whatsapp:${from.startsWith("+") ? from : "+" + from.replace(/\D/g, "")}`;
+  const params = new URLSearchParams({ From: fromAddr, To: `whatsapp:+${to}`, Body: message });
+  try {
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      return { status: "failed", error: `twilio ${res.status}: ${t.slice(0, 160)}` };
+    }
+    const data = (await res.json().catch(() => ({}))) as { sid?: string };
+    return { status: "sent", messageId: data.sid };
+  } catch (err) {
+    return { status: "failed", error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/** Meta WhatsApp Cloud API. Free tier; business-initiated text needs the 24h
+ *  window or an approved template. */
+async function sendViaMeta(to: string, message: string): Promise<DeliveryResult | null> {
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  if (!phoneNumberId || !accessToken) return null;
+  try {
+    const res = await fetch(`https://graph.facebook.com/v21.0/${phoneNumberId}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ messaging_product: "whatsapp", to, type: "text", text: { body: message } }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      return { status: "failed", error: `meta ${res.status}: ${t.slice(0, 160)}` };
+    }
+    return { status: "sent" };
+  } catch (err) {
+    return { status: "failed", error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/** Generic webhook ({ to, message }) — any custom provider. */
+async function sendViaWaWebhook(to: string, message: string): Promise<DeliveryResult | null> {
+  const webhook = process.env.WHATSAPP_WEBHOOK_URL;
+  if (!webhook) return null;
+  const token = process.env.WHATSAPP_API_TOKEN;
   try {
     const res = await fetch(webhook, {
       method: "POST",
@@ -93,6 +142,22 @@ export async function sendWhatsApp(phone: string, message: string): Promise<Deli
   } catch (err) {
     return { status: "failed", error: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/**
+ * Send a WhatsApp message via the first configured provider: Twilio →
+ * Meta Cloud API → generic webhook. Returns "no_transport" when none is
+ * configured (wa.me deep links remain the manual fallback). Real WhatsApp
+ * auto-send requires an approved Business sender — a WhatsApp platform rule.
+ */
+export async function sendWhatsApp(phone: string, message: string): Promise<DeliveryResult> {
+  const to = normalizePhone(phone);
+  if (!to) return { status: "no_transport" };
+  return (
+    (await sendViaTwilio(to, message)) ??
+    (await sendViaMeta(to, message)) ??
+    (await sendViaWaWebhook(to, message)) ?? { status: "no_transport" }
+  );
 }
 
 /** mailto: link to one or many recipients. */
