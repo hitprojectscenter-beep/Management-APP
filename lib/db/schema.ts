@@ -365,7 +365,10 @@ export const appTasks = pgTable(
     title: text("title").notNull(),
     titleEn: text("title_en"),
     description: text("description"),
-    status: taskStatusEnum("status").default("not_started").notNull(),
+    // Workflow status (text, not the pg enum) so it can hold the task workflow
+    // values: new / in_progress / frozen / waiting / handled / rejected /
+    // completed. Default "new" (חדשה).
+    status: text("status").default("new").notNull(),
     priority: taskPriorityEnum("priority").default("medium").notNull(),
     /** Mock WBS node id this task hangs under (string ref, may be ""). */
     wbsNodeId: text("wbs_node_id").default("").notNull(),
@@ -451,6 +454,57 @@ export const taskReceipts = pgTable(
   (t) => ({
     taskUserUnq: unique("task_receipts_task_user_unq").on(t.taskId, t.userId),
     taskIdx: index("task_receipts_task_idx").on(t.taskId),
+  })
+);
+
+// ============================================
+// Task workflow — change history + per-member sign-off
+// ============================================
+/**
+ * Append-only activity log for a task: every status change, member sign-off,
+ * and due-date-extension request/decision lands here with the mandatory
+ * explanation note. Shown as a timeline to all task participants.
+ *   kind: created | status_change | member_done | member_undone
+ *       | extension_request | extension_approved | extension_rejected
+ */
+export const taskHistory = pgTable(
+  "task_history",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    taskId: text("task_id").notNull(),
+    actorId: text("actor_id").notNull(), // who performed the change
+    kind: text("kind").notNull(),
+    fromStatus: text("from_status"),
+    toStatus: text("to_status"),
+    /** Mandatory explanation — the spec requires a reason on every change. */
+    note: text("note").notNull(),
+    /** Structured extras: { newDueDate, prevDueDate, requestId, targetUserId }. */
+    meta: jsonb("meta").$type<Record<string, unknown>>().default({}).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    taskIdx: index("task_history_task_idx").on(t.taskId),
+  })
+);
+
+/**
+ * Per-member completion sign-off. One row per (task, user). A task auto-flips
+ * to "completed" (הושלם) once every assigned team member has done=true. Each
+ * sign-off carries an explanation note (the detail line the spec requires).
+ */
+export const taskMemberStatus = pgTable(
+  "task_member_status",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    taskId: text("task_id").notNull(),
+    userId: text("user_id").notNull(),
+    done: boolean("done").default(false).notNull(),
+    note: text("note"),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    taskUserUnq: unique("task_member_status_task_user_unq").on(t.taskId, t.userId),
+    taskIdx: index("task_member_status_task_idx").on(t.taskId),
   })
 );
 
@@ -705,6 +759,8 @@ export type AppProject = typeof appProjects.$inferSelect;
 export type NewAppProject = typeof appProjects.$inferInsert;
 export type TaskMessage = typeof taskMessages.$inferSelect;
 export type TaskReceipt = typeof taskReceipts.$inferSelect;
+export type TaskHistoryRow = typeof taskHistory.$inferSelect;
+export type TaskMemberStatusRow = typeof taskMemberStatus.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type Board = typeof boards.$inferSelect;
 export type Comment = typeof comments.$inferSelect;

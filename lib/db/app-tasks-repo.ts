@@ -35,7 +35,12 @@ export interface Viewer {
 
 // ---- converters -------------------------------------------------------------
 
-const STATUSES = new Set<TaskStatus>(["not_started", "in_progress", "review", "done", "blocked", "cancelled"]);
+const STATUSES = new Set<TaskStatus>([
+  // legacy
+  "not_started", "in_progress", "review", "done", "blocked", "cancelled",
+  // workflow
+  "new", "frozen", "waiting", "handled", "rejected", "completed",
+]);
 const PRIORITIES = new Set<TaskPriority>(["low", "medium", "high", "critical"]);
 
 function asArray(v: unknown): string[] {
@@ -55,7 +60,7 @@ export function rowToMockTask(r: AppTask): AppMockTask {
     title: r.title,
     titleEn: r.titleEn ?? undefined,
     description: r.description ?? undefined,
-    status: (STATUSES.has(r.status as TaskStatus) ? r.status : "not_started") as TaskStatus,
+    status: (STATUSES.has(r.status as TaskStatus) ? r.status : "new") as TaskStatus,
     priority: (PRIORITIES.has(r.priority as TaskPriority) ? r.priority : "medium") as TaskPriority,
     assigneeId: r.assigneeId ?? null,
     team: Array.isArray(r.team) ? r.team : undefined,
@@ -77,7 +82,7 @@ export function rowToMockTask(r: AppTask): AppMockTask {
 
 /** Incoming client task → DB insert row. Sanitizes types; never trusts shape. */
 function toRow(t: Partial<AppMockTask> & { id: string; title: string }, creatorId: string | null): NewAppTask {
-  const status = STATUSES.has(t.status as TaskStatus) ? (t.status as TaskStatus) : "not_started";
+  const status = STATUSES.has(t.status as TaskStatus) ? (t.status as TaskStatus) : "new";
   const priority = PRIORITIES.has(t.priority as TaskPriority) ? (t.priority as TaskPriority) : "medium";
   return {
     id: t.id,

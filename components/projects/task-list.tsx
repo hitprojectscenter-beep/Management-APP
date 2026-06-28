@@ -5,22 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { formatDate, isOverdue, cn } from "@/lib/utils";
 import { Link } from "@/lib/i18n/routing";
 import { AlertTriangle } from "lucide-react";
-
-const STATUS_LABELS: Record<string, Record<string, string>> = {
-  not_started: { he: "לא התחיל", en: "Not started", ru: "Не начата", fr: "Non démarré", es: "No iniciada" },
-  in_progress: { he: "בביצוע", en: "In progress", ru: "В работе", fr: "En cours", es: "En progreso" },
-  review: { he: "בבדיקה", en: "Review", ru: "Проверка", fr: "En revue", es: "En revisión" },
-  done: { he: "הושלם", en: "Done", ru: "Завершена", fr: "Terminé", es: "Completada" },
-  blocked: { he: "חסום", en: "Blocked", ru: "Заблокирована", fr: "Bloqué", es: "Bloqueada" },
-  cancelled: { he: "בוטל", en: "Cancelled", ru: "Отменена", fr: "Annulé", es: "Cancelada" },
-};
-
-const PRIORITY_LABELS: Record<string, Record<string, string>> = {
-  low: { he: "נמוכה", en: "Low", ru: "Низкий", fr: "Basse", es: "Baja" },
-  medium: { he: "בינונית", en: "Medium", ru: "Средний", fr: "Moyenne", es: "Media" },
-  high: { he: "גבוהה", en: "High", ru: "Высокий", fr: "Haute", es: "Alta" },
-  critical: { he: "קריטית", en: "Critical", ru: "Критический", fr: "Critique", es: "Crítica" },
-};
+import { txt, STATUS_LABELS_ML, PRIORITY_LABELS_ML } from "@/lib/utils/locale-text";
+import { STATUS_COLORS, type TaskStatus } from "@/lib/db/types";
 
 export function TaskList({
   tasks,
@@ -65,13 +51,14 @@ export function TaskList({
                   )}
                 </td>
                 <td className="py-3 px-2">
-                  <span className={cn("status-badge", `status-${task.status}`)}>
-                    {STATUS_LABELS[task.status][locale]}
+                  <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap">
+                    <span className="size-1.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[task.status as TaskStatus] || "hsl(220,9%,46%)" }} />
+                    {txt(locale, STATUS_LABELS_ML[task.status]) || task.status}
                   </span>
                 </td>
                 <td className="py-3 px-2">
                   <span className={cn("status-badge", `priority-${task.priority}`)}>
-                    {PRIORITY_LABELS[task.priority][locale]}
+                    {txt(locale, PRIORITY_LABELS_ML[task.priority]) || task.priority}
                   </span>
                 </td>
                 <td className="py-3 px-2">

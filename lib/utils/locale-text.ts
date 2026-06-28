@@ -39,11 +39,18 @@ export const COMMON_LABELS = {
 /** Status labels for tasks */
 export const STATUS_LABELS_ML: Record<string, LocaleTexts> = {
   not_started: { he: "לא התחיל", en: "Not started", ru: "Не начата",      fr: "Non démarré",  es: "No iniciada" },
-  in_progress: { he: "בביצוע",   en: "In progress", ru: "В работе",       fr: "En cours",     es: "En progreso" },
+  in_progress: { he: "בטיפול",   en: "In progress", ru: "В работе",       fr: "En cours",     es: "En progreso" },
   review:      { he: "בבדיקה",   en: "Review",      ru: "Проверка",       fr: "En revue",     es: "En revisión" },
   done:        { he: "הושלם",    en: "Done",        ru: "Завершена",      fr: "Terminé",      es: "Completada"  },
   blocked:     { he: "חסום",     en: "Blocked",     ru: "Заблокирована",  fr: "Bloqué",       es: "Bloqueada"   },
   cancelled:   { he: "בוטל",     en: "Cancelled",   ru: "Отменена",       fr: "Annulé",       es: "Cancelada"   },
+  // Task workflow statuses (user spec)
+  new:         { he: "חדשה",     en: "New",         ru: "Новая",          fr: "Nouvelle",     es: "Nueva"       },
+  frozen:      { he: "הוקפאה",   en: "Frozen",      ru: "Заморожена",     fr: "Gelé",         es: "Congelada"   },
+  waiting:     { he: "ממתינה",   en: "Waiting",     ru: "Ожидает",        fr: "En attente",   es: "En espera"   },
+  handled:     { he: "טופל",     en: "Handled",     ru: "Обработана",     fr: "Traité",       es: "Atendida"    },
+  rejected:    { he: "נדחתה",    en: "Rejected",    ru: "Отклонена",      fr: "Rejeté",       es: "Rechazada"   },
+  completed:   { he: "הושלם",    en: "Completed",   ru: "Завершена",      fr: "Terminé",      es: "Completada"  },
 };
 
 /** Priority labels */

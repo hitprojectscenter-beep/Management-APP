@@ -9,6 +9,7 @@ import {
   recordSeen,
   type ThreadViewer,
 } from "@/lib/db/task-thread-repo";
+import { getActivity } from "@/lib/db/task-activity-repo";
 import { dispatchToUsers } from "@/lib/notify/dispatch";
 import { mockUsers } from "@/lib/db/mock-data";
 
@@ -37,10 +38,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
-  const [messages, receipts] = await Promise.all([listMessages(id), listReceipts(id)]);
+  const [messages, receipts, activity] = await Promise.all([
+    listMessages(id),
+    listReceipts(id),
+    getActivity(id),
+  ]);
   return NextResponse.json({
     messages,
     receipts,
+    activity, // workflow status + history timeline + per-member sign-off (null for seeded tasks)
     participants: participants.ids,
     creatorId: participants.creatorId,
     isCreatedTask: participants.isCreatedTask,

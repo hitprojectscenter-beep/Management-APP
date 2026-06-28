@@ -73,7 +73,7 @@ export function RecentTasks({
                 </td>
                 <td className="py-3 hidden sm:table-cell">
                   <span className={cn("status-badge", `status-${task.status}`)}>
-                    {statusLabels[task.status][locale]}
+                    {statusLabels[task.status]?.[locale] || task.status}
                   </span>
                 </td>
                 <td className="py-3 hidden md:table-cell">

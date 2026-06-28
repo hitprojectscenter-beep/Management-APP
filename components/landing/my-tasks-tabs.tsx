@@ -11,6 +11,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { AlertTriangle, Clock, Layers, Briefcase, Calendar as CalIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
 import { txt, STATUS_LABELS_ML, PRIORITY_LABELS_ML, TAB_LABELS_ML } from "@/lib/utils/locale-text";
+import { STATUS_COLORS, type TaskStatus } from "@/lib/db/types";
 import { useRole } from "@/lib/auth/role-context";
 
 type TabKey = "all" | "in_progress" | "not_started" | "blocked" | "review" | "overdue" | "by_project";
@@ -35,7 +36,7 @@ export function MyTasksTabs({
     const counts = {
       all: tasks.length,
       in_progress: tasks.filter((t) => t.status === "in_progress").length,
-      not_started: tasks.filter((t) => t.status === "not_started").length,
+      not_started: tasks.filter((t) => t.status === "not_started" || t.status === "new").length,
       blocked: tasks.filter((t) => t.status === "blocked").length,
       review: tasks.filter((t) => t.status === "review").length,
       overdue: tasks.filter((t) => {
@@ -62,7 +63,7 @@ export function MyTasksTabs({
         return new Date(t.plannedEnd).getTime() < Date.now();
       });
     }
-    return tasks.filter((t) => t.status === activeTab);
+    return tasks.filter((t) => t.status === activeTab || (activeTab === "not_started" && t.status === "new"));
   }, [tasks, activeTab]);
 
   // Sort by urgency (overdue first, then closest to due, then by priority)
@@ -192,15 +193,10 @@ function TaskCard({
       <Card className="card-hover overflow-hidden">
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
-            {/* Status indicator */}
+            {/* Status indicator — colored by the task's status (any workflow value) */}
             <div
-              className={cn(
-                "w-1 self-stretch rounded-full",
-                task.status === "blocked" && "bg-red-500",
-                task.status === "in_progress" && "bg-blue-500",
-                task.status === "review" && "bg-amber-500",
-                task.status === "not_started" && "bg-slate-300"
-              )}
+              className="w-1 self-stretch rounded-full"
+              style={{ backgroundColor: STATUS_COLORS[task.status as TaskStatus] || "hsl(220,13%,80%)" }}
             />
 
             {/* Title + meta */}

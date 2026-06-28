@@ -8,19 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import { Calendar, Clock, User as UserIcon, Tag, Paperclip, FileText, Loader2, ArrowRight } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
 import { cn, formatDateDDMMYYYY } from "@/lib/utils";
-import { txt, PRIORITY_LABELS_ML } from "@/lib/utils/locale-text";
+import { txt, PRIORITY_LABELS_ML, STATUS_LABELS_ML } from "@/lib/utils/locale-text";
+import { STATUS_COLORS, type TaskStatus } from "@/lib/db/types";
 import { loadAddedTasks, fetchTaskFromDb } from "@/lib/db/local-tasks";
 import { mockUsers, type MockTask } from "@/lib/db/mock-data";
 import { TaskThread } from "@/components/projects/task-thread";
-
-const STATUS_LABELS: Record<string, Record<string, string>> = {
-  not_started: { he: "לא התחיל", en: "Not started" },
-  in_progress: { he: "בביצוע", en: "In progress" },
-  review: { he: "בבדיקה", en: "Review" },
-  done: { he: "הושלם", en: "Done" },
-  blocked: { he: "חסום", en: "Blocked" },
-  cancelled: { he: "בוטל", en: "Cancelled" },
-};
 
 /**
  * Client-side task detail for user-created tasks (intake extraction, add-task
@@ -95,8 +87,9 @@ export function LocalTaskDetail({ id, locale }: { id: string; locale: string }) 
         <div className="flex items-start justify-between gap-4">
           <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
           <div className="flex gap-2">
-            <span className={cn("status-badge", `status-${task.status}`)}>
-              {STATUS_LABELS[task.status]?.[locale] || task.status}
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium">
+              <span className="size-2 rounded-full" style={{ backgroundColor: STATUS_COLORS[task.status as TaskStatus] || "hsl(220,9%,46%)" }} />
+              {txt(locale, STATUS_LABELS_ML[task.status]) || task.status}
             </span>
             <span className={cn("status-badge", `priority-${task.priority}`)}>{txt(locale, PRIORITY_LABELS_ML[task.priority]) || task.priority}</span>
           </div>
