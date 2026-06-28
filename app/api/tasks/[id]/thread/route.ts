@@ -51,6 +51,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     creatorId: participants.creatorId,
     isCreatedTask: participants.isCreatedTask,
     me: viewer.id,
+    meRole: viewer.role,
   });
 }
 

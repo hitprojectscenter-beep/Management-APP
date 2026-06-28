@@ -22,7 +22,8 @@ export type HistoryKind =
   | "member_undone"
   | "extension_request"
   | "extension_approved"
-  | "extension_rejected";
+  | "extension_rejected"
+  | "roles_updated";
 
 /** Valid workflow statuses a task may hold. */
 export const WORKFLOW_STATUS_SET = new Set<string>([
@@ -252,4 +253,21 @@ export async function decideExtension(
     meta: { requestId, newDueDate },
   });
   return { applied, newDueDate, history };
+}
+
+/** Replace the task's per-member responsibility map (who does what), logging
+ *  the change. `roles` must already be sanitized by the caller. */
+export async function updateMemberRoles(
+  taskId: string,
+  actorId: string,
+  roles: Record<string, { type: string; detail?: string }>,
+): Promise<{ history: TaskHistoryRow }> {
+  const core = await getTaskCore(taskId);
+  if (!core) throw new Error("task_not_found");
+  await getDb()
+    .update(appTasks)
+    .set({ memberRoles: roles, updatedAt: new Date() })
+    .where(eq(appTasks.id, taskId));
+  const history = await log(taskId, actorId, "roles_updated", "עודכנו תפקידי חברי הצוות במשימה.", {});
+  return { history };
 }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MessageSquare, Send, CheckCheck, Eye, Clock, Loader2, History,
-  CircleDot, CheckCircle2, CalendarClock, ThumbsUp, ThumbsDown, X,
+  CircleDot, CheckCircle2, CalendarClock, ThumbsUp, ThumbsDown, X, Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatDateTime, formatDateDDMMYYYY } from "@/lib/utils";
-import { txt, STATUS_LABELS_ML, MEMBER_ROLE_LABELS_ML } from "@/lib/utils/locale-text";
+import { txt, STATUS_LABELS_ML, MEMBER_ROLE_LABELS_ML, MEMBER_ROLE_KEYS } from "@/lib/utils/locale-text";
 import { STATUS_COLORS, WORKFLOW_STATUSES, type TaskStatus } from "@/lib/db/types";
 import { mockUsers } from "@/lib/db/mock-data";
 
@@ -48,6 +48,7 @@ interface ThreadData {
   creatorId: string | null;
   isCreatedTask: boolean;
   me: string;
+  meRole?: string;
 }
 
 /** The modal can collect a note, and (for extensions) a date too. */
@@ -97,6 +98,9 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
   const [note, setNote] = useState("");
   const [extDate, setExtDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [editingRoles, setEditingRoles] = useState(false);
+  const [rolesDraft, setRolesDraft] = useState<Record<string, { type: string; detail?: string }>>({});
+  const [savingRoles, setSavingRoles] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -152,8 +156,44 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
     : 0;
   const iAmCompletionMember = !!me && !!activity && activity.completionMembers.includes(me);
   const myDone = !!activity?.members.find((m) => m.userId === me)?.done;
+  // Only the task creator (or an admin) assigns/edits responsibilities.
+  const canEditRoles = !!activity && activity.completionMembers.length > 0 && (isCreator || data?.meRole === "admin");
 
   // ---- actions --------------------------------------------------------------
+  const startEditRoles = () => {
+    if (!activity) return;
+    const draft: Record<string, { type: string; detail?: string }> = {};
+    for (const uid of activity.completionMembers) draft[uid] = activity.memberRoles[uid] || { type: "execute" };
+    setRolesDraft(draft);
+    setEditingRoles(true);
+  };
+  const setDraftRole = (uid: string, patch: { type?: string; detail?: string }) =>
+    setRolesDraft((prev) => {
+      const cur = prev[uid] || { type: "execute" };
+      return { ...prev, [uid]: { ...cur, ...patch } };
+    });
+  const saveRoles = async () => {
+    setSavingRoles(true);
+    try {
+      const res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/member-roles`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberRoles: rolesDraft }),
+      });
+      if (res.ok) {
+        toast.success(txt(locale, { he: "התפקידים עודכנו ונשלחו לצוות", en: "Roles updated & sent to the team" }) as string);
+        setEditingRoles(false);
+        await load();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        toast.error(txt(locale, e?.error === "only_creator"
+          ? { he: "רק יוצר המשימה יכול לערוך תפקידים", en: "Only the creator can edit roles" }
+          : { he: "עדכון התפקידים נכשל", en: "Failed to update roles" }) as string);
+      }
+    } finally {
+      setSavingRoles(false);
+    }
+  };
   const send = async () => {
     const text = input.trim();
     if (!text) return;
@@ -272,6 +312,8 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
         return `${txt(locale, { he: "אישר/ה עדכון יעד ל", en: "Approved new due date" })}-${formatDateDDMMYYYY(String(m.newDueDate || ""))}`;
       case "extension_rejected":
         return txt(locale, { he: "דחה/תה בקשת עדכון יעד", en: "Rejected due-date request" }) as string;
+      case "roles_updated":
+        return txt(locale, { he: "עודכנו תפקידי הצוות", en: "Updated team roles" }) as string;
       default:
         return h.kind;
     }
@@ -324,52 +366,103 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
             {/* Per-member sign-off */}
             {activity.completionMembers.length > 0 && (
               <div className="space-y-2 pt-3 border-t">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-muted-foreground">
-                    {txt(locale, { he: "ביצוע חברי הצוות", en: "Team completion" })}
+                    {txt(locale, { he: "ביצוע חברי הצוות (מי אחראי על מה)", en: "Team completion (who does what)" })}
                   </span>
-                  <Badge variant={doneCount === activity.completionMembers.length ? "success" : "secondary"}>
-                    {doneCount}/{activity.completionMembers.length} {txt(locale, { he: "בוצע", en: "done" })}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {canEditRoles && !editingRoles && (
+                      <button type="button" onClick={startEditRoles} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                        <Pencil className="size-3" />
+                        {txt(locale, { he: "ערוך תפקידים", en: "Edit roles" })}
+                      </button>
+                    )}
+                    <Badge variant={doneCount === activity.completionMembers.length ? "success" : "secondary"}>
+                      {doneCount}/{activity.completionMembers.length} {txt(locale, { he: "בוצע", en: "done" })}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  {activity.completionMembers.map((uid) => {
-                    const mDone = !!activity.members.find((m) => m.userId === uid)?.done;
-                    return (
-                      <div key={uid} className="flex items-center justify-between text-sm gap-2">
-                        <span className="flex items-center gap-2 min-w-0">
-                          <Avatar src={userImg(uid)} fallback={userName(uid)[0]} className="size-6 shrink-0" />
-                          <span className="min-w-0">
-                            <span className="block truncate">{userName(uid)}</span>
-                            {activity.memberRoles[uid] && (
-                              <span className="block text-[11px] text-muted-foreground truncate">
-                                {roleLabel(activity.memberRoles[uid].type, locale)}
-                                {activity.memberRoles[uid].detail ? ` · ${activity.memberRoles[uid].detail}` : ""}
+
+                {editingRoles ? (
+                  <div className="space-y-2">
+                    {activity.completionMembers.map((uid) => {
+                      const role = rolesDraft[uid] || { type: "execute" };
+                      return (
+                        <div key={uid} className="grid grid-cols-1 sm:grid-cols-[6rem_8rem_1fr] gap-2 sm:items-center">
+                          <span className="text-sm font-medium truncate">{userName(uid)}</span>
+                          <select
+                            value={role.type}
+                            onChange={(e) => setDraftRole(uid, { type: e.target.value })}
+                            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                          >
+                            {MEMBER_ROLE_KEYS.map((k) => (
+                              <option key={k} value={k}>{txt(locale, MEMBER_ROLE_LABELS_ML[k]) as string}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            value={role.detail || ""}
+                            onChange={(e) => setDraftRole(uid, { detail: e.target.value })}
+                            placeholder={txt(locale, { he: "פירוט: על מה / עם מי / מה התוצר", en: "Detail: on what / with whom / deliverable" }) as string}
+                            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                            style={{ fontSize: "16px" }}
+                            maxLength={120}
+                          />
+                        </div>
+                      );
+                    })}
+                    <div className="flex gap-2 pt-1">
+                      <Button size="sm" onClick={saveRoles} disabled={savingRoles}>
+                        {savingRoles && <Loader2 className="size-3.5 animate-spin me-1" />}
+                        {txt(locale, { he: "שמור תפקידים", en: "Save roles" })}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingRoles(false)} disabled={savingRoles}>
+                        {txt(locale, { he: "ביטול", en: "Cancel" })}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-1.5">
+                      {activity.completionMembers.map((uid) => {
+                        const mDone = !!activity.members.find((m) => m.userId === uid)?.done;
+                        return (
+                          <div key={uid} className="flex items-center justify-between text-sm gap-2">
+                            <span className="flex items-center gap-2 min-w-0">
+                              <Avatar src={userImg(uid)} fallback={userName(uid)[0]} className="size-6 shrink-0" />
+                              <span className="min-w-0">
+                                <span className="block truncate">{userName(uid)}</span>
+                                {activity.memberRoles[uid] && (
+                                  <span className="block text-[11px] text-muted-foreground truncate">
+                                    {roleLabel(activity.memberRoles[uid].type, locale)}
+                                    {activity.memberRoles[uid].detail ? ` · ${activity.memberRoles[uid].detail}` : ""}
+                                  </span>
+                                )}
                               </span>
+                            </span>
+                            {mDone ? (
+                              <Badge variant="success" className="gap-1"><CheckCircle2 className="size-3" />{txt(locale, { he: "בוצע", en: "Done" })}</Badge>
+                            ) : (
+                              <Badge variant="outline" className="gap-1 text-muted-foreground"><Clock className="size-3" />{txt(locale, { he: "ממתין", en: "Pending" })}</Badge>
                             )}
-                          </span>
-                        </span>
-                        {mDone ? (
-                          <Badge variant="success" className="gap-1"><CheckCircle2 className="size-3" />{txt(locale, { he: "בוצע", en: "Done" })}</Badge>
-                        ) : (
-                          <Badge variant="outline" className="gap-1 text-muted-foreground"><Clock className="size-3" />{txt(locale, { he: "ממתין", en: "Pending" })}</Badge>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                {iAmCompletionMember && (
-                  <Button
-                    size="sm"
-                    variant={myDone ? "outline" : "default"}
-                    className="w-full mt-1"
-                    onClick={() => openPrompt({ type: "member", done: !myDone })}
-                  >
-                    <CheckCircle2 className="size-4 me-1.5" />
-                    {myDone
-                      ? txt(locale, { he: "בטל סימון 'בוצע'", en: "Undo 'done'" })
-                      : txt(locale, { he: "סמן את חלקי כ'בוצע'", en: "Mark my part done" })}
-                  </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {iAmCompletionMember && (
+                      <Button
+                        size="sm"
+                        variant={myDone ? "outline" : "default"}
+                        className="w-full mt-1"
+                        onClick={() => openPrompt({ type: "member", done: !myDone })}
+                      >
+                        <CheckCircle2 className="size-4 me-1.5" />
+                        {myDone
+                          ? txt(locale, { he: "בטל סימון 'בוצע'", en: "Undo 'done'" })
+                          : txt(locale, { he: "סמן את חלקי כ'בוצע'", en: "Mark my part done" })}
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             )}
