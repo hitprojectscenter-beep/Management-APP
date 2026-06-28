@@ -70,7 +70,7 @@ export function rowToMockTask(r: AppTask): AppMockTask {
     dependencies: Array.isArray(r.dependencies) ? r.dependencies : [],
     resources: Array.isArray(r.resources) ? r.resources : [],
     attachments: Array.isArray(r.attachments) ? r.attachments : [],
-    sourceFile: r.sourceFile ?? null,
+    sourceFile: r.sourceFile ?? undefined,
     creatorId: r.creatorId ?? null,
   };
 }

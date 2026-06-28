@@ -43,6 +43,13 @@ function ensureEndAfterStart(start: string, end: string): string {
   return addDaysISO(start, 7);
 }
 
+/** Local "today" as ISO yyyy-mm-dd (local components — no UTC off-by-one).
+ *  Used as the default start date for a new task. */
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 // Required-resources / effort categories — multi-select on the form.
 const RESOURCE_OPTIONS = [
   { value: "manpower", he: "כוח אדם", en: "Manpower" },
@@ -217,9 +224,12 @@ export function AddTaskDialog({
     description: initialValues?.description || "",
     teamMembers: initialAssigneeId ? [initialAssigneeId] : [],
     resources: [],
-    plannedStart: initialValues?.plannedStart || "",
+    // Start date defaults to TODAY for a new (manual) task; intake-extracted
+    // tasks keep the source/document date.
+    plannedStart: initialValues?.plannedStart || todayISO(),
     // Never let end == start: if the source gave the same (or no) end,
-    // default to a one-week window.
+    // default to a one-week window. Manual tasks leave the end empty (the user
+    // picks the due date) — ensureEndAfterStart("", "") returns "".
     plannedEnd: ensureEndAfterStart(initialValues?.plannedStart || "", initialValues?.plannedEnd || ""),
     // When a source-extracted task is opened, source="other" and the source
     // label (e.g. "סיכום פגישה Salesforce · 2026-06-27") is the free-text.
@@ -478,9 +488,18 @@ export function AddTaskDialog({
     const wbsLeaf = mockWbsNodes.find((n) => n.level === "task")?.id
       ?? mockWbsNodes[0]?.id
       ?? "root";
+    // Source provenance — persist the chosen source (type label, or "other"
+    // free-text) so the task records where it came from even without a file.
+    const srcObj = TASK_SOURCES.find((s) => s.value === form.source);
+    const sourceLabel =
+      form.source === "other"
+        ? form.sourceOther.trim()
+        : (locale === "he" ? srcObj?.labelHe : srcObj?.labelEn) || "";
     const newTask: MockTask = {
       id: `task-${Date.now()}`,
-      wbsNodeId: wbsLeaf,
+      // Save the chosen project/program assignment (was dropped — wbsNodeId was
+      // a generic leaf). Falls back to a task-level leaf when none was picked.
+      wbsNodeId: form.parentId || wbsLeaf,
       parentTaskId: null,
       title: form.title.trim(),
       description: form.description.trim() || undefined,
@@ -501,6 +520,13 @@ export function AddTaskDialog({
       dependencies: [],
       resources: form.resources.length > 0 ? form.resources : undefined,
       attachments: attachments.length > 0 ? attachments : undefined,
+      // Persist provenance: the attached file (with the source label) or, when
+      // there's no file, the source label itself — so the source is never lost.
+      sourceFile: attachments[0]
+        ? { ...attachments[0], source: sourceLabel || attachments[0].source }
+        : sourceLabel
+        ? { name: sourceLabel }
+        : undefined,
     };
     // persistAddedTask pushes to the in-memory module AND localStorage AND
     // fires "pmo:tasks-changed" so the task list updates live and survives
@@ -528,7 +554,7 @@ export function AddTaskDialog({
     void notifyAssignees(newTask);
 
     setOpen(false);
-    // Reset form
+    // Reset form — next new task starts fresh: start = today, end empty.
     setForm({
       ...form,
       title: "",
@@ -537,6 +563,8 @@ export function AddTaskDialog({
       resources: [],
       sourceOther: "",
       attachments: [],
+      plannedStart: todayISO(),
+      plannedEnd: "",
     });
     setErrors({});
   };

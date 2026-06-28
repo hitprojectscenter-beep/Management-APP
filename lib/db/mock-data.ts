@@ -93,6 +93,9 @@ export interface MockTask {
   /** Files attached when the task was created — typically the source
    *  document/recording for tasks extracted via the intake center. */
   attachments?: MockTaskAttachment[];
+  /** Provenance: the task's source — a source file, or a source-type label
+   *  (e.g. "החלטת מנהל"). Shown as "מקור המשימה" on the task detail. */
+  sourceFile?: { name: string; size?: number; type?: string; blobUrl?: string; source?: string };
 }
 
 export interface MockRisk {
