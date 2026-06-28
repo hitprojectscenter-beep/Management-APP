@@ -33,9 +33,9 @@ interface FormState {
 }
 
 const METHODOLOGY = [
-  { value: "waterfall", icon: "📊", he: "Waterfall — מפל מים", en: "Waterfall", desc: { he: "שלבים רציפים, שערי שלב", en: "Sequential phases, gate reviews" } },
-  { value: "agile",     icon: "🔄", he: "Agile",                en: "Agile",      desc: { he: "Sprints, velocity, retros",      en: "Sprints, velocity, retros" } },
-  { value: "kanban",    icon: "📋", he: "Kanban",               en: "Kanban",     desc: { he: "זרימה רציפה, WIP מוגבל",        en: "Continuous flow, WIP limits" } },
+  { value: "waterfall", icon: "📊", he: "מפל מים", en: "Waterfall", desc: { he: "שלבים רציפים, שערי שלב",          en: "Sequential phases, gate reviews" } },
+  { value: "agile",     icon: "🔄", he: "אג'ייל",  en: "Agile",     desc: { he: "ספרינטים, מהירות, רטרוספקטיבות", en: "Sprints, velocity, retros" } },
+  { value: "kanban",    icon: "📋", he: "קנבן",    en: "Kanban",    desc: { he: "זרימה רציפה, הגבלת עבודה בתהליך", en: "Continuous flow, WIP limits" } },
 ] as const;
 
 /**
@@ -122,8 +122,8 @@ export function AddProjectDialog({ children }: { children: React.ReactNode }) {
       }),
       {
         description: txt(locale, {
-          he: `תוכנית: ${program?.name || ""} · מתודולוגיה: ${form.methodology} · ${form.plannedStart} → ${form.plannedEnd}`,
-          en: `Program: ${program?.name || ""} · Methodology: ${form.methodology} · ${form.plannedStart} → ${form.plannedEnd}`,
+          he: `תוכנית: ${program?.name || ""} · מתודולוגיה: ${METHODOLOGY.find((m) => m.value === form.methodology)?.he || form.methodology} · ${form.plannedStart} → ${form.plannedEnd}`,
+          en: `Program: ${program?.name || ""} · Methodology: ${METHODOLOGY.find((m) => m.value === form.methodology)?.en || form.methodology} · ${form.plannedStart} → ${form.plannedEnd}`,
         }),
       }
     );

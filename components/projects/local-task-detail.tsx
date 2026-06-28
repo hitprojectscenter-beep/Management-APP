@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Calendar, Clock, User as UserIcon, Tag, Paperclip, FileText, Loader2, ArrowRight } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
 import { cn, formatDateDDMMYYYY } from "@/lib/utils";
-import { txt } from "@/lib/utils/locale-text";
+import { txt, PRIORITY_LABELS_ML } from "@/lib/utils/locale-text";
 import { loadAddedTasks, fetchTaskFromDb } from "@/lib/db/local-tasks";
 import { mockUsers, type MockTask } from "@/lib/db/mock-data";
 import { TaskThread } from "@/components/projects/task-thread";
@@ -98,7 +98,7 @@ export function LocalTaskDetail({ id, locale }: { id: string; locale: string }) 
             <span className={cn("status-badge", `status-${task.status}`)}>
               {STATUS_LABELS[task.status]?.[locale] || task.status}
             </span>
-            <span className={cn("status-badge", `priority-${task.priority}`)}>{task.priority}</span>
+            <span className={cn("status-badge", `priority-${task.priority}`)}>{txt(locale, PRIORITY_LABELS_ML[task.priority]) || task.priority}</span>
           </div>
         </div>
       </div>

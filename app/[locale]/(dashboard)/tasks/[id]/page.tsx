@@ -27,6 +27,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn, formatDate, calculateVariance } from "@/lib/utils";
+import { txt, PRIORITY_LABELS_ML } from "@/lib/utils/locale-text";
 
 export default async function TaskDetailPage({
   params,
@@ -78,7 +79,7 @@ export default async function TaskDetailPage({
               {STATUS_LABELS[task.status][locale]}
             </span>
             <span className={cn("status-badge", `priority-${task.priority}`)}>
-              {task.priority}
+              {txt(locale, PRIORITY_LABELS_ML[task.priority]) || task.priority}
             </span>
           </div>
         </div>

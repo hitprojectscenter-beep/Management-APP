@@ -11,9 +11,9 @@ import { fetchProjectFromDb, type LiveProject } from "@/lib/db/local-projects";
 import { mockWbsNodes } from "@/lib/db/mock-data";
 
 const METHODOLOGY_LABELS: Record<string, Record<string, string>> = {
-  waterfall: { he: "Waterfall — מפל מים", en: "Waterfall" },
-  agile: { he: "Agile — זריז", en: "Agile" },
-  kanban: { he: "Kanban", en: "Kanban" },
+  waterfall: { he: "מפל מים", en: "Waterfall" },
+  agile: { he: "אג'ייל", en: "Agile" },
+  kanban: { he: "קנבן", en: "Kanban" },
 };
 
 /**

@@ -12,7 +12,7 @@ import {
   Activity, CheckSquare, Folder, X, Calendar, Clock, User as UserIcon,
 } from "lucide-react";
 import { cn, formatDate, formatDateDDMMYYYY } from "@/lib/utils";
-import { txt } from "@/lib/utils/locale-text";
+import { txt, STATUS_LABELS_ML, PRIORITY_LABELS_ML } from "@/lib/utils/locale-text";
 import { Link } from "@/lib/i18n/routing";
 
 const ROW_HEIGHT = 32;
@@ -398,8 +398,8 @@ export function ProgramGantt({ rootNodeId, allNodes, allTasks, users, locale }: 
               <div className="space-y-2.5">
                 <div>
                   <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                    <Badge variant={t.status === "done" ? "secondary" : t.status === "blocked" ? "destructive" : "default"} className="text-[10px]">{t.status}</Badge>
-                    <Badge variant="outline" className="text-[10px]">{t.priority}</Badge>
+                    <Badge variant={t.status === "done" ? "secondary" : t.status === "blocked" ? "destructive" : "default"} className="text-[10px]">{txt(locale, STATUS_LABELS_ML[t.status]) || t.status}</Badge>
+                    <Badge variant="outline" className="text-[10px]">{txt(locale, PRIORITY_LABELS_ML[t.priority]) || t.priority}</Badge>
                     {isCrit && <Badge className="text-[10px] bg-red-600">⚡ {txt(locale, { he: "קריטי", en: "Critical" })}</Badge>}
                   </div>
                   <h3 className="font-bold text-sm leading-tight">{isHe ? t.title : t.titleEn || t.title}</h3>

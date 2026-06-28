@@ -16,6 +16,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { cn, formatDate, isOverdue } from "@/lib/utils";
 import { AlertTriangle, MessageSquare, Paperclip, Calendar } from "lucide-react";
+import { txt, PRIORITY_LABELS_ML } from "@/lib/utils/locale-text";
 import type { TaskStatus } from "@/lib/db/types";
 
 const COLUMNS: { id: TaskStatus; he: string; en: string; color: string }[] = [
@@ -161,7 +162,7 @@ function KanbanCard({
           {locale === "he" ? task.title : task.titleEn || task.title}
         </p>
         <span className={cn("status-badge text-[9px]", `priority-${task.priority}`)}>
-          {task.priority[0].toUpperCase()}
+          {txt(locale, PRIORITY_LABELS_ML[task.priority])?.[0] || task.priority[0].toUpperCase()}
         </span>
       </div>
 
