@@ -21,7 +21,7 @@ import { mockItemTypes, mockWbsNodes } from "@/lib/db/mock-data";
 import { persistAddedTask } from "@/lib/db/local-tasks";
 import { computeTeamWorkload } from "@/lib/ai/workload";
 import { cn } from "@/lib/utils";
-import { txt } from "@/lib/utils/locale-text";
+import { txt, MEMBER_ROLE_LABELS_ML, MEMBER_ROLE_KEYS } from "@/lib/utils/locale-text";
 
 /** One week, in ms — the default gap between start and end when the
  *  source doesn't give an explicit due date. */
@@ -74,22 +74,16 @@ const TASK_SOURCES = [
   { value: "other", labelHe: "אחר", labelEn: "Other" },
 ] as const;
 
-// Project methodology options
-const METHODOLOGY_OPTIONS = [
-  { value: "waterfall", icon: "📊", he: "Waterfall — מפל מים", en: "Waterfall", desc: { he: "שלבים רציפים, שערי שלב", en: "Sequential phases, gate reviews" } },
-  { value: "agile", icon: "🔄", he: "Agile — גמיש", en: "Agile / Scrum", desc: { he: "Sprints, velocity, user stories", en: "Sprints, velocity, user stories" } },
-  { value: "kanban", icon: "📋", he: "Kanban — זרימה", en: "Kanban", desc: { he: "זרימה רציפה, WIP limit", en: "Continuous flow, WIP limits" } },
-] as const;
-
 interface AddTaskFormData {
   title: string;
   taskType: string;
   taskTypeOther: string;
   parentType: "project" | "program";
   parentId: string;
-  methodology: string; // waterfall | agile | kanban
   description: string;
   teamMembers: string[];
+  /** Per-member responsibility within the task: userId → { type, detail }. */
+  memberRoles: Record<string, { type: string; detail?: string }>;
   /** Required resources / effort categories (multi-select). */
   resources: string[];
   plannedStart: string;
@@ -220,9 +214,9 @@ export function AddTaskDialog({
     taskTypeOther: "",
     parentType: initialValues?.defaultParentType || "project",
     parentId: initialValues?.defaultParentId || "",
-    methodology: (initialValues?.defaultMethodology || "") as any,
     description: initialValues?.description || "",
     teamMembers: initialAssigneeId ? [initialAssigneeId] : [],
+    memberRoles: initialAssigneeId ? { [initialAssigneeId]: { type: "execute" } } : {},
     resources: [],
     // Start date defaults to TODAY for a new (manual) task; intake-extracted
     // tasks keep the source/document date.
@@ -260,6 +254,7 @@ export function AddTaskDialog({
         prev.taskType,
       description: initialValues.description ?? prev.description,
       teamMembers: initialAssigneeId ? [initialAssigneeId] : prev.teamMembers,
+      memberRoles: initialAssigneeId ? { [initialAssigneeId]: prev.memberRoles[initialAssigneeId] || { type: "execute" } } : prev.memberRoles,
       plannedStart: initialValues.plannedStart ?? prev.plannedStart,
       // Guarantee a real window — never start == end.
       plannedEnd: ensureEndAfterStart(
@@ -274,7 +269,6 @@ export function AddTaskDialog({
       priority: initialValues.defaultPriority ? (initialValues.defaultPriority as any) : prev.priority,
       parentType: initialValues.defaultParentType ?? prev.parentType,
       parentId: initialValues.defaultParentId ?? prev.parentId,
-      methodology: initialValues.defaultMethodology ? (initialValues.defaultMethodology as any) : prev.methodology,
     }));
     setErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -341,12 +335,22 @@ export function AddTaskDialog({
   };
 
   const toggleTeamMember = (userId: string) => {
-    setForm((prev) => ({
-      ...prev,
-      teamMembers: prev.teamMembers.includes(userId)
-        ? prev.teamMembers.filter((id) => id !== userId)
-        : [...prev.teamMembers, userId],
-    }));
+    setForm((prev) => {
+      const has = prev.teamMembers.includes(userId);
+      const teamMembers = has ? prev.teamMembers.filter((id) => id !== userId) : [...prev.teamMembers, userId];
+      const memberRoles = { ...prev.memberRoles };
+      if (has) delete memberRoles[userId];
+      else if (!memberRoles[userId]) memberRoles[userId] = { type: "execute" }; // sensible default on add
+      return { ...prev, teamMembers, memberRoles };
+    });
+  };
+
+  /** Update one team member's role type / detail in the task. */
+  const setMemberRole = (userId: string, patch: { type?: string; detail?: string }) => {
+    setForm((prev) => {
+      const current = prev.memberRoles[userId] || { type: "execute" };
+      return { ...prev, memberRoles: { ...prev.memberRoles, [userId]: { ...current, ...patch } } };
+    });
   };
 
   /**
@@ -503,7 +507,7 @@ export function AddTaskDialog({
       parentTaskId: null,
       title: form.title.trim(),
       description: form.description.trim() || undefined,
-      status: "not_started",
+      status: "new",
       priority: (form.priority as any) || "medium",
       assigneeId: form.teamMembers[0] || null,
       // Persist the FULL team (was dropped before) — every member is a
@@ -526,6 +530,17 @@ export function AddTaskDialog({
         ? { ...attachments[0], source: sourceLabel || attachments[0].source }
         : sourceLabel
         ? { name: sourceLabel }
+        : undefined,
+      // Per-member responsibility (who does what) — captured when each member
+      // was added to the team. Every selected member gets a role (default לבצע).
+      memberRoles: form.teamMembers.length > 0
+        ? Object.fromEntries(
+            form.teamMembers.map((uid) => {
+              const r = form.memberRoles[uid];
+              const detail = r?.detail?.trim();
+              return [uid, { type: r?.type || "execute", ...(detail ? { detail } : {}) }];
+            }),
+          )
         : undefined,
     };
     // persistAddedTask pushes to the in-memory module AND localStorage AND
@@ -560,6 +575,7 @@ export function AddTaskDialog({
       title: "",
       description: "",
       teamMembers: [],
+      memberRoles: {},
       resources: [],
       sourceOther: "",
       attachments: [],
@@ -816,6 +832,44 @@ export function AddTaskDialog({
             />
             {errors.teamMembers && <p className="text-xs text-red-500">{errors.teamMembers}</p>}
 
+            {/* Per-member responsibility — "who does what". Set the function for
+                each member as they're added to the team. */}
+            {form.teamMembers.length > 0 && (
+              <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2.5">
+                <div className="text-xs font-semibold text-muted-foreground">
+                  {txt(locale, { he: "תפקיד כל חבר צוות במשימה (מי אחראי על מה)", en: "Each member's role in the task (who does what)" })}
+                </div>
+                {form.teamMembers.map((uid) => {
+                  const u = users.find((x) => x.id === uid);
+                  if (!u) return null;
+                  const role = form.memberRoles[uid] || { type: "execute" };
+                  return (
+                    <div key={uid} className="grid grid-cols-1 sm:grid-cols-[7rem_9rem_1fr] gap-2 sm:items-center">
+                      <span className="text-sm font-medium truncate">{u.name}</span>
+                      <select
+                        value={role.type}
+                        onChange={(e) => setMemberRole(uid, { type: e.target.value })}
+                        className="h-9 rounded-md border border-input bg-background px-2 text-sm min-h-[40px]"
+                      >
+                        {MEMBER_ROLE_KEYS.map((k) => (
+                          <option key={k} value={k}>{txt(locale, MEMBER_ROLE_LABELS_ML[k]) as string}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={role.detail || ""}
+                        onChange={(e) => setMemberRole(uid, { detail: e.target.value })}
+                        placeholder={txt(locale, { he: "פירוט: על מה / עם מי / מה התוצר", en: "Detail: on what / with whom / deliverable" }) as string}
+                        className="h-9 rounded-md border border-input bg-background px-2 text-sm min-h-[40px]"
+                        style={{ fontSize: "16px" }}
+                        maxLength={120}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Workload / availability check — warns (never blocks) when an
                 assigned member is over-allocated or already has overlapping
                 tasks in the chosen window. */}
@@ -911,31 +965,6 @@ export function AddTaskDialog({
             {errors.parentId && <p className="text-xs text-red-500">{errors.parentId}</p>}
           </div>
 
-          {/* Project Methodology selector */}
-          {form.parentType === "project" && (
-            <div className="space-y-1.5">
-              <Label>{txt(locale, { he: "שיטת ניהול", en: "Methodology" })}</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {METHODOLOGY_OPTIONS.map((m) => (
-                  <button
-                    key={m.value}
-                    type="button"
-                    onClick={() => setForm({ ...form, methodology: m.value })}
-                    className={cn(
-                      "flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all min-h-[44px]",
-                      form.methodology === m.value
-                        ? "border-primary bg-primary/10 text-primary shadow-md ring-2 ring-primary/20"
-                        : "border-border hover:bg-accent hover:border-primary/30"
-                    )}
-                  >
-                    <span className="text-lg">{m.icon}</span>
-                    <span className="text-xs font-semibold">{txt(locale, { he: m.he.split(" — ")[0], en: m.en })}</span>
-                    <span className="text-[9px] text-muted-foreground leading-tight">{txt(locale, m.desc)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* File Attachments (max 5MB each) */}
           <div className="space-y-1.5">

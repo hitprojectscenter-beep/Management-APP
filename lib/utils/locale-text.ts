@@ -53,6 +53,21 @@ export const STATUS_LABELS_ML: Record<string, LocaleTexts> = {
   completed:   { he: "הושלם",    en: "Completed",   ru: "Завершена",      fr: "Terminé",      es: "Completada"  },
 };
 
+/** Per-member role/function within a task ("who does what"). */
+export const MEMBER_ROLE_LABELS_ML: Record<string, LocaleTexts> = {
+  execute:      { he: "לבצע",          en: "Execute",          ru: "Выполнить",                fr: "Exécuter",            es: "Ejecutar" },
+  provide_info: { he: "לספק מידע",     en: "Provide info",     ru: "Предоставить информацию",  fr: "Fournir des infos",   es: "Proporcionar información" },
+  meeting:      { he: "לקיים פגישה",   en: "Hold a meeting",   ru: "Провести встречу",         fr: "Tenir une réunion",   es: "Realizar una reunión" },
+  report:       { he: "להכין דו\"ח",    en: "Prepare a report", ru: "Подготовить отчёт",        fr: "Préparer un rapport", es: "Preparar un informe" },
+  review:       { he: "לבדוק ולאשר",   en: "Review & approve", ru: "Проверить и утвердить",    fr: "Vérifier et approuver", es: "Revisar y aprobar" },
+  coordinate:   { he: "לתאם",          en: "Coordinate",       ru: "Координировать",           fr: "Coordonner",          es: "Coordinar" },
+  consult:      { he: "לייעץ",         en: "Advise / consult", ru: "Консультировать",          fr: "Conseiller",          es: "Asesorar" },
+  other:        { he: "אחר",           en: "Other",            ru: "Другое",                   fr: "Autre",               es: "Otro" },
+};
+
+/** Role keys in display order (for the add-task dropdown). */
+export const MEMBER_ROLE_KEYS = ["execute", "provide_info", "meeting", "report", "review", "coordinate", "consult", "other"];
+
 /** Priority labels */
 export const PRIORITY_LABELS_ML: Record<string, LocaleTexts> = {
   low:      { he: "נמוכה",   en: "Low",      ru: "Низкий",      fr: "Basse",     es: "Baja"     },

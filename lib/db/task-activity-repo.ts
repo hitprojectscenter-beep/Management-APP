@@ -56,6 +56,7 @@ interface TaskCore {
   plannedEnd: string;
   creatorId: string | null;
   title: string;
+  memberRoles: Record<string, { type: string; detail?: string }> | null;
 }
 
 /** Read just the workflow-relevant fields of a task, or null if it isn't a
@@ -69,6 +70,7 @@ async function getTaskCore(taskId: string): Promise<TaskCore | null> {
       plannedEnd: appTasks.plannedEnd,
       creatorId: appTasks.creatorId,
       title: appTasks.title,
+      memberRoles: appTasks.memberRoles,
     })
     .from(appTasks)
     .where(eq(appTasks.id, taskId))
@@ -114,6 +116,7 @@ export interface TaskActivity {
   plannedEnd: string;
   team: string[];
   completionMembers: string[]; // who must sign off
+  memberRoles: Record<string, { type: string; detail?: string }>; // who does what
   history: TaskHistoryRow[];
   members: TaskMemberStatusRow[];
 }
@@ -132,6 +135,7 @@ export async function getActivity(taskId: string): Promise<TaskActivity | null> 
     plannedEnd: core.plannedEnd,
     team: (core.team ?? []).filter(Boolean),
     completionMembers: completionSet(core.team, core.assigneeId),
+    memberRoles: core.memberRoles ?? {},
     history,
     members,
   };

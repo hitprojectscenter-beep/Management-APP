@@ -96,6 +96,9 @@ export interface MockTask {
   /** Provenance: the task's source — a source file, or a source-type label
    *  (e.g. "החלטת מנהל"). Shown as "מקור המשימה" on the task detail. */
   sourceFile?: { name: string; size?: number; type?: string; blobUrl?: string; source?: string };
+  /** Per-member responsibility within the task: userId → { type, detail }.
+   *  e.g. { u3: { type: "report", detail: "דו\"ח התקדמות שבועי" } }. */
+  memberRoles?: Record<string, { type: string; detail?: string }>;
 }
 
 export interface MockRisk {

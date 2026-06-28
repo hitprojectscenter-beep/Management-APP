@@ -404,6 +404,13 @@ export const appTasks = pgTable(
       blobUrl?: string;
       source?: string;
     } | null>(),
+    /** Per-member responsibility in the task: userId → { type, detail }. Set
+     *  when each member is added to the team (the add-task form). A lightweight
+     *  RACI — "who does what" (execute / provide info / meeting / report / …). */
+    memberRoles: jsonb("member_roles")
+      .$type<Record<string, { type: string; detail?: string }>>()
+      .default({})
+      .notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

@@ -76,8 +76,24 @@ export function rowToMockTask(r: AppTask): AppMockTask {
     resources: Array.isArray(r.resources) ? r.resources : [],
     attachments: Array.isArray(r.attachments) ? r.attachments : [],
     sourceFile: r.sourceFile ?? undefined,
+    memberRoles: r.memberRoles ?? undefined,
     creatorId: r.creatorId ?? null,
   };
+}
+
+/** Sanitize the per-member role map: keep only entries with a string type. */
+function sanitizeMemberRoles(v: unknown): Record<string, { type: string; detail?: string }> {
+  const out: Record<string, { type: string; detail?: string }> = {};
+  if (v && typeof v === "object") {
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+      if (val && typeof val === "object" && typeof (val as { type?: unknown }).type === "string") {
+        const t = (val as { type: string }).type;
+        const d = (val as { detail?: unknown }).detail;
+        out[k] = { type: t, ...(typeof d === "string" && d.trim() ? { detail: d.trim().slice(0, 300) } : {}) };
+      }
+    }
+  }
+  return out;
 }
 
 /** Incoming client task → DB insert row. Sanitizes types; never trusts shape. */
@@ -108,6 +124,7 @@ function toRow(t: Partial<AppMockTask> & { id: string; title: string }, creatorI
     resources: asArray(t.resources),
     attachments: Array.isArray(t.attachments) ? t.attachments : [],
     sourceFile: t.sourceFile ?? null,
+    memberRoles: sanitizeMemberRoles(t.memberRoles),
     updatedAt: new Date(),
   };
 }

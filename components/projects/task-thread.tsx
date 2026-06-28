@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatDateTime, formatDateDDMMYYYY } from "@/lib/utils";
-import { txt, STATUS_LABELS_ML } from "@/lib/utils/locale-text";
+import { txt, STATUS_LABELS_ML, MEMBER_ROLE_LABELS_ML } from "@/lib/utils/locale-text";
 import { STATUS_COLORS, WORKFLOW_STATUSES, type TaskStatus } from "@/lib/db/types";
 import { mockUsers } from "@/lib/db/mock-data";
 
@@ -36,6 +36,7 @@ interface Activity {
   plannedEnd: string;
   team: string[];
   completionMembers: string[];
+  memberRoles: Record<string, { type: string; detail?: string }>;
   history: HistoryRow[];
   members: MemberRow[];
 }
@@ -67,6 +68,9 @@ function statusLabel(s: string, locale: string): string {
 }
 function statusColor(s: string): string {
   return STATUS_COLORS[s as TaskStatus] || "hsl(220,9%,46%)";
+}
+function roleLabel(type: string, locale: string): string {
+  return (MEMBER_ROLE_LABELS_ML[type] && txt(locale, MEMBER_ROLE_LABELS_ML[type])) as string || type;
 }
 function todayISO(): string {
   const d = new Date();
@@ -332,10 +336,18 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                   {activity.completionMembers.map((uid) => {
                     const mDone = !!activity.members.find((m) => m.userId === uid)?.done;
                     return (
-                      <div key={uid} className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2">
-                          <Avatar src={userImg(uid)} fallback={userName(uid)[0]} className="size-6" />
-                          {userName(uid)}
+                      <div key={uid} className="flex items-center justify-between text-sm gap-2">
+                        <span className="flex items-center gap-2 min-w-0">
+                          <Avatar src={userImg(uid)} fallback={userName(uid)[0]} className="size-6 shrink-0" />
+                          <span className="min-w-0">
+                            <span className="block truncate">{userName(uid)}</span>
+                            {activity.memberRoles[uid] && (
+                              <span className="block text-[11px] text-muted-foreground truncate">
+                                {roleLabel(activity.memberRoles[uid].type, locale)}
+                                {activity.memberRoles[uid].detail ? ` · ${activity.memberRoles[uid].detail}` : ""}
+                              </span>
+                            )}
+                          </span>
                         </span>
                         {mDone ? (
                           <Badge variant="success" className="gap-1"><CheckCircle2 className="size-3" />{txt(locale, { he: "בוצע", en: "Done" })}</Badge>
