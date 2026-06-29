@@ -8,13 +8,13 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn, formatDate } from "@/lib/utils";
-import { AlertTriangle, Clock, Layers, Briefcase, Calendar as CalIcon } from "lucide-react";
+import { AlertTriangle, Clock, Layers, Briefcase, Calendar as CalIcon, User as UserIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
 import { txt, STATUS_LABELS_ML, PRIORITY_LABELS_ML, TAB_LABELS_ML } from "@/lib/utils/locale-text";
 import { STATUS_COLORS, type TaskStatus } from "@/lib/db/types";
 import { useRole } from "@/lib/auth/role-context";
 
-type TabKey = "all" | "in_progress" | "not_started" | "blocked" | "review" | "overdue" | "by_project";
+type TabKey = "all" | "in_progress" | "not_started" | "blocked" | "review" | "overdue" | "by_project" | "subordinates";
 
 export function MyTasksTabs({
   tasks,
@@ -22,12 +22,16 @@ export function MyTasksTabs({
   projects,
   wbsNodes,
   locale,
+  subordinateTasks,
 }: {
   tasks: MockTask[];
   users: MockUser[];
   projects: MockWbsNode[];
   wbsNodes: MockWbsNode[];
   locale: string;
+  /** Tasks of the current user's reporting subtree (managers only). When
+   *  provided, a "משימות הכפופים אלי" tab is shown. */
+  subordinateTasks?: MockTask[];
 }) {
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const { can } = useRole();
@@ -44,7 +48,7 @@ export function MyTasksTabs({
         return new Date(t.plannedEnd).getTime() < Date.now();
       }).length,
     };
-    return [
+    const base = [
       { key: "all" as TabKey, count: counts.all },
       { key: "in_progress" as TabKey, count: counts.in_progress },
       { key: "not_started" as TabKey, count: counts.not_started },
@@ -53,9 +57,13 @@ export function MyTasksTabs({
       { key: "overdue" as TabKey, count: counts.overdue },
       { key: "by_project" as TabKey },
     ];
-  }, [tasks]);
+    // Managers get an extra tab for their reporting subtree's tasks.
+    if (subordinateTasks) base.push({ key: "subordinates" as TabKey, count: subordinateTasks.length });
+    return base;
+  }, [tasks, subordinateTasks]);
 
   const filteredTasks = useMemo(() => {
+    if (activeTab === "subordinates") return subordinateTasks || [];
     if (activeTab === "all" || activeTab === "by_project") return tasks;
     if (activeTab === "overdue") {
       return tasks.filter((t) => {
@@ -64,7 +72,7 @@ export function MyTasksTabs({
       });
     }
     return tasks.filter((t) => t.status === activeTab || (activeTab === "not_started" && t.status === "new"));
-  }, [tasks, activeTab]);
+  }, [tasks, activeTab, subordinateTasks]);
 
   // Sort by urgency (overdue first, then closest to due, then by priority)
   const sortedTasks = useMemo(() => {
@@ -152,7 +160,7 @@ export function MyTasksTabs({
               </div>
               <div className="space-y-2">
                 {pTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} users={users} locale={locale} />
+                  <TaskCard key={task.id} task={task} users={users} locale={locale} showAssignee={false} />
                 ))}
               </div>
             </div>
@@ -168,7 +176,7 @@ export function MyTasksTabs({
       ) : (
         <div className="space-y-2" data-tour="task-list">
           {sortedTasks.map((task) => (
-            <TaskCard key={task.id} task={task} users={users} locale={locale} />
+            <TaskCard key={task.id} task={task} users={users} locale={locale} showAssignee={activeTab === "subordinates"} />
           ))}
         </div>
       )}
@@ -180,10 +188,12 @@ function TaskCard({
   task,
   users,
   locale,
+  showAssignee,
 }: {
   task: MockTask;
   users: MockUser[];
   locale: string;
+  showAssignee?: boolean;
 }) {
   const assignee = users.find((u) => u.id === task.assigneeId);
   const remaining = task.plannedEnd ? getTimeRemaining(task.plannedEnd) : null;
@@ -217,6 +227,12 @@ function TaskCard({
                   <CalIcon className="size-3" />
                   {formatDate(task.plannedEnd, locale)}
                 </div>
+                {showAssignee && assignee && (
+                  <span className="flex items-center gap-1 font-medium text-foreground">
+                    <UserIcon className="size-3" />
+                    {assignee.name}
+                  </span>
+                )}
                 {task.tags.slice(0, 2).map((tag) => (
                   <span key={tag} className="text-[10px] bg-muted px-1.5 py-0.5 rounded">
                     {tag}

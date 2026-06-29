@@ -73,8 +73,37 @@ export function MyDashboardContent({
       const days = (new Date(t.plannedEnd).getTime() - now) / dayMs;
       return days >= 0 && days <= 7;
     }).length;
-    return { myMemberships, myNodes, myProjects, myOpenTasks, totalFte, inProgress, overdue, dueThisWeek };
-  }, [userId, liveTasks, allWbsNodes, allMembers]);
+    // Reporting subtree (managers only) — BFS over managerId. These tasks
+    // power the "משימות הכפופים אלי" tab. Visibility is already enforced
+    // server-side (a manager only ever receives their subtree's tasks).
+    const childrenOf = new Map<string, string[]>();
+    for (const u of allUsers) {
+      if (u.managerId) {
+        const arr = childrenOf.get(u.managerId) ?? [];
+        arr.push(u.id);
+        childrenOf.set(u.managerId, arr);
+      }
+    }
+    const subtree = new Set<string>();
+    const queue = [...(childrenOf.get(userId) ?? [])];
+    while (queue.length) {
+      const id = queue.shift() as string;
+      if (subtree.has(id)) continue;
+      subtree.add(id);
+      for (const ch of childrenOf.get(id) ?? []) queue.push(ch);
+    }
+    const subordinateTasks = subtree.size
+      ? liveTasks.filter((t) => {
+          const cId = (t as MockTask & { creatorId?: string }).creatorId;
+          return (
+            (t.assigneeId && subtree.has(t.assigneeId)) ||
+            (cId && subtree.has(cId)) ||
+            (Array.isArray(t.team) && t.team.some((m) => subtree.has(m)))
+          );
+        })
+      : null;
+    return { myMemberships, myNodes, myProjects, myOpenTasks, totalFte, inProgress, overdue, dueThisWeek, subordinateTasks };
+  }, [userId, liveTasks, allWbsNodes, allMembers, allUsers]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -130,6 +159,7 @@ export function MyDashboardContent({
                 projects={projects}
                 wbsNodes={allWbsNodes}
                 locale={locale}
+                subordinateTasks={derived.subordinateTasks ?? undefined}
               />
             </div>
           </CollapsibleSection>

@@ -85,6 +85,7 @@ export const TAB_LABELS_ML: Record<string, LocaleTexts> = {
   review:      { he: "בבדיקה",     en: "Review",      ru: "На проверке",   fr: "En revue",     es: "En revisión"  },
   overdue:     { he: "באיחור",     en: "Overdue",     ru: "Просрочены",    fr: "En retard",    es: "Retrasadas"   },
   by_project:  { he: "לפי פרויקט", en: "By project",  ru: "По проекту",    fr: "Par projet",   es: "Por proyecto" },
+  subordinates:{ he: "משימות הכפופים אלי", en: "My team's tasks", ru: "Задачи подчинённых", fr: "Tâches de mon équipe", es: "Tareas de mi equipo" },
 };
 
 /** Weekday short names for calendar */
