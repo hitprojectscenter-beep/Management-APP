@@ -9,7 +9,7 @@ import {
   recordSeen,
   type ThreadViewer,
 } from "@/lib/db/task-thread-repo";
-import { getActivity } from "@/lib/db/task-activity-repo";
+import { getActivity, isSupervisorOfTask } from "@/lib/db/task-activity-repo";
 import { dispatchToUsers } from "@/lib/notify/dispatch";
 import { mockUsers } from "@/lib/db/mock-data";
 
@@ -38,10 +38,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
-  const [messages, receipts, activity] = await Promise.all([
+  const [messages, receipts, activity, isSupervisor] = await Promise.all([
     listMessages(id),
     listReceipts(id),
     getActivity(id),
+    isSupervisorOfTask(viewer.id, id), // viewer supervises the assignee → can act as ממונה
   ]);
   return NextResponse.json({
     messages,
@@ -52,6 +53,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     isCreatedTask: participants.isCreatedTask,
     me: viewer.id,
     meRole: viewer.role,
+    isSupervisor,
   });
 }
 

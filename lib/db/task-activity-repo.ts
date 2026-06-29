@@ -13,7 +13,7 @@
 import "server-only";
 import { eq, asc, and } from "drizzle-orm";
 import { getDb } from "./client";
-import { appTasks, taskHistory, taskMemberStatus, type TaskHistoryRow, type TaskMemberStatusRow } from "./schema";
+import { appTasks, taskHistory, taskMemberStatus, users, type TaskHistoryRow, type TaskMemberStatusRow } from "./schema";
 
 export type HistoryKind =
   | "created"
@@ -23,7 +23,12 @@ export type HistoryKind =
   | "extension_request"
   | "extension_approved"
   | "extension_rejected"
-  | "roles_updated";
+  | "roles_updated"
+  // Supervisor (ממונה) actions on a subordinate's task:
+  | "supervisor_note"
+  | "supervisor_reject"
+  | "supervisor_cancel"
+  | "supervisor_extend";
 
 /** Valid workflow statuses a task may hold. */
 export const WORKFLOW_STATUS_SET = new Set<string>([
@@ -269,5 +274,82 @@ export async function updateMemberRoles(
     .set({ memberRoles: roles, updatedAt: new Date() })
     .where(eq(appTasks.id, taskId));
   const history = await log(taskId, actorId, "roles_updated", "עודכנו תפקידי חברי הצוות במשימה.", {});
+  return { history };
+}
+
+// ---- supervisor (ממונה) actions on a subordinate's task -------------------
+
+/** All user ids in `viewerId`'s reporting subtree (excludes the viewer). */
+async function reportingSubtree(viewerId: string): Promise<Set<string>> {
+  const all = await getDb().select({ id: users.id, managerId: users.managerId }).from(users);
+  const childrenOf = new Map<string, string[]>();
+  for (const u of all) if (u.managerId) { const a = childrenOf.get(u.managerId) ?? []; a.push(u.id); childrenOf.set(u.managerId, a); }
+  const out = new Set<string>();
+  const q = [...(childrenOf.get(viewerId) ?? [])];
+  while (q.length) { const id = q.shift() as string; if (out.has(id)) continue; out.add(id); for (const ch of childrenOf.get(id) ?? []) q.push(ch); }
+  return out;
+}
+
+/** The actor's managers, from their direct manager UP TO + INCLUDING the
+ *  division head (סמנכ"ל). Excludes the CEO (an admin who sees everything). */
+export async function supervisorChainUpToVP(actorId: string): Promise<string[]> {
+  const all = await getDb().select({ id: users.id, managerId: users.managerId }).from(users);
+  const byId = new Map(all.map((u) => [u.id, u]));
+  const ceoId = all.find((u) => !u.managerId)?.id;
+  const chain: string[] = [];
+  const seen = new Set<string>();
+  let cur = byId.get(actorId);
+  while (cur?.managerId) {
+    const mgr = byId.get(cur.managerId);
+    if (!mgr || !mgr.managerId) break;       // reached the CEO — stop (don't include)
+    if (seen.has(mgr.id)) break;
+    seen.add(mgr.id);
+    chain.push(mgr.id);
+    if (mgr.managerId === ceoId) break;       // mgr is a division head (VP) — included, stop
+    cur = mgr;
+  }
+  return chain;
+}
+
+/** True if `viewerId` supervises this task — the assignee (or a team member)
+ *  is in the viewer's reporting subtree (and isn't the viewer). */
+export async function isSupervisorOfTask(viewerId: string, taskId: string): Promise<boolean> {
+  const core = await getTaskCore(taskId);
+  if (!core) return false;
+  const targets = [core.assigneeId, ...((core.team ?? []) as string[])].filter((x): x is string => !!x && x !== viewerId);
+  if (!targets.length) return false;
+  const subtree = await reportingSubtree(viewerId);
+  return targets.some((t) => subtree.has(t));
+}
+
+export type SupervisorAction = "note" | "reject" | "cancel" | "extend";
+
+/** A supervisor annotates / rejects / cancels / extends a subordinate's task.
+ *  (Cannot delete.) Each action carries a mandatory reason and is logged. */
+export async function supervisorAction(
+  taskId: string,
+  actorId: string,
+  action: SupervisorAction,
+  note: string,
+  newDueDate?: string,
+): Promise<{ status?: string; plannedEnd?: string; history: TaskHistoryRow }> {
+  const core = await getTaskCore(taskId);
+  if (!core) throw new Error("task_not_found");
+  const db = getDb();
+  if (action === "reject" || action === "cancel") {
+    const to = action === "reject" ? "rejected" : "cancelled";
+    await db.update(appTasks).set({ status: to, updatedAt: new Date() }).where(eq(appTasks.id, taskId));
+    const history = await log(taskId, actorId, action === "reject" ? "supervisor_reject" : "supervisor_cancel", note, {
+      fromStatus: core.status, toStatus: to,
+    });
+    return { status: to, history };
+  }
+  if (action === "extend") {
+    const nd = String(newDueDate || "");
+    await db.update(appTasks).set({ plannedEnd: nd, updatedAt: new Date() }).where(eq(appTasks.id, taskId));
+    const history = await log(taskId, actorId, "supervisor_extend", note, { meta: { newDueDate: nd, prevDueDate: core.plannedEnd } });
+    return { plannedEnd: nd, history };
+  }
+  const history = await log(taskId, actorId, "supervisor_note", note, {});
   return { history };
 }

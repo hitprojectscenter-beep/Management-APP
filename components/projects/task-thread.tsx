@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MessageSquare, Send, CheckCheck, Eye, Clock, Loader2, History,
   CircleDot, CheckCircle2, CalendarClock, ThumbsUp, ThumbsDown, X, Pencil,
+  ShieldAlert, MessageSquarePlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,6 +50,7 @@ interface ThreadData {
   isCreatedTask: boolean;
   me: string;
   meRole?: string;
+  isSupervisor?: boolean;
 }
 
 /** The modal can collect a note, and (for extensions) a date too. */
@@ -56,7 +58,8 @@ type Prompt =
   | { type: "status"; status: string }
   | { type: "member"; done: boolean }
   | { type: "extension" }
-  | { type: "decide"; requestId: string; approve: boolean; newDueDate: string };
+  | { type: "decide"; requestId: string; approve: boolean; newDueDate: string }
+  | { type: "supervisor"; action: "note" | "reject" | "cancel" | "extend" };
 
 function userName(id: string): string {
   return mockUsers.find((u) => u.id === id)?.name || id;
@@ -231,7 +234,7 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
   const openPrompt = (p: Prompt) => {
     setPrompt(p);
     setNote("");
-    setExtDate(p.type === "extension" ? (activity?.plannedEnd || todayISO()) : "");
+    setExtDate((p.type === "extension" || (p.type === "supervisor" && p.action === "extend")) ? (activity?.plannedEnd || todayISO()) : "");
   };
 
   const submitPrompt = async () => {
@@ -241,7 +244,7 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
       toast.error(txt(locale, { he: "חובה למלא הסבר", en: "Explanation is required" }) as string);
       return;
     }
-    if (prompt.type === "extension" && !extDate) {
+    if ((prompt.type === "extension" || (prompt.type === "supervisor" && prompt.action === "extend")) && !extDate) {
       toast.error(txt(locale, { he: "חובה לבחור תאריך יעד חדש", en: "Pick a new due date" }) as string);
       return;
     }
@@ -263,10 +266,16 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ newDueDate: extDate, note: trimmed }),
         });
-      } else {
+      } else if (prompt.type === "decide") {
         res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/extension`, {
           method: "PATCH", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ requestId: prompt.requestId, approve: prompt.approve, note: trimmed }),
+        });
+      } else {
+        // supervisor (ממונה) action on a subordinate's task
+        res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/supervisor`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: prompt.action, note: trimmed, ...(prompt.action === "extend" ? { newDueDate: extDate } : {}) }),
         });
       }
       if (res.ok) {
@@ -286,6 +295,8 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
           bad_date: { he: "תאריך לא תקין", en: "Invalid date" },
           only_creator: { he: "רק יוצר המשימה יכול לאשר/לדחות", en: "Only the creator can decide" },
           request_not_found: { he: "הבקשה לא נמצאה", en: "Request not found" },
+          not_supervisor: { he: "פעולה זו זמינה רק לממונה של מבצע המשימה", en: "Only the assignee's supervisor can do this" },
+          bad_action: { he: "פעולה לא תקינה", en: "Invalid action" },
         };
         toast.error(txt(locale, map[err?.error] || { he: "הפעולה נכשלה", en: "Action failed" }) as string);
       }
@@ -314,6 +325,14 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
         return txt(locale, { he: "דחה/תה בקשת עדכון יעד", en: "Rejected due-date request" }) as string;
       case "roles_updated":
         return txt(locale, { he: "עודכנו תפקידי הצוות", en: "Updated team roles" }) as string;
+      case "supervisor_note":
+        return txt(locale, { he: "הערת ממונה", en: "Supervisor note" }) as string;
+      case "supervisor_reject":
+        return txt(locale, { he: "המשימה נדחתה ע\"י ממונה", en: "Rejected by supervisor" }) as string;
+      case "supervisor_cancel":
+        return txt(locale, { he: "המשימה בוטלה ע\"י ממונה", en: "Cancelled by supervisor" }) as string;
+      case "supervisor_extend":
+        return `${txt(locale, { he: "ממונה הוסיף/ה זמן ביצוע — יעד חדש", en: "Supervisor added time — new due" })} ${formatDateDDMMYYYY(String(m.newDueDate || ""))}`;
       default:
         return h.kind;
     }
@@ -507,6 +526,33 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
               })}
             </div>
 
+            {/* Supervisor (ממונה) actions — only for a supervisor of the assignee */}
+            {data?.isSupervisor && (
+              <div className="space-y-2 pt-3 border-t">
+                <div className="text-xs font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                  <ShieldAlert className="size-3.5" />
+                  {txt(locale, { he: "פעולות ממונה (על משימת כפוף)", en: "Supervisor actions" })}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button size="sm" variant="outline" onClick={() => openPrompt({ type: "supervisor", action: "note" })}>
+                    <MessageSquarePlus className="size-4 me-1.5" />{txt(locale, { he: "הוסף הערה", en: "Add note" })}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => openPrompt({ type: "supervisor", action: "extend" })}>
+                    <CalendarClock className="size-4 me-1.5" />{txt(locale, { he: "הוסף זמן ביצוע", en: "Add time" })}
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-300" onClick={() => openPrompt({ type: "supervisor", action: "reject" })}>
+                    <ThumbsDown className="size-4 me-1.5" />{txt(locale, { he: "דחה משימה", en: "Reject" })}
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50 dark:text-red-300" onClick={() => openPrompt({ type: "supervisor", action: "cancel" })}>
+                    <X className="size-4 me-1.5" />{txt(locale, { he: "בטל משימה", en: "Cancel task" })}
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {txt(locale, { he: "כל פעולה דורשת סיבה, נרשמת בהיסטוריה, ונשלחת ליוצר, למבצע/צוות ולממונים מעליך עד הסמנכ\"ל. (אין אפשרות מחיקה.)", en: "Each action needs a reason, is logged, and notifies the creator, assignee/team and your managers up to the VP. (No delete.)" })}
+                </p>
+              </div>
+            )}
+
             {/* History timeline */}
             {activity.history.length > 0 && (
               <div className="space-y-2 pt-3 border-t">
@@ -671,11 +717,16 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                 {prompt.type === "decide" && (prompt.approve
                   ? txt(locale, { he: "אישור בקשת יעד", en: "Approve request" })
                   : txt(locale, { he: "דחיית בקשת יעד", en: "Reject request" }))}
+                {prompt.type === "supervisor" && (
+                  prompt.action === "note" ? txt(locale, { he: "הוספת הערת ממונה", en: "Add supervisor note" })
+                  : prompt.action === "reject" ? txt(locale, { he: "דחיית המשימה (ממונה)", en: "Reject task (supervisor)" })
+                  : prompt.action === "cancel" ? txt(locale, { he: "ביטול המשימה (ממונה)", en: "Cancel task (supervisor)" })
+                  : txt(locale, { he: "הוספת זמן ביצוע (ממונה)", en: "Add execution time (supervisor)" }))}
               </h3>
               <button onClick={() => !submitting && setPrompt(null)} className="text-muted-foreground hover:text-foreground"><X className="size-4" /></button>
             </div>
             <div className="p-4 space-y-3">
-              {prompt.type === "extension" && (
+              {(prompt.type === "extension" || (prompt.type === "supervisor" && prompt.action === "extend")) && (
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "תאריך יעד חדש *", en: "New due date *" })}</label>
                   <input
