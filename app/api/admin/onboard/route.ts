@@ -20,6 +20,24 @@ const ADMIN_SUMMARY_EMAIL = "hitprojectscenter@gmail.com";
 
 const SUBJECT = "הזמנה להצטרף ליישום ניהול משימות PMO++ — המרכז למיפוי ישראל";
 
+// WhatsApp connection (Twilio Sandbox). The join phrase is account-specific —
+// set WHATSAPP_SANDBOX_JOIN_CODE in env to produce a one-tap join link.
+const WA_NUMBER_DISPLAY = "+1 415 523 8886";
+const WA_NUMBER_DIGITS = "14155238886";
+const WA_JOIN_CODE = (process.env.WHATSAPP_SANDBOX_JOIN_CODE || "").trim();
+
+function whatsappConnectLines(): string[] {
+  const head = ["", "📱 חיבור וואטסאפ (חד-פעמי, לקבלת התראות גם בוואטסאפ):"];
+  if (WA_JOIN_CODE) {
+    return [
+      ...head,
+      `• שלח/י הודעת WhatsApp עם הטקסט "join ${WA_JOIN_CODE}" למספר ${WA_NUMBER_DISPLAY}`,
+      `• חיבור בלחיצה אחת: https://wa.me/${WA_NUMBER_DIGITS}?text=join%20${encodeURIComponent(WA_JOIN_CODE)}`,
+    ];
+  }
+  return [...head, `• שמור/י את המספר ${WA_NUMBER_DISPLAY} ושלח/י אליו הודעת WhatsApp לפי ההנחיות במדריך המצורף.`];
+}
+
 function inviteBody(): string {
   return [
     "שלום רב,",
@@ -27,6 +45,8 @@ function inviteBody(): string {
     `להלן הקישור ליישום: ${APP_LINK}`,
     `בכניסה יש להזין את המייל הארגוני וסיסמה ראשונית: ${INITIAL_PW}`,
     "הנך מתבקש/ת לקרוא בעיון את ההנחיות למשתמש (מצורף קובץ PDF).",
+    ...whatsappConnectLines(),
+    "",
     "לכל שאלה על היישום, אנא פנה/י למארק ישראל, PMO של המרכז למיפוי ישראל.",
   ].join("\n");
 }
