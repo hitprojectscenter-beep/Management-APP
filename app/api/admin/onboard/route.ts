@@ -24,7 +24,7 @@ const SUBJECT = "הזמנה להצטרף ליישום ניהול משימות PM
 // set WHATSAPP_SANDBOX_JOIN_CODE in env to produce a one-tap join link.
 const WA_NUMBER_DISPLAY = "+1 415 523 8886";
 const WA_NUMBER_DIGITS = "14155238886";
-const WA_JOIN_CODE = (process.env.WHATSAPP_SANDBOX_JOIN_CODE || "").trim();
+const WA_JOIN_CODE = (process.env.WHATSAPP_SANDBOX_JOIN_CODE || "elephant-bread").trim();
 
 function whatsappConnectLines(): string[] {
   const head = ["", "📱 חיבור וואטסאפ (חד-פעמי, לקבלת התראות גם בוואטסאפ):"];
