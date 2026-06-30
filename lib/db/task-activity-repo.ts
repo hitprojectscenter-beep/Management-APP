@@ -36,7 +36,9 @@ export type HistoryKind =
   // Auto-escalation: an overdue/stuck task was raised up the management chain:
   | "escalated"
   // A rejected/cancelled task was reopened (back into the workflow):
-  | "reopened";
+  | "reopened"
+  // A supervisor reassigned (delegated) the task to a different subordinate:
+  | "reassigned";
 
 /** Valid workflow statuses a task may hold. */
 export const WORKFLOW_STATUS_SET = new Set<string>([
@@ -128,6 +130,7 @@ async function log(
 export interface TaskActivity {
   status: string;
   plannedEnd: string;
+  assigneeId: string | null; // current responsible user (for reassignment UI)
   team: string[];
   completionMembers: string[]; // who must sign off
   memberRoles: Record<string, { type: string; detail?: string }>; // who does what
@@ -147,6 +150,7 @@ export async function getActivity(taskId: string): Promise<TaskActivity | null> 
   return {
     status: core.status,
     plannedEnd: core.plannedEnd,
+    assigneeId: core.assigneeId,
     team: (core.team ?? []).filter(Boolean),
     completionMembers: completionSet(core.team, core.assigneeId),
     memberRoles: core.memberRoles ?? {},
@@ -288,7 +292,7 @@ export async function updateMemberRoles(
 // ---- supervisor (ממונה) actions on a subordinate's task -------------------
 
 /** All user ids in `viewerId`'s reporting subtree (excludes the viewer). */
-async function reportingSubtree(viewerId: string): Promise<Set<string>> {
+export async function reportingSubtree(viewerId: string): Promise<Set<string>> {
   const all = await getDb().select({ id: users.id, managerId: users.managerId }).from(users);
   const childrenOf = new Map<string, string[]>();
   for (const u of all) if (u.managerId) { const a = childrenOf.get(u.managerId) ?? []; a.push(u.id); childrenOf.set(u.managerId, a); }
@@ -418,6 +422,33 @@ export async function reopenTask(
   await getDb().update(appTasks).set({ status: restore, updatedAt: new Date() }).where(eq(appTasks.id, taskId));
   const history = await log(taskId, actorId, "reopened", note, { fromStatus: core.status, toStatus: restore });
   return { status: restore, history };
+}
+
+/**
+ * Reassign (delegate) a task from its current assignee to a DIFFERENT user, with
+ * a mandatory reason. The new user becomes the responsible assignee (team[0])
+ * and a participant; the previous assignee is dropped from the active team. The
+ * caller (a supervisor of the current assignee, or an admin) and the target's
+ * eligibility are enforced in the API layer. Logged + notified.
+ */
+export async function reassignTask(
+  taskId: string,
+  actorId: string,
+  newAssigneeId: string,
+  note: string,
+): Promise<{ assigneeId: string; from: string | null; history: TaskHistoryRow }> {
+  const core = await getTaskCore(taskId);
+  if (!core) throw new Error("task_not_found");
+  const from = core.assigneeId;
+  if (from === newAssigneeId) throw new Error("same_assignee");
+  const team = (core.team ?? []).filter(Boolean);
+  const newTeam = [newAssigneeId, ...team.filter((id) => id !== from && id !== newAssigneeId)];
+  await getDb()
+    .update(appTasks)
+    .set({ assigneeId: newAssigneeId, team: newTeam, updatedAt: new Date() })
+    .where(eq(appTasks.id, taskId));
+  const history = await log(taskId, actorId, "reassigned", note, { meta: { from, to: newAssigneeId } });
+  return { assigneeId: newAssigneeId, from, history };
 }
 
 // ---- Auto-escalation (#4) ---------------------------------------------------

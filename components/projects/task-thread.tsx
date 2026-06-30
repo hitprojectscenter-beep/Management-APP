@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MessageSquare, Send, CheckCheck, Eye, Clock, Loader2, History,
   CircleDot, CheckCircle2, CalendarClock, ThumbsUp, ThumbsDown, X, Pencil,
-  ShieldAlert, MessageSquarePlus, Download, RotateCcw,
+  ShieldAlert, MessageSquarePlus, Download, RotateCcw, UserCog,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +35,7 @@ interface MemberRow {
 interface Activity {
   status: string;
   plannedEnd: string;
+  assigneeId: string | null;
   team: string[];
   completionMembers: string[];
   memberRoles: Record<string, { type: string; detail?: string }>;
@@ -60,7 +61,8 @@ type Prompt =
   | { type: "extension" }
   | { type: "decide"; requestId: string; approve: boolean; newDueDate: string }
   | { type: "supervisor"; action: "note" | "reject" | "cancel" | "extend" }
-  | { type: "reopen" };
+  | { type: "reopen" }
+  | { type: "reassign" };
 
 function userName(id: string): string {
   if (id === "system") return "מערכת";
@@ -80,6 +82,31 @@ function roleLabel(type: string, locale: string): string {
 }
 function reasonLabel(code: string, locale: string): string {
   return (SUPERVISOR_REASON_LABELS_ML[code] && txt(locale, SUPERVISOR_REASON_LABELS_ML[code])) as string || code;
+}
+/** Descendants of a user in the managerId tree (BFS down), from the seeded directory. */
+function descendantsOf(rootId: string): string[] {
+  const children = new Map<string, string[]>();
+  for (const u of mockUsers) {
+    if (u.managerId) {
+      const arr = children.get(u.managerId);
+      if (arr) arr.push(u.id);
+      else children.set(u.managerId, [u.id]);
+    }
+  }
+  const out: string[] = [];
+  const queue = [rootId];
+  const seen = new Set<string>([rootId]);
+  while (queue.length) {
+    const cur = queue.shift()!;
+    for (const ch of children.get(cur) ?? []) {
+      if (!seen.has(ch)) {
+        seen.add(ch);
+        out.push(ch);
+        queue.push(ch);
+      }
+    }
+  }
+  return out;
 }
 function todayISO(): string {
   const d = new Date();
@@ -108,6 +135,7 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
   const [note, setNote] = useState("");
   const [extDate, setExtDate] = useState("");
   const [reasonCode, setReasonCode] = useState("");
+  const [reassignTarget, setReassignTarget] = useState("");
   const [ackingDecision, setAckingDecision] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingRoles, setEditingRoles] = useState(false);
@@ -184,6 +212,12 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
   // A rejected/cancelled task can be reopened by the creator / supervisor / admin.
   const taskClosed = activity?.status === "rejected" || activity?.status === "cancelled";
   const canReopen = !!taskClosed && (isCreator || !!data?.isSupervisor || data?.meRole === "admin");
+  // Reassignment candidates for a supervisor: their subordinates (admins: everyone), minus the current assignee.
+  const reassignCandidates = (() => {
+    if (!me) return [] as string[];
+    const pool = data?.meRole === "admin" ? mockUsers.map((u) => u.id) : descendantsOf(me);
+    return pool.filter((uid) => uid !== activity?.assigneeId && uid !== me);
+  })();
 
   // ---- actions --------------------------------------------------------------
   const startEditRoles = () => {
@@ -278,6 +312,7 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
     setNote("");
     setExtDate((p.type === "extension" || (p.type === "supervisor" && p.action === "extend")) ? (activity?.plannedEnd || todayISO()) : "");
     setReasonCode(p.type === "supervisor" && (p.action === "reject" || p.action === "cancel") ? SUPERVISOR_REASON_KEYS[0] : "");
+    setReassignTarget(p.type === "reassign" ? (reassignCandidates[0] || "") : "");
   };
 
   const submitPrompt = async () => {
@@ -289,6 +324,10 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
     }
     if ((prompt.type === "extension" || (prompt.type === "supervisor" && prompt.action === "extend")) && !extDate) {
       toast.error(txt(locale, { he: "חובה לבחור תאריך יעד חדש", en: "Pick a new due date" }) as string);
+      return;
+    }
+    if (prompt.type === "reassign" && !reassignTarget) {
+      toast.error(txt(locale, { he: "יש לבחור משתמש יעד", en: "Pick a target user" }) as string);
       return;
     }
     setSubmitting(true);
@@ -318,6 +357,11 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
         res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/reopen`, {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ note: trimmed }),
+        });
+      } else if (prompt.type === "reassign") {
+        res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/reassign`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ newAssigneeId: reassignTarget, note: trimmed }),
         });
       } else {
         // supervisor (ממונה) action on a subordinate's task
@@ -350,6 +394,11 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
           request_not_found: { he: "הבקשה לא נמצאה", en: "Request not found" },
           not_supervisor: { he: "פעולה זו זמינה רק לממונה של מבצע המשימה", en: "Only the assignee's supervisor can do this" },
           bad_action: { he: "פעולה לא תקינה", en: "Invalid action" },
+          not_allowed: { he: "אין לך הרשאה לפעולה זו", en: "Not allowed" },
+          not_closed: { he: "ניתן לפתוח מחדש רק משימה שנדחתה/בוטלה", en: "Only a rejected/cancelled task can be reopened" },
+          target_not_subordinate: { he: "ניתן לשייך מחדש רק לכפוף שלך", en: "Target must be your subordinate" },
+          same_assignee: { he: "המשימה כבר משויכת למשתמש זה", en: "Already assigned to this user" },
+          target_required: { he: "יש לבחור משתמש יעד", en: "Pick a target user" },
         };
         toast.error(txt(locale, map[err?.error] || { he: "הפעולה נכשלה", en: "Action failed" }) as string);
       }
@@ -392,6 +441,8 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
         return `⚠️ ${txt(locale, { he: "הוסלם אוטומטית לדרג הניהולי", en: "Auto-escalated to management" })}`;
       case "reopened":
         return `${txt(locale, { he: "המשימה נפתחה מחדש", en: "Task reopened" })}${h.toStatus ? ` → ${statusLabel(h.toStatus, locale)}` : ""}`;
+      case "reassigned":
+        return `${txt(locale, { he: "המשימה הועברה", en: "Task reassigned" })}${m.from ? ` ${txt(locale, { he: "מ-", en: "from " })}${userName(String(m.from))}` : ""} → ${m.to ? userName(String(m.to)) : ""}`;
       default:
         return h.kind;
     }
@@ -669,6 +720,11 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                     <X className="size-4 me-1.5" />{txt(locale, { he: "בטל משימה", en: "Cancel task" })}
                   </Button>
                 </div>
+                {reassignCandidates.length > 0 && (
+                  <Button size="sm" variant="outline" className="w-full" onClick={() => openPrompt({ type: "reassign" })}>
+                    <UserCog className="size-4 me-1.5" />{txt(locale, { he: "שייך מחדש (האצלה לכפוף אחר)", en: "Reassign (delegate)" })}
+                  </Button>
+                )}
                 <p className="text-[11px] text-muted-foreground">
                   {txt(locale, { he: "כל פעולה דורשת סיבה, נרשמת בהיסטוריה, ונשלחת ליוצר, למבצע/צוות ולממונים מעליך עד הסמנכ\"ל. (אין אפשרות מחיקה.)", en: "Each action needs a reason, is logged, and notifies the creator, assignee/team and your managers up to the VP. (No delete.)" })}
                 </p>
@@ -851,6 +907,7 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                   : prompt.action === "cancel" ? txt(locale, { he: "ביטול המשימה (ממונה)", en: "Cancel task (supervisor)" })
                   : txt(locale, { he: "הוספת זמן ביצוע (ממונה)", en: "Add execution time (supervisor)" }))}
                 {prompt.type === "reopen" && txt(locale, { he: "פתיחת המשימה מחדש", en: "Reopen task" })}
+                {prompt.type === "reassign" && txt(locale, { he: "שיוך מחדש (האצלה)", en: "Reassign task" })}
               </h3>
               <button onClick={() => !submitting && setPrompt(null)} className="text-muted-foreground hover:text-foreground"><X className="size-4" /></button>
             </div>
@@ -865,6 +922,21 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                     style={{ fontSize: "16px" }}
                   />
+                </div>
+              )}
+              {prompt.type === "reassign" && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "העבר את המשימה ל *", en: "Reassign to *" })}</label>
+                  <select
+                    value={reassignTarget}
+                    onChange={(e) => setReassignTarget(e.target.value)}
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    style={{ fontSize: "16px" }}
+                  >
+                    {reassignCandidates.map((uid) => (
+                      <option key={uid} value={uid}>{userName(uid)}</option>
+                    ))}
+                  </select>
                 </div>
               )}
               {prompt.type === "supervisor" && (prompt.action === "reject" || prompt.action === "cancel") && (
