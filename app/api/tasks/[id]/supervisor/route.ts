@@ -46,11 +46,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const action = body?.action as SupervisorAction;
   const note = typeof body?.note === "string" ? body.note.trim() : "";
   const newDueDate = typeof body?.newDueDate === "string" ? body.newDueDate.trim() : "";
+  const reasonCode = typeof body?.reasonCode === "string" ? body.reasonCode : undefined;
   if (!ACTIONS.has(action)) return NextResponse.json({ error: "bad_action" }, { status: 400 });
   if (!note) return NextResponse.json({ error: "note_required" }, { status: 400 });
   if (action === "extend" && !ISO_DATE.test(newDueDate)) return NextResponse.json({ error: "bad_date" }, { status: 400 });
 
-  const result = await supervisorAction(id, viewer.id, action, note, newDueDate);
+  const result = await supervisorAction(id, viewer.id, action, note, newDueDate, reasonCode);
 
   // Recipients: task people + the supervisor's chain up to the VP, minus the actor.
   const chain = await supervisorChainUpToVP(viewer.id);

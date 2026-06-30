@@ -28,7 +28,9 @@ export type HistoryKind =
   | "supervisor_note"
   | "supervisor_reject"
   | "supervisor_cancel"
-  | "supervisor_extend";
+  | "supervisor_extend"
+  // The assignee acknowledged a supervisor decision (read-receipt):
+  | "decision_acknowledged";
 
 /** Valid workflow statuses a task may hold. */
 export const WORKFLOW_STATUS_SET = new Set<string>([
@@ -332,24 +334,45 @@ export async function supervisorAction(
   action: SupervisorAction,
   note: string,
   newDueDate?: string,
+  reasonCode?: string,
 ): Promise<{ status?: string; plannedEnd?: string; history: TaskHistoryRow }> {
   const core = await getTaskCore(taskId);
   if (!core) throw new Error("task_not_found");
   const db = getDb();
+  const rc = reasonCode ? { reasonCode } : {};
   if (action === "reject" || action === "cancel") {
     const to = action === "reject" ? "rejected" : "cancelled";
     await db.update(appTasks).set({ status: to, updatedAt: new Date() }).where(eq(appTasks.id, taskId));
     const history = await log(taskId, actorId, action === "reject" ? "supervisor_reject" : "supervisor_cancel", note, {
-      fromStatus: core.status, toStatus: to,
+      fromStatus: core.status, toStatus: to, meta: rc,
     });
     return { status: to, history };
   }
   if (action === "extend") {
     const nd = String(newDueDate || "");
     await db.update(appTasks).set({ plannedEnd: nd, updatedAt: new Date() }).where(eq(appTasks.id, taskId));
-    const history = await log(taskId, actorId, "supervisor_extend", note, { meta: { newDueDate: nd, prevDueDate: core.plannedEnd } });
+    const history = await log(taskId, actorId, "supervisor_extend", note, { meta: { newDueDate: nd, prevDueDate: core.plannedEnd, ...rc } });
     return { plannedEnd: nd, history };
   }
-  const history = await log(taskId, actorId, "supervisor_note", note, {});
+  const history = await log(taskId, actorId, "supervisor_note", note, { meta: rc });
   return { history };
+}
+
+/** The assignee acknowledges a supervisor decision (read-receipt). Returns the
+ *  decision's original actor + kind so the API can notify them back. */
+export async function acknowledgeDecision(
+  taskId: string,
+  actorId: string,
+  historyId: string,
+): Promise<{ history: TaskHistoryRow; refActorId: string | null; refKind: string | null }> {
+  const rows = await getDb()
+    .select()
+    .from(taskHistory)
+    .where(and(eq(taskHistory.id, historyId), eq(taskHistory.taskId, taskId)))
+    .limit(1);
+  const ref = rows[0] ?? null;
+  const history = await log(taskId, actorId, "decision_acknowledged", "אישור קבלת ההחלטה", {
+    meta: { refId: historyId, refKind: ref?.kind ?? null },
+  });
+  return { history, refActorId: ref?.actorId ?? null, refKind: ref?.kind ?? null };
 }

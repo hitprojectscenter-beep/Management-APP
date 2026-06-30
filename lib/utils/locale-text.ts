@@ -68,6 +68,18 @@ export const MEMBER_ROLE_LABELS_ML: Record<string, LocaleTexts> = {
 /** Role keys in display order (for the add-task dropdown). */
 export const MEMBER_ROLE_KEYS = ["execute", "provide_info", "meeting", "report", "review", "coordinate", "consult", "other"];
 
+/** Predefined reasons (taxonomy) for a supervisor reject/cancel — plus free text. */
+export const SUPERVISOR_REASON_LABELS_ML: Record<string, LocaleTexts> = {
+  priority_change:     { he: "שינוי סדרי עדיפויות", en: "Priorities changed",    ru: "Изменение приоритетов", fr: "Priorités modifiées",  es: "Prioridades cambiaron" },
+  no_resources:        { he: "חוסר משאבים",         en: "Lack of resources",     ru: "Нехватка ресурсов",     fr: "Manque de ressources", es: "Falta de recursos" },
+  duplicate:           { he: "כפילות / קיים כבר",    en: "Duplicate",             ru: "Дубликат",              fr: "Doublon",              es: "Duplicado" },
+  not_relevant:        { he: "לא רלוונטי עוד",       en: "No longer relevant",    ru: "Больше не актуально",   fr: "Plus pertinent",       es: "Ya no es relevante" },
+  external_dependency: { he: "תלות חיצונית חוסמת",  en: "Blocked by dependency", ru: "Внешняя зависимость",   fr: "Dépendance externe",   es: "Dependencia externa" },
+  defined_wrong:       { he: "הוגדר שגוי",           en: "Misdefined",            ru: "Неверно определена",    fr: "Mal définie",          es: "Mal definida" },
+  other:               { he: "אחר",                 en: "Other",                 ru: "Другое",                fr: "Autre",                es: "Otro" },
+};
+export const SUPERVISOR_REASON_KEYS = ["priority_change", "no_resources", "duplicate", "not_relevant", "external_dependency", "defined_wrong", "other"];
+
 /** Priority labels */
 export const PRIORITY_LABELS_ML: Record<string, LocaleTexts> = {
   low:      { he: "נמוכה",   en: "Low",      ru: "Низкий",      fr: "Basse",     es: "Baja"     },

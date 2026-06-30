@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MessageSquare, Send, CheckCheck, Eye, Clock, Loader2, History,
   CircleDot, CheckCircle2, CalendarClock, ThumbsUp, ThumbsDown, X, Pencil,
-  ShieldAlert, MessageSquarePlus,
+  ShieldAlert, MessageSquarePlus, Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatDateTime, formatDateDDMMYYYY } from "@/lib/utils";
-import { txt, STATUS_LABELS_ML, MEMBER_ROLE_LABELS_ML, MEMBER_ROLE_KEYS } from "@/lib/utils/locale-text";
+import { txt, STATUS_LABELS_ML, MEMBER_ROLE_LABELS_ML, MEMBER_ROLE_KEYS, SUPERVISOR_REASON_LABELS_ML, SUPERVISOR_REASON_KEYS } from "@/lib/utils/locale-text";
 import { STATUS_COLORS, WORKFLOW_STATUSES, type TaskStatus } from "@/lib/db/types";
 import { mockUsers } from "@/lib/db/mock-data";
 
@@ -76,10 +76,15 @@ function statusColor(s: string): string {
 function roleLabel(type: string, locale: string): string {
   return (MEMBER_ROLE_LABELS_ML[type] && txt(locale, MEMBER_ROLE_LABELS_ML[type])) as string || type;
 }
+function reasonLabel(code: string, locale: string): string {
+  return (SUPERVISOR_REASON_LABELS_ML[code] && txt(locale, SUPERVISOR_REASON_LABELS_ML[code])) as string || code;
+}
 function todayISO(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+/** UTF-8 byte-order mark — prefix to a CSV so Excel reads Hebrew correctly. */
+const BOM = String.fromCharCode(0xfeff);
 
 /**
  * Per-task workflow + internal chat. Two cards:
@@ -100,6 +105,8 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [note, setNote] = useState("");
   const [extDate, setExtDate] = useState("");
+  const [reasonCode, setReasonCode] = useState("");
+  const [ackingDecision, setAckingDecision] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingRoles, setEditingRoles] = useState(false);
   const [rolesDraft, setRolesDraft] = useState<Record<string, { type: string; detail?: string }>>({});
@@ -153,6 +160,17 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
   const pendingRequests = (activity?.history || []).filter(
     (h) => h.kind === "extension_request" && !decidedReqIds.has(h.id),
   );
+
+  // Pending supervisor DECISION (reject/cancel) the viewer hasn't acknowledged yet.
+  const decisionEntries = (activity?.history || []).filter(
+    (h) => h.kind === "supervisor_reject" || h.kind === "supervisor_cancel",
+  );
+  const latestDecision = decisionEntries.length ? decisionEntries[decisionEntries.length - 1] : null;
+  const ackedByMe = !!latestDecision && (activity?.history || []).some(
+    (h) => h.kind === "decision_acknowledged" && h.actorId === me &&
+      String((h.meta as Record<string, unknown> | null)?.refId ?? "") === latestDecision.id,
+  );
+  const showDecisionAck = !!latestDecision && !ackedByMe && !!me && isParticipant && latestDecision.actorId !== me;
 
   const doneCount = activity
     ? activity.completionMembers.filter((id) => activity.members.find((m) => m.userId === id)?.done).length
@@ -231,10 +249,30 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
     }
   };
 
+  // Acknowledge a supervisor DECISION (read-receipt) — notifies the supervisor back.
+  const acknowledgeDecisionNow = async (historyId: string) => {
+    setAckingDecision(true);
+    try {
+      const res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/acknowledge`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ historyId }),
+      });
+      if (res.ok) {
+        toast.success(txt(locale, { he: "אישרת שקראת את החלטת הממונה", en: "Acknowledged" }) as string);
+        await load();
+      } else {
+        toast.error(txt(locale, { he: "האישור נכשל", en: "Failed to acknowledge" }) as string);
+      }
+    } finally {
+      setAckingDecision(false);
+    }
+  };
+
   const openPrompt = (p: Prompt) => {
     setPrompt(p);
     setNote("");
     setExtDate((p.type === "extension" || (p.type === "supervisor" && p.action === "extend")) ? (activity?.plannedEnd || todayISO()) : "");
+    setReasonCode(p.type === "supervisor" && (p.action === "reject" || p.action === "cancel") ? SUPERVISOR_REASON_KEYS[0] : "");
   };
 
   const submitPrompt = async () => {
@@ -275,7 +313,12 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
         // supervisor (ממונה) action on a subordinate's task
         res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/supervisor`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: prompt.action, note: trimmed, ...(prompt.action === "extend" ? { newDueDate: extDate } : {}) }),
+          body: JSON.stringify({
+            action: prompt.action,
+            note: trimmed,
+            ...(prompt.action === "extend" ? { newDueDate: extDate } : {}),
+            ...((prompt.action === "reject" || prompt.action === "cancel") && reasonCode ? { reasonCode } : {}),
+          }),
         });
       }
       if (res.ok) {
@@ -328,14 +371,48 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
       case "supervisor_note":
         return txt(locale, { he: "הערת ממונה", en: "Supervisor note" }) as string;
       case "supervisor_reject":
-        return txt(locale, { he: "המשימה נדחתה ע\"י ממונה", en: "Rejected by supervisor" }) as string;
+        return `${txt(locale, { he: "המשימה נדחתה ע\"י ממונה", en: "Rejected by supervisor" })}${m.reasonCode ? ` — ${reasonLabel(String(m.reasonCode), locale)}` : ""}`;
       case "supervisor_cancel":
-        return txt(locale, { he: "המשימה בוטלה ע\"י ממונה", en: "Cancelled by supervisor" }) as string;
+        return `${txt(locale, { he: "המשימה בוטלה ע\"י ממונה", en: "Cancelled by supervisor" })}${m.reasonCode ? ` — ${reasonLabel(String(m.reasonCode), locale)}` : ""}`;
       case "supervisor_extend":
         return `${txt(locale, { he: "ממונה הוסיף/ה זמן ביצוע — יעד חדש", en: "Supervisor added time — new due" })} ${formatDateDDMMYYYY(String(m.newDueDate || ""))}`;
+      case "decision_acknowledged":
+        return txt(locale, { he: "אישר/ה את קבלת החלטת הממונה", en: "Acknowledged the supervisor's decision" }) as string;
       default:
         return h.kind;
     }
+  };
+
+  // Export the full task history (timeline) to a UTF-8 CSV (BOM → Excel reads Hebrew).
+  const exportHistoryCsv = () => {
+    if (!activity) return;
+    const header = [
+      txt(locale, { he: "תאריך ושעה", en: "Date & time" }) as string,
+      txt(locale, { he: "מבצע", en: "Actor" }) as string,
+      txt(locale, { he: "פעולה", en: "Action" }) as string,
+      txt(locale, { he: "מסטטוס", en: "From" }) as string,
+      txt(locale, { he: "לסטטוס", en: "To" }) as string,
+      txt(locale, { he: "סיבה / הסבר", en: "Reason / note" }) as string,
+    ];
+    const rows = activity.history.map((h) => [
+      formatDateTime(h.createdAt, locale),
+      userName(h.actorId),
+      historyDesc(h),
+      h.fromStatus ? statusLabel(h.fromStatus, locale) : "",
+      h.toStatus ? statusLabel(h.toStatus, locale) : "",
+      h.note && h.note !== "—" ? h.note : "",
+    ]);
+    const esc = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = BOM + [header, ...rows].map((r) => r.map(esc).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `task-${taskId}-history.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -350,6 +427,26 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
+            {/* Pending supervisor-decision acknowledgment (read-receipt) */}
+            {showDecisionAck && latestDecision && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-2">
+                <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-medium text-sm">
+                  <ShieldAlert className="size-4" />
+                  {latestDecision.kind === "supervisor_reject"
+                    ? txt(locale, { he: "הממונה דחה את המשימה", en: "The supervisor rejected this task" })
+                    : txt(locale, { he: "הממונה ביטל את המשימה", en: "The supervisor cancelled this task" })}
+                </div>
+                {latestDecision.note && latestDecision.note !== "—" && (
+                  <div className="text-[13px] text-muted-foreground whitespace-pre-wrap">“{latestDecision.note}”</div>
+                )}
+                <Button size="sm" onClick={() => acknowledgeDecisionNow(latestDecision.id)} disabled={ackingDecision}>
+                  {ackingDecision && <Loader2 className="size-3.5 animate-spin me-1" />}
+                  <CheckCheck className="size-4 me-1.5" />
+                  {txt(locale, { he: "אשר שקראתי את החלטת הממונה", en: "I've read the supervisor's decision" })}
+                </Button>
+              </div>
+            )}
+
             {/* Current status + changer */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
@@ -556,9 +653,15 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
             {/* History timeline */}
             {activity.history.length > 0 && (
               <div className="space-y-2 pt-3 border-t">
-                <div className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                  <History className="size-3.5" />
-                  {txt(locale, { he: "היסטוריית המשימה", en: "Task history" })}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                    <History className="size-3.5" />
+                    {txt(locale, { he: "היסטוריית המשימה", en: "Task history" })}
+                  </div>
+                  <button type="button" onClick={exportHistoryCsv} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                    <Download className="size-3" />
+                    {txt(locale, { he: "ייצוא (CSV)", en: "Export (CSV)" })}
+                  </button>
                 </div>
                 <ol className="space-y-2.5 max-h-72 overflow-y-auto pe-1">
                   {[...activity.history].reverse().map((h) => (
@@ -736,6 +839,21 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                     className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                     style={{ fontSize: "16px" }}
                   />
+                </div>
+              )}
+              {prompt.type === "supervisor" && (prompt.action === "reject" || prompt.action === "cancel") && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "סיבה (קטגוריה)", en: "Reason (category)" })}</label>
+                  <select
+                    value={reasonCode}
+                    onChange={(e) => setReasonCode(e.target.value)}
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    style={{ fontSize: "16px" }}
+                  >
+                    {SUPERVISOR_REASON_KEYS.map((k) => (
+                      <option key={k} value={k}>{txt(locale, SUPERVISOR_REASON_LABELS_ML[k]) as string}</option>
+                    ))}
+                  </select>
                 </div>
               )}
               <div className="space-y-1">
