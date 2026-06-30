@@ -266,10 +266,15 @@ export async function PUT(req: Request) {
       return NextResponse.json({ success: true, taskId: newTask.id });
     }
 
-    return NextResponse.json(
-      { error: `Action ${intent.action} not yet implemented for execution` },
-      { status: 501 }
-    );
+    // Actions beyond create_task (assign / status change / reassign) aren't
+    // executed by the assistant yet — return a friendly guidance message (200)
+    // instead of a hard 501 the user would see as an error.
+    return NextResponse.json({
+      success: false,
+      needsManual: true,
+      message:
+        "פעולה זו מתבצעת כרגע ישירות במסך המשימה: פתח/י את המשימה מרשימת המשימות ובצע/י שם (שינוי סטטוס, שיוך מחדש וכו'). העוזר תומך כעת בפתיחת משימה חדשה.",
+    });
   } catch (err) {
     console.error("[assistant PUT] Fatal error:", err);
     return NextResponse.json(

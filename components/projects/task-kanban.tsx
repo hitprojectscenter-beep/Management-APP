@@ -19,12 +19,16 @@ import { AlertTriangle, MessageSquare, Paperclip, Calendar } from "lucide-react"
 import { txt, PRIORITY_LABELS_ML } from "@/lib/utils/locale-text";
 import type { TaskStatus } from "@/lib/db/types";
 
-const COLUMNS: { id: TaskStatus; he: string; en: string; color: string }[] = [
-  { id: "not_started", he: "לא התחילו", en: "Not Started", color: "bg-slate-100 dark:bg-slate-900" },
-  { id: "in_progress", he: "בביצוע", en: "In Progress", color: "bg-blue-100 dark:bg-blue-950/30" },
-  { id: "review", he: "בבדיקה", en: "Review", color: "bg-amber-100 dark:bg-amber-950/30" },
-  { id: "done", he: "הושלמו", en: "Done", color: "bg-emerald-100 dark:bg-emerald-950/30" },
-  { id: "blocked", he: "חסומות", en: "Blocked", color: "bg-red-100 dark:bg-red-950/30" },
+// Each column maps a PRIMARY status (assigned on drop) and the set of statuses
+// it collects — so every one of the 12 task statuses lands in a column and no
+// task silently disappears from the board.
+const COLUMNS: { id: TaskStatus; statuses: TaskStatus[]; he: string; en: string; color: string }[] = [
+  { id: "not_started", statuses: ["not_started", "new"], he: "לא התחילו / חדשות", en: "Not Started / New", color: "bg-slate-100 dark:bg-slate-900" },
+  { id: "in_progress", statuses: ["in_progress"], he: "בביצוע", en: "In Progress", color: "bg-blue-100 dark:bg-blue-950/30" },
+  { id: "waiting", statuses: ["waiting", "review"], he: "ממתינה / בבדיקה", en: "Waiting / Review", color: "bg-amber-100 dark:bg-amber-950/30" },
+  { id: "frozen", statuses: ["frozen", "blocked"], he: "הוקפאה / חסומות", en: "Frozen / Blocked", color: "bg-red-100 dark:bg-red-950/30" },
+  { id: "done", statuses: ["done", "completed", "handled"], he: "הושלמו", en: "Done", color: "bg-emerald-100 dark:bg-emerald-950/30" },
+  { id: "rejected", statuses: ["rejected", "cancelled"], he: "נדחו / בוטלו", en: "Rejected / Cancelled", color: "bg-slate-200 dark:bg-slate-800" },
 ];
 
 export function TaskKanban({
@@ -69,7 +73,7 @@ export function TaskKanban({
           <KanbanColumn
             key={col.id}
             column={col}
-            tasks={tasks.filter((t) => t.status === col.id)}
+            tasks={tasks.filter((t) => (col.statuses as readonly string[]).includes(t.status))}
             users={users}
             locale={locale}
           />

@@ -98,10 +98,10 @@ function seedActivities(projectId: string): ProjectActivity[] {
   const tasks = getTasksByProject(projectId);
   return tasks.map((task) => {
     let status: ActivityStatus = "new";
-    if (task.status === "done") status = "done";
-    else if (task.status === "in_progress" || task.status === "review") status = "in_progress";
-    else if (task.status === "blocked") status = "frozen";
-    else if (task.status === "not_started" && new Date(task.plannedEnd) < new Date()) status = "late";
+    if (["done", "completed", "handled"].includes(task.status)) status = "done";
+    else if (["in_progress", "review"].includes(task.status)) status = "in_progress";
+    else if (["blocked", "frozen", "waiting", "rejected", "cancelled"].includes(task.status)) status = "frozen";
+    else if ((task.status === "not_started" || task.status === "new") && new Date(task.plannedEnd) < new Date()) status = "late";
 
     let priority: ActivityPriority = "medium";
     if (task.priority === "low") priority = "low";
