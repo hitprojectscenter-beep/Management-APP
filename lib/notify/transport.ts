@@ -25,6 +25,13 @@ export interface EmailAttachment {
   contentType?: string;
 }
 
+/**
+ * Ops/contact address — ALL correspondence with users routes here: it's the
+ * Reply-To on every outgoing email (so user replies land here) and the
+ * recipient of the in-app "צור קשר" (Contact us) form. Override via env.
+ */
+export const OPS_CONTACT_EMAIL = process.env.MAIL_OPS_CONTACT || "pmoplusops@gmail.com";
+
 /** Gmail SMTP via Nodemailer + App Password. Null when not configured. */
 async function sendViaGmail(toEmail: string, subject: string, body: string, attachments?: EmailAttachment[]): Promise<{ id: string } | null> {
   const user = process.env.GMAIL_USER;
@@ -39,6 +46,7 @@ async function sendViaGmail(toEmail: string, subject: string, body: string, atta
   const info = await transporter.sendMail({
     from: `"PMO++ — מפ\"י" <${user}>`,
     to: toEmail,
+    replyTo: OPS_CONTACT_EMAIL,
     subject,
     text: body,
     attachments: attachments?.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType })),
@@ -57,6 +65,7 @@ async function sendViaResend(toEmail: string, subject: string, body: string, att
     body: JSON.stringify({
       from,
       to: [toEmail],
+      reply_to: OPS_CONTACT_EMAIL,
       subject,
       text: body,
       attachments: attachments?.map((a) => ({ filename: a.filename, content: a.content.toString("base64") })),

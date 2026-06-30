@@ -5,6 +5,7 @@ import { WelcomeTour } from "@/components/help/welcome-tour";
 import { HelpBot } from "@/components/help/help-bot";
 import { HelpFloatingButton } from "@/components/help/help-trigger";
 import { PersonalAssistant } from "@/components/assistant/personal-assistant";
+import { ContactButton } from "@/components/contact/contact-button";
 import { RoleProvider } from "@/lib/auth/role-context";
 import { AuthGate } from "@/components/auth/auth-gate";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,6 +34,7 @@ export default async function DashboardLayout({
       <HelpBot />
       <HelpFloatingButton />
       <PersonalAssistant />
+      <ContactButton />
     </HelpProvider>
     </RoleProvider>
     </AuthGate>
