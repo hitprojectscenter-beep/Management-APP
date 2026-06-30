@@ -13,6 +13,7 @@ import { Link } from "@/lib/i18n/routing";
 import { txt, STATUS_LABELS_ML, PRIORITY_LABELS_ML, TAB_LABELS_ML } from "@/lib/utils/locale-text";
 import { STATUS_COLORS, type TaskStatus } from "@/lib/db/types";
 import { useRole } from "@/lib/auth/role-context";
+import { SubordinatesRollup } from "@/components/landing/subordinates-rollup";
 
 type TabKey = "all" | "in_progress" | "not_started" | "blocked" | "review" | "overdue" | "by_project" | "subordinates";
 
@@ -145,6 +146,11 @@ export function MyTasksTabs({
         {/* Add Task moved exclusively to /tasks page per user spec.
             Import from document moved to /intake page under Management View. */}
       </div>
+
+      {/* Manager rollup — shown only on the "my team's tasks" tab */}
+      {activeTab === "subordinates" && subordinateTasks && (
+        <SubordinatesRollup tasks={subordinateTasks} users={users} locale={locale} />
+      )}
 
       {/* Tasks list */}
       {activeTab === "by_project" ? (
