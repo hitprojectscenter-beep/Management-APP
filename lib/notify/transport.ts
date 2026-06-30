@@ -18,8 +18,15 @@ export interface DeliveryResult {
   error?: string;
 }
 
+/** An email attachment (e.g. the onboarding guide PDF). */
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+}
+
 /** Gmail SMTP via Nodemailer + App Password. Null when not configured. */
-async function sendViaGmail(toEmail: string, subject: string, body: string): Promise<{ id: string } | null> {
+async function sendViaGmail(toEmail: string, subject: string, body: string, attachments?: EmailAttachment[]): Promise<{ id: string } | null> {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
   if (!user || !pass) return null;
@@ -34,19 +41,26 @@ async function sendViaGmail(toEmail: string, subject: string, body: string): Pro
     to: toEmail,
     subject,
     text: body,
+    attachments: attachments?.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType })),
   });
   return { id: info.messageId };
 }
 
 /** Resend fallback. Null when not configured. */
-async function sendViaResend(toEmail: string, subject: string, body: string): Promise<{ id: string } | null> {
+async function sendViaResend(toEmail: string, subject: string, body: string, attachments?: EmailAttachment[]): Promise<{ id: string } | null> {
   const key = process.env.RESEND_API_KEY;
   if (!key) return null;
   const from = process.env.RESEND_FROM_ADDRESS || "PMO++ <onboarding@resend.dev>";
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: [toEmail], subject, text: body }),
+    body: JSON.stringify({
+      from,
+      to: [toEmail],
+      subject,
+      text: body,
+      attachments: attachments?.map((a) => ({ filename: a.filename, content: a.content.toString("base64") })),
+    }),
   });
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
@@ -56,11 +70,11 @@ async function sendViaResend(toEmail: string, subject: string, body: string): Pr
 }
 
 /** Try Gmail, then Resend. Honest about whether anything actually sent. */
-export async function sendEmail(toEmail: string, subject: string, body: string): Promise<DeliveryResult> {
+export async function sendEmail(toEmail: string, subject: string, body: string, attachments?: EmailAttachment[]): Promise<DeliveryResult> {
   try {
-    const gmail = await sendViaGmail(toEmail, subject, body);
+    const gmail = await sendViaGmail(toEmail, subject, body, attachments);
     if (gmail) return { status: "sent", provider: "gmail", messageId: gmail.id };
-    const resend = await sendViaResend(toEmail, subject, body);
+    const resend = await sendViaResend(toEmail, subject, body, attachments);
     if (resend) return { status: "sent", provider: "resend", messageId: resend.id };
     return { status: "no_transport" };
   } catch (err) {
