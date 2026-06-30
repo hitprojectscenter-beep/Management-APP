@@ -588,6 +588,7 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                         key={s}
                         type="button"
                         onClick={() => s !== activity.status && openPrompt({ type: "status", status: s })}
+                        title={txt(locale, { he: `העבר/י את המשימה לסטטוס "${statusLabel(s, locale)}". ייפתח חלון שבו חובה למלא הסבר לשינוי, והוא יירשם בהיסטוריה.`, en: `Move the task to "${statusLabel(s, locale)}" status. A window opens where an explanation for the change is required; it is logged in the history.` }) as string}
                         className={cn(
                           "rounded-full border px-2.5 py-1 text-xs transition-colors",
                           s === activity.status ? "ring-2 ring-primary bg-primary/5 font-semibold cursor-default" : "hover:bg-muted",
@@ -693,6 +694,7 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                         size="sm"
                         variant={myDone ? "outline" : "default"}
                         className="w-full mt-1"
+                        title={txt(locale, { he: "סימון חלקך במשימה כ'בוצע' (או ביטול הסימון). יידרש הסבר קצר; כשכל חברי הצוות מסמנים 'בוצע' המשימה נסגרת אוטומטית.", en: "Mark your part of the task as done (or undo it). A short explanation is required; once all members mark done, the task auto-completes." }) as string}
                         onClick={() => openPrompt({ type: "member", done: !myDone })}
                       >
                         <CheckCircle2 className="size-4 me-1.5" />
@@ -716,7 +718,7 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                 <span className="text-sm font-medium">{activity.plannedEnd ? formatDateDDMMYYYY(activity.plannedEnd) : "—"}</span>
               </div>
               {isParticipant && !isCreator && (
-                <Button size="sm" variant="outline" className="w-full" onClick={() => openPrompt({ type: "extension" })}>
+                <Button size="sm" variant="outline" className="w-full" title={txt(locale, { he: "בקשה לדחות/לשנות את תאריך היעד של המשימה. תבחר/י תאריך חדש ותנמק/י; הבקשה נשלחת ליוצר המשימה לאישור או דחייה.", en: "Request to push or change the task's due date. Pick a new date and give a reason; the request is sent to the task creator to approve or reject." }) as string} onClick={() => openPrompt({ type: "extension" })}>
                   <CalendarClock className="size-4 me-1.5" />
                   {txt(locale, { he: "בקש עדכון תאריך יעד", en: "Request due-date change" })}
                 </Button>
@@ -754,16 +756,16 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                   {txt(locale, { he: "פעולות ממונה (על משימת כפוף)", en: "Supervisor actions" })}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button size="sm" variant="outline" onClick={() => openPrompt({ type: "supervisor", action: "note" })}>
+                  <Button size="sm" variant="outline" title={txt(locale, { he: "הוספת הערת ממונה למשימת הכפוף. ההערה נרשמת בהיסטוריה ונשלחת ליוצר, למבצע/צוות ולשרשרת הניהול.", en: "Add a supervisor note to your subordinate's task. The note is logged and sent to the creator, assignee/team and the management chain." }) as string} onClick={() => openPrompt({ type: "supervisor", action: "note" })}>
                     <MessageSquarePlus className="size-4 me-1.5" />{txt(locale, { he: "הוסף הערה", en: "Add note" })}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => openPrompt({ type: "supervisor", action: "extend" })}>
+                  <Button size="sm" variant="outline" title={txt(locale, { he: "הארכת תאריך היעד של המשימה כממונה. תבחר/י תאריך יעד חדש ותנמק/י; השינוי חל מיד ונרשם בהיסטוריה.", en: "Extend the task's due date as a supervisor. Pick a new due date and give a reason; the change applies immediately and is logged." }) as string} onClick={() => openPrompt({ type: "supervisor", action: "extend" })}>
                     <CalendarClock className="size-4 me-1.5" />{txt(locale, { he: "הוסף זמן ביצוע", en: "Add time" })}
                   </Button>
-                  <Button size="sm" variant="outline" className="text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-300" onClick={() => openPrompt({ type: "supervisor", action: "reject" })}>
+                  <Button size="sm" variant="outline" className="text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-300" title={txt(locale, { he: "דחיית המשימה כממונה — סימונה כלא-מאושרת. יש לבחור סיבה ולנמק; המבצע יתבקש לאשר שקרא את ההחלטה.", en: "Reject the task as a supervisor — mark it as not approved. Pick a reason and explain; the assignee will be asked to acknowledge the decision." }) as string} onClick={() => openPrompt({ type: "supervisor", action: "reject" })}>
                     <ThumbsDown className="size-4 me-1.5" />{txt(locale, { he: "דחה משימה", en: "Reject" })}
                   </Button>
-                  <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50 dark:text-red-300" onClick={() => openPrompt({ type: "supervisor", action: "cancel" })}>
+                  <Button size="sm" variant="outline" className="text-red-700 border-red-300 hover:bg-red-50 dark:text-red-300" title={txt(locale, { he: "ביטול המשימה כממונה — סגירתה ללא ביצוע. יש לבחור סיבה ולנמק; הפעולה נרשמת בהיסטוריה ואינה ניתנת למחיקה.", en: "Cancel the task as a supervisor — close it without completion. Pick a reason and explain; the action is logged and cannot be deleted." }) as string} onClick={() => openPrompt({ type: "supervisor", action: "cancel" })}>
                     <X className="size-4 me-1.5" />{txt(locale, { he: "בטל משימה", en: "Cancel task" })}
                   </Button>
                 </div>

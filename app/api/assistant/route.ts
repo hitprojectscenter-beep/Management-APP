@@ -22,6 +22,9 @@ import {
   getUserById,
   CURRENT_USER_ID,
 } from "@/lib/db/mock-data";
+import { requireUser } from "@/lib/auth/require-user";
+import { upsertAppTask } from "@/lib/db/app-tasks-repo";
+import { isDatabaseConfigured } from "@/lib/db/client";
 
 export const runtime = "nodejs";
 
@@ -215,7 +218,11 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const { intent } = (await req.json()) as { intent: ParsedIntent };
-    const currentUser = getUserById(CURRENT_USER_ID);
+    // Prefer the REAL signed-in user — so an assistant-created task persists to
+    // the DB and is owned correctly. Fall back to the demo user only when there
+    // is no DB session (mock mode).
+    const sessionUser = await requireUser();
+    const currentUser = sessionUser ?? getUserById(CURRENT_USER_ID);
     if (!currentUser) {
       return NextResponse.json({ error: "No current user" }, { status: 401 });
     }
@@ -226,7 +233,6 @@ export async function PUT(req: Request) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
       }
 
-      // In mock mode - add to in-memory array
       const newTask = {
         id: `task-new-${Date.now()}`,
         wbsNodeId: e.projectId,
@@ -246,12 +252,18 @@ export async function PUT(req: Request) {
         tags: e.tags || [],
         dependencies: [],
       };
-      mockTasks.push(newTask);
+      // Persist to PostgreSQL (per-user, cross-device) when a DB session exists;
+      // otherwise fall back to the in-memory demo array (mock mode).
+      if (isDatabaseConfigured() && sessionUser) {
+        await upsertAppTask(newTask, sessionUser.id);
+      } else {
+        mockTasks.push(newTask);
+      }
 
       // Audit log
       logAssistantAction({
         actorUserId: currentUser.id,
-        actorUserName: currentUser.name,
+        actorUserName: currentUser.name ?? "",
         action: "create_task",
         entityType: "Task",
         entityId: newTask.id,

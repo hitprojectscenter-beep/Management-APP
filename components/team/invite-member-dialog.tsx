@@ -104,6 +104,8 @@ function SelectWithOther({
   otherPlaceholder,
   locale,
   error,
+  title,
+  otherTitle,
 }: {
   label: string;
   options: { value: string; he: string; en: string }[];
@@ -115,6 +117,8 @@ function SelectWithOther({
   otherPlaceholder: string;
   locale: string;
   error?: string;
+  title?: string;
+  otherTitle?: string;
 }) {
   const isOther = value === "other";
   const lang = locale === "en" ? "en" : "he";
@@ -129,6 +133,7 @@ function SelectWithOther({
             onChange(e.target.value);
             if (e.target.value !== "other") onOtherChange("");
           }}
+          title={title}
           className={cn(
             "w-full min-h-[44px] px-3 pe-8 rounded-md border bg-background text-sm appearance-none",
             "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1",
@@ -150,6 +155,7 @@ function SelectWithOther({
           value={otherValue}
           onChange={(e) => onOtherChange(e.target.value)}
           placeholder={otherPlaceholder}
+          title={otherTitle}
           className="min-h-[44px] mt-1"
           autoFocus
         />
@@ -348,6 +354,7 @@ export function InviteMemberDialog({
               value={form.fullName}
               onChange={(e) => setForm({ ...form, fullName: e.target.value })}
               placeholder={txt(locale, { he: "ישראל ישראלי", en: "John Doe" })}
+              title={txt(locale, { he: "השם המלא של חבר הצוות החדש. הזן שם פרטי ושם משפחה. השם יוצג ברשימת הצוות ובכל מקום שבו מופיע המשתמש. שדה חובה.", en: "The full name of the new team member. Enter first and last name. Shown in the team list and everywhere the user appears. Required field." }) as string}
               className={cn("min-h-[44px]", errors.fullName && "border-red-500")}
             />
             {errors.fullName && <p className="text-xs text-red-500">{errors.fullName}</p>}
@@ -363,6 +370,8 @@ export function InviteMemberDialog({
             onOtherChange={(v) => setForm({ ...form, roleOther: v })}
             placeholder={txt(locale, { he: "— בחר תפקיד —", en: "— Select role —" })}
             otherPlaceholder={txt(locale, { he: "הקלד תפקיד מותאם...", en: "Type custom role..." })}
+            title={txt(locale, { he: "התפקיד המקצועי של חבר הצוות (לדוגמה: מנהל פרויקט, מפתח/ת). בחר מהרשימה, או בחר 'אחר...' כדי להקליד תפקיד מותאם.", en: "The team member's job role (e.g. Project Manager, Developer). Pick from the list, or choose 'Other...' to type a custom role." }) as string}
+            otherTitle={txt(locale, { he: "הקלד כאן את התפקיד המותאם שאינו מופיע ברשימה.", en: "Type the custom role that is not in the list here." }) as string}
             locale={locale}
             error={errors.role}
           />
@@ -378,6 +387,8 @@ export function InviteMemberDialog({
               onOtherChange={(v) => setForm({ ...form, divisionOther: v })}
               placeholder={txt(locale, { he: "— בחר חטיבה —", en: "— Select —" })}
               otherPlaceholder={txt(locale, { he: "חטיבה אחרת...", en: "Other division..." })}
+              title={txt(locale, { he: "החטיבה הארגונית שאליה משתייך חבר הצוות (לדוגמה: חטיבת IT, חטיבת תפעול). בחר מהרשימה, או בחר 'אחר...' להזנה ידנית.", en: "The organizational division the member belongs to (e.g. IT, Operations). Pick from the list, or choose 'Other...' to enter manually." }) as string}
+              otherTitle={txt(locale, { he: "הקלד כאן את שם החטיבה שאינו מופיע ברשימה.", en: "Type the division name that is not in the list here." }) as string}
               locale={locale}
               error={errors.division}
             />
@@ -390,6 +401,8 @@ export function InviteMemberDialog({
               onOtherChange={(v) => setForm({ ...form, departmentOther: v })}
               placeholder={txt(locale, { he: "— בחר אגף —", en: "— Select —" })}
               otherPlaceholder={txt(locale, { he: "אגף אחר...", en: "Other dept..." })}
+              title={txt(locale, { he: "האגף הספציפי בתוך החטיבה (לדוגמה: אגף פיתוח, אגף תשתיות). בחר מהרשימה, או בחר 'אחר...' להזנה ידנית.", en: "The specific department within the division (e.g. Development, Infrastructure). Pick from the list, or choose 'Other...' to enter manually." }) as string}
+              otherTitle={txt(locale, { he: "הקלד כאן את שם האגף שאינו מופיע ברשימה.", en: "Type the department name that is not in the list here." }) as string}
               locale={locale}
               error={errors.department}
             />
@@ -402,6 +415,7 @@ export function InviteMemberDialog({
               <select
                 value={form.managerId}
                 onChange={(e) => setForm({ ...form, managerId: e.target.value })}
+                title={txt(locale, { he: "המנהל הישיר שאליו חבר הצוות מדווח. בחירה זו בונה את היררכיית הארגון וקובעת אילו משימות המנהל יראה. השאר 'ללא' אם החבר נמצא בראש ההיררכיה.", en: "The direct manager this member reports to. This choice builds the org hierarchy and determines which tasks the manager can see. Leave 'None' if the member is at the top of the org." }) as string}
                 className={cn(
                   "w-full min-h-[44px] px-3 pe-8 rounded-md border bg-background text-sm appearance-none",
                   "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
@@ -430,6 +444,7 @@ export function InviteMemberDialog({
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               placeholder="050-1234567"
               dir="ltr"
+              title={txt(locale, { he: "מספר הטלפון הנייד של חבר הצוות. משמש ליצירת קשר ולשליחת הזמנה (למשל ב-WhatsApp). הזן 7 עד 15 ספרות. שדה חובה.", en: "The team member's mobile phone number. Used for contact and sending the invite (e.g. via WhatsApp). Enter 7 to 15 digits. Required field." }) as string}
               className={cn("min-h-[44px]", errors.phone && "border-red-500")}
             />
             {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
@@ -444,6 +459,7 @@ export function InviteMemberDialog({
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="user@mapi.gov.il"
               dir="ltr"
+              title={txt(locale, { he: "כתובת הדואר האלקטרוני של חבר הצוות. אליה תישלח הזמנה והודעת יידוע, והיא תשמש כשם המשתמש לכניסה. שדה חובה.", en: "The team member's email address. The invitation and heads-up notice are sent here, and it serves as the login username. Required field." }) as string}
               className={cn("min-h-[44px]", errors.email && "border-red-500")}
             />
             {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}

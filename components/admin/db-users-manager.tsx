@@ -240,6 +240,7 @@ export function DbUsersManager({ locale }: { locale: string }) {
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder={txt(locale, { he: "שם מלא", en: "Full name" }) as string}
+            title={txt(locale, { he: "השם המלא של המשתמש כפי שיוצג בכל המערכת. הזן שם פרטי ושם משפחה. שדה חובה.", en: "The user's full name as shown throughout the system. Enter first and last name. Required field." }) as string}
             className="min-h-[44px] px-3 rounded-md border bg-background text-sm"
           />
           <input
@@ -247,12 +248,13 @@ export function DbUsersManager({ locale }: { locale: string }) {
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="user@mapi.gov.il"
             dir="ltr"
+            title={txt(locale, { he: "כתובת הדואר האלקטרוני הארגונית. משמשת כשם המשתמש לכניסה ולקבלת התראות. חייבת להיות ייחודית במערכת. שדה חובה.", en: "The organizational email address. Used as the login username and for notifications. Must be unique in the system. Required field." }) as string}
             className="min-h-[44px] px-3 rounded-md border bg-background text-sm"
           />
-          <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="min-h-[44px] px-3 rounded-md border bg-background text-sm">
+          <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} title={txt(locale, { he: "רמת ההרשאה של המשתמש: מנהל מערכת, מנהל, חבר צוות, צופה או אורח. ההרשאה קובעת לאילו מסכים ופעולות יש למשתמש גישה.", en: "The user's permission level: Admin, Manager, Member, Viewer or Guest. The role determines which screens and actions the user can access." }) as string} className="min-h-[44px] px-3 rounded-md border bg-background text-sm">
             {ROLES.map((r) => <option key={r.value} value={r.value}>{roleLabel(locale, r.value)}</option>)}
           </select>
-          <select value={form.managerId} onChange={(e) => setForm({ ...form, managerId: e.target.value })} className="min-h-[44px] px-3 rounded-md border bg-background text-sm">
+          <select value={form.managerId} onChange={(e) => setForm({ ...form, managerId: e.target.value })} title={txt(locale, { he: "המנהל הישיר שאליו המשתמש כפוף. בונה את היררכיית הארגון וקובע אילו משימות המנהל יראה. שדה רשות.", en: "The direct manager this user reports to. Builds the org hierarchy and determines which tasks the manager can see. Optional field." }) as string} className="min-h-[44px] px-3 rounded-md border bg-background text-sm">
             <option value="">{txt(locale, { he: "— מנהל ישיר (רשות) —", en: "— Direct manager (optional) —" })}</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
@@ -260,6 +262,7 @@ export function DbUsersManager({ locale }: { locale: string }) {
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder={txt(locale, { he: "תפקיד / אגף (רשות)", en: "Title / department (optional)" }) as string}
+            title={txt(locale, { he: "התפקיד או האגף של המשתמש בארגון (לדוגמה: מנהל פרויקטים, אגף יישומים). מוצג בכרטיס המשתמש ובבורר המנהל הישיר. שדה רשות.", en: "The user's job title or department (e.g. Project Manager, Applications Dept.). Shown in the user card and the direct-manager picker. Optional field." }) as string}
             className="min-h-[44px] px-3 rounded-md border bg-background text-sm"
           />
           <input
@@ -267,6 +270,7 @@ export function DbUsersManager({ locale }: { locale: string }) {
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
             placeholder={txt(locale, { he: "טלפון נייד (רשות)", en: "Mobile phone (optional)" }) as string}
             dir="ltr"
+            title={txt(locale, { he: "מספר הטלפון הנייד של המשתמש. משמש ליצירת קשר ולשליחת הודעות (למשל WhatsApp). שדה רשות.", en: "The user's mobile phone number. Used for contact and for sending messages (e.g. WhatsApp). Optional field." }) as string}
             className="min-h-[44px] px-3 rounded-md border bg-background text-sm"
           />
           <div className="sm:col-span-2 flex justify-end gap-2">
@@ -390,19 +394,19 @@ export function DbUsersManager({ locale }: { locale: string }) {
             <div className="p-4 space-y-3">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "שם מלא *", en: "Full name *" })}</label>
-                <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
+                <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} title={txt(locale, { he: "השם המלא של המשתמש כפי שיוצג בכל המערכת. הזן שם פרטי ושם משפחה. שדה חובה.", en: "The user's full name as shown throughout the system. Enter first and last name. Required field." }) as string} className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "מייל ארגוני *", en: "Email *" })}</label>
-                <input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} dir="ltr" className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
+                <input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} dir="ltr" title={txt(locale, { he: "כתובת הדואר האלקטרוני הארגונית. משמשת כשם המשתמש לכניסה למערכת. חייבת להיות ייחודית. שדה חובה.", en: "The organizational email address. Used as the login username. Must be unique. Required field." }) as string} className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "טלפון נייד", en: "Mobile phone" })}</label>
-                <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} dir="ltr" className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
+                <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} dir="ltr" title={txt(locale, { he: "מספר הטלפון הנייד של המשתמש. משמש ליצירת קשר ולשליחת הודעות. ניתן להשאיר ריק.", en: "The user's mobile phone number. Used for contact and messaging. May be left blank." }) as string} className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "תפקיד / אגף", en: "Title / department" })}</label>
-                <input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
+                <input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} title={txt(locale, { he: "התפקיד או האגף של המשתמש בארגון (לדוגמה: מנהל פרויקטים, אגף יישומים). מוצג בכרטיס המשתמש. ניתן להשאיר ריק.", en: "The user's job title or department (e.g. Project Manager, Applications Dept.). Shown in the user card. May be left blank." }) as string} className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
               </div>
             </div>
             <div className="flex justify-end gap-2 border-t px-4 py-3">

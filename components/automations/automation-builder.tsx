@@ -257,6 +257,7 @@ export function AutomationBuilder({
                 <button
                   key={tpl.id}
                   onClick={() => applyTemplate(tpl)}
+                  title={txt(locale, { he: "בחר תבנית אוטומציה מוכנה. הטריגר, התנאים והפעולות ימולאו אוטומטית — תוכל לערוך אותם לפני השמירה.", en: "Pick a ready-made automation template. Its trigger, conditions and actions are filled in automatically — you can edit them before saving." }) as string}
                   className="p-3 rounded-lg border bg-card hover:bg-accent/50 text-start transition-all min-h-[44px]"
                 >
                   <div className="font-semibold text-sm">{txt(locale, { he: tpl.nameHe, en: tpl.nameEn })}</div>
@@ -267,7 +268,7 @@ export function AutomationBuilder({
 
             {/* Build from scratch */}
             <div className="border-t pt-3">
-              <Button variant="outline" className="w-full min-h-[44px]" onClick={() => setStep("builder")}>
+              <Button variant="outline" className="w-full min-h-[44px]" onClick={() => setStep("builder")} title={txt(locale, { he: "התחל אוטומציה ריקה ובנה אותה בעצמך: בחר טריגר, הוסף תנאים (אופציונלי) ופעולות.", en: "Start a blank automation and build it yourself: choose a trigger, add conditions (optional) and actions." }) as string}>
                 <Plus className="size-4" />
                 {txt(locale, { he: "בנה מאפס", en: "Build from scratch" })}
               </Button>
@@ -281,6 +282,7 @@ export function AutomationBuilder({
               <Input
                 value={state.name}
                 onChange={(e) => setState({ ...state, name: e.target.value })}
+                title={txt(locale, { he: "תן שם ברור לאוטומציה כדי שתזהה אותה ברשימה (שדה חובה). לדוגמה: 'התראה על משימות באיחור'.", en: "Give the automation a clear name so you can identify it in the list (required). e.g., 'Alert on overdue tasks'." }) as string}
                 placeholder={txt(locale, { he: "לדוגמה: התראה על משימות באיחור", en: "e.g., Alert on overdue tasks" })}
                 className="min-h-[44px]"
               />
@@ -299,6 +301,7 @@ export function AutomationBuilder({
                     <button
                       key={t.id}
                       onClick={() => setState({ ...state, trigger: t.id, triggerParams: {} })}
+                      title={txt(locale, { he: `בחר את האירוע שיפעיל את האוטומציה: "${t.labelHe}". ניתן לבחור טריגר אחד בלבד; אם יש לו פרמטרים הם יופיעו מתחת.`, en: `Choose the event that triggers the automation: "${t.labelEn}". Only one trigger can be selected; if it has parameters they appear below.` }) as string}
                       className={cn(
                         "flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium border transition-all min-h-[36px]",
                         state.trigger === t.id
@@ -322,6 +325,7 @@ export function AutomationBuilder({
                         <select
                           value={state.triggerParams[p.id] || (p as any).options?.[0] || ""}
                           onChange={(e) => setState({ ...state, triggerParams: { ...state.triggerParams, [p.id]: e.target.value } })}
+                          title={txt(locale, { he: `בחר ערך עבור "${p.labelHe}" — תנאי ההפעלה של הטריגר.`, en: `Pick a value for "${p.labelEn}" — the trigger's firing condition.` }) as string}
                           className="h-9 rounded-md border border-input bg-background px-2 text-sm flex-1 min-h-[36px]"
                         >
                           {(p as any).options?.map((o: string) => (
@@ -333,6 +337,7 @@ export function AutomationBuilder({
                           type={p.type}
                           value={state.triggerParams[p.id] || (p as any).default || ""}
                           onChange={(e) => setState({ ...state, triggerParams: { ...state.triggerParams, [p.id]: e.target.value } })}
+                          title={txt(locale, { he: `הזן ערך עבור "${p.labelHe}" (למשל מספר ימים) — קובע מתי הטריגר יופעל.`, en: `Enter a value for "${p.labelEn}" (e.g. number of days) — controls when the trigger fires.` }) as string}
                           className="flex-1 h-9 min-h-[36px]"
                         />
                       )}
@@ -360,6 +365,7 @@ export function AutomationBuilder({
                         key={p.id}
                         placeholder={txt(locale, { he: p.labelHe, en: p.labelEn })}
                         value={cond.params[p.id] || ""}
+                        title={txt(locale, { he: `הזן את הערך להשוואה עבור התנאי "${p.labelHe}". האוטומציה תרוץ רק אם התנאי מתקיים.`, en: `Enter the value to match for the "${p.labelEn}" condition. The automation runs only if this condition holds.` }) as string}
                         onChange={(e) => {
                           const updated = [...state.conditions];
                           updated[idx] = { ...cond, params: { ...cond.params, [p.id]: e.target.value } };
@@ -368,7 +374,7 @@ export function AutomationBuilder({
                         className="flex-1 h-8 text-xs min-h-[36px]"
                       />
                     ))}
-                    <Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={() => removeCondition(idx)}>
+                    <Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={() => removeCondition(idx)} title={txt(locale, { he: "הסר את התנאי הזה מהאוטומציה.", en: "Remove this condition from the automation." }) as string}>
                       <Trash2 className="size-3 text-red-500" />
                     </Button>
                   </div>
@@ -377,6 +383,7 @@ export function AutomationBuilder({
               <div className="flex flex-wrap gap-1 ps-10">
                 {CONDITIONS.map((c) => (
                   <button key={c.id} onClick={() => addCondition(c.id)}
+                    title={txt(locale, { he: `הוסף תנאי "${c.labelHe}". התנאים מצמצמים מתי האוטומציה תפעל; ניתן להוסיף כמה תנאים (כולם חייבים להתקיים).`, en: `Add a "${c.labelEn}" condition. Conditions narrow when the automation runs; you can add several (all must hold).` }) as string}
                     className="text-[10px] px-2 py-1 rounded border border-dashed border-amber-400 text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 min-h-[28px]"
                   >
                     + {txt(locale, { he: c.labelHe, en: c.labelEn })}
@@ -411,6 +418,7 @@ export function AutomationBuilder({
                             updated[idx] = { ...act, params: { ...act.params, [p.id]: e.target.value } };
                             setState({ ...state, actions: updated });
                           }}
+                          title={txt(locale, { he: `בחר ערך עבור "${p.labelHe}" — הערך שהפעולה הזו תחיל כשהאוטומציה תרוץ.`, en: `Pick a value for "${p.labelEn}" — what this action will apply when the automation runs.` }) as string}
                           className="h-8 rounded-md border border-input bg-background px-2 text-xs flex-1 min-h-[36px]"
                         >
                           {(p as any).options?.map((o: string) => <option key={o} value={o}>{o}</option>)}
@@ -419,6 +427,7 @@ export function AutomationBuilder({
                         <Input key={p.id}
                           placeholder={txt(locale, { he: p.labelHe, en: p.labelEn })}
                           value={act.params[p.id] || ""}
+                          title={txt(locale, { he: `הזן ערך עבור "${p.labelHe}" — פרמטר לפעולה (למשל תוכן הודעה, שם משתמש או כותרת).`, en: `Enter a value for "${p.labelEn}" — a parameter for the action (e.g. message text, user name or title).` }) as string}
                           onChange={(e) => {
                             const updated = [...state.actions];
                             updated[idx] = { ...act, params: { ...act.params, [p.id]: e.target.value } };
@@ -428,7 +437,7 @@ export function AutomationBuilder({
                         />
                       )
                     ))}
-                    <Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={() => removeAction(idx)}>
+                    <Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={() => removeAction(idx)} title={txt(locale, { he: "הסר את הפעולה הזו מהאוטומציה.", en: "Remove this action from the automation." }) as string}>
                       <Trash2 className="size-3 text-red-500" />
                     </Button>
                   </div>
@@ -439,6 +448,7 @@ export function AutomationBuilder({
                   const Icon = a.icon;
                   return (
                     <button key={a.id} onClick={() => addAction(a.id)}
+                      title={txt(locale, { he: `הוסף את הפעולה "${a.labelHe}" — מה שיקרה כשהטריגר נורה והתנאים מתקיימים. ניתן לשרשר כמה פעולות לפי הסדר.`, en: `Add the "${a.labelEn}" action — what happens when the trigger fires and conditions hold. You can chain several actions in order.` }) as string}
                       className="flex items-center gap-1 text-[10px] px-2 py-1 rounded border border-dashed border-emerald-400 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 min-h-[28px]"
                     >
                       <Icon className="size-3" />

@@ -845,6 +845,7 @@ export function IntakeWorkflow() {
               <button
                 type="button"
                 onClick={() => setMode("file")}
+                title={txt(locale, { he: "מצב 'קובץ': העלאת מסמך (PDF, Word, PowerPoint או תמונה) עד 300MB. ה-AI יקרא את הקובץ ויחלץ ממנו את המשימות. בחר מצב זה ואז לחץ 'בחר קובץ'.", en: "'Document' mode: upload a file (PDF, Word, PowerPoint or image) up to 300 MB. The AI reads the file and extracts tasks from it. Select this mode, then click 'Choose file'." }) as string}
                 className={cn(
                   "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all min-h-[120px]",
                   mode === "file"
@@ -863,6 +864,7 @@ export function IntakeWorkflow() {
               <button
                 type="button"
                 onClick={() => setMode("text")}
+                title={txt(locale, { he: "מצב 'הדבק טקסט': הדבק טקסט חופשי (סיכום פגישה, מייל, פרוטוקול) עד 50,000 תווים. ה-AI יזהה מתוכו את המשימות. בחר מצב זה ואז הדבק את הטקסט בתיבה.", en: "'Paste text' mode: paste free text (meeting summary, email, minutes) up to 50,000 chars. The AI detects tasks within it. Select this mode, then paste your text in the box." }) as string}
                 className={cn(
                   "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all min-h-[120px]",
                   mode === "text"
@@ -881,6 +883,7 @@ export function IntakeWorkflow() {
               <button
                 type="button"
                 onClick={() => setMode("audio")}
+                title={txt(locale, { he: "מצב 'הקלטת שמע': העלה הקלטה של פגישה (Zoom/Meet) בפורמט MP3/WAV/M4A/MP4 עד 300MB. המערכת תתמלל את ההקלטה ותחלץ ממנה משימות. בחר מצב זה ואז לחץ 'בחר קובץ שמע'.", en: "'Audio recording' mode: upload a meeting recording (Zoom/Meet) as MP3/WAV/M4A/MP4 up to 300 MB. The system transcribes it and extracts tasks. Select this mode, then click 'Choose audio file'." }) as string}
                 className={cn(
                   "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all min-h-[120px]",
                   mode === "audio"
@@ -899,6 +902,7 @@ export function IntakeWorkflow() {
               <button
                 type="button"
                 onClick={() => setMode("url")}
+                title={txt(locale, { he: "מצב 'קישור': הדבק קישור ציבורי לקובץ ב-Google Drive או Dropbox. השרת מוריד את הקובץ ישירות, כך שאין הגבלת גודל העלאה. בחר מצב זה ואז הדבק את הקישור.", en: "'Link' mode: paste a public link to a file on Google Drive or Dropbox. The server downloads it directly, so there is no upload-size limit. Select this mode, then paste the link." }) as string}
                 className={cn(
                   "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all min-h-[120px]",
                   mode === "url"
@@ -934,12 +938,13 @@ export function IntakeWorkflow() {
                     type="file"
                     accept=".pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,image/*"
                     className="hidden"
+                    title={txt(locale, { he: "בחר קובץ מהמחשב: PDF, Word, PowerPoint, טקסט או תמונה (עד 300MB). הקובץ יישלח לחילוץ משימות.", en: "Pick a file from your computer: PDF, Word, PowerPoint, text or image (up to 300 MB). The file is sent for task extraction." }) as string}
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f) void handleFile(f);
                     }}
                   />
-                  <Button onClick={() => fileInputRef.current?.click()} disabled={loading}>
+                  <Button onClick={() => fileInputRef.current?.click()} disabled={loading} title={txt(locale, { he: "פתח את חלון בחירת הקובץ. לאחר הבחירה ה-AI יחלץ אוטומטית את המשימות מהמסמך.", en: "Open the file picker. Once you choose a file, the AI extracts tasks from the document automatically." }) as string}>
                     {loading ? (<><Loader2 className="size-4 animate-spin" />{txt(locale, { he: "מעבד...", en: "Processing..." })}</>) : (<><FileUp className="size-4" />{txt(locale, { he: "בחר קובץ", en: "Choose file" })}</>)}
                   </Button>
                 </div>
@@ -950,6 +955,7 @@ export function IntakeWorkflow() {
                   <textarea
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
+                    title={txt(locale, { he: "הדבק כאן את הטקסט החופשי (סיכום פגישה, מייל, פרוטוקול). ה-AI יחלץ את המשימות, יזהה אחראים ותאריכי יעד. עד 50,000 תווים.", en: "Paste your free text here (meeting summary, email, minutes). The AI extracts tasks and detects owners and due dates. Up to 50,000 characters." }) as string}
                     placeholder={txt(locale, {
                       he: "לדוגמה: בסיכום הפגישה הוחלט שאלעד יכין מצגת לדירקטוריון עד יום חמישי. ניר יכתוב מסמך אפיון. אסתר תסכם את הישיבה ותשלח עד מחר...",
                       en: "Example: Meeting summary — Elad to prepare a board deck by Thursday. Nir to write the spec. Esther to summarize the meeting and send by tomorrow...",
@@ -960,7 +966,7 @@ export function IntakeWorkflow() {
                   />
                   <div className="flex justify-between items-center text-xs text-muted-foreground">
                     <span>{textInput.length.toLocaleString()} / 50,000</span>
-                    <Button onClick={handleText} disabled={loading || !textInput.trim()}>
+                    <Button onClick={handleText} disabled={loading || !textInput.trim()} title={txt(locale, { he: "שלח את הטקסט שהדבקת לחילוץ. ה-AI יחזיר רשימת משימות מוצעות לאישור.", en: "Send the pasted text for extraction. The AI returns a list of suggested tasks for you to confirm." }) as string}>
                       {loading ? (<><Loader2 className="size-4 animate-spin" />{txt(locale, { he: "מעבד...", en: "Processing..." })}</>) : (<><Sparkles className="size-4" />{txt(locale, { he: "חלץ משימות", en: "Extract tasks" })}</>)}
                     </Button>
                   </div>
@@ -981,12 +987,13 @@ export function IntakeWorkflow() {
                     type="file"
                     accept="audio/*,video/mp4,video/webm,.mp3,.wav,.m4a,.webm,.ogg,.flac,.aac,.mp4,.mov"
                     className="hidden"
+                    title={txt(locale, { he: "בחר קובץ שמע או וידאו של הקלטת פגישה (MP3/WAV/M4A/MP4 וכו', עד 300MB). המערכת תתמלל ותחלץ משימות.", en: "Pick an audio or video file of a meeting recording (MP3/WAV/M4A/MP4 etc., up to 300 MB). The system transcribes it and extracts tasks." }) as string}
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f) void handleFile(f);
                     }}
                   />
-                  <Button onClick={() => audioInputRef.current?.click()} disabled={loading}>
+                  <Button onClick={() => audioInputRef.current?.click()} disabled={loading} title={txt(locale, { he: "פתח את חלון בחירת קובץ השמע. לאחר הבחירה ההקלטה תתומלל ויחולצו ממנה משימות אוטומטית.", en: "Open the audio-file picker. Once you choose a file, the recording is transcribed and tasks are extracted automatically." }) as string}>
                     {loading ? (<><Loader2 className="size-4 animate-spin" />{txt(locale, { he: "מתמלל ומחלץ...", en: "Transcribing..." })}</>) : (<><Mic className="size-4" />{txt(locale, { he: "בחר קובץ שמע", en: "Choose audio file" })}</>)}
                   </Button>
                 </div>
@@ -1007,6 +1014,7 @@ export function IntakeWorkflow() {
                     type="url"
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
+                    title={txt(locale, { he: "הדבק כאן קישור ציבורי לקובץ (Google Drive / Dropbox). הקפד לשתף ב'כל מי שיש לו את הקישור'. השרת ימשוך את הקובץ — בלי הגבלת גודל. אפשר ללחוץ Enter לשליחה.", en: "Paste a public file link here (Google Drive / Dropbox). Be sure to share it as 'Anyone with the link'. The server fetches the file — no size limit. Press Enter to submit." }) as string}
                     placeholder="https://drive.google.com/file/d/... · https://www.dropbox.com/scl/..."
                     dir="ltr"
                     className="min-h-[44px]"
@@ -1032,7 +1040,7 @@ export function IntakeWorkflow() {
                       })}
                     </p>
                   </div>
-                  <Button onClick={handleUrl} disabled={loading || !urlInput.trim()} className="min-h-[44px]">
+                  <Button onClick={handleUrl} disabled={loading || !urlInput.trim()} className="min-h-[44px]" title={txt(locale, { he: "הורד את הקובץ מהקישור ושלח אותו לחילוץ. ה-AI יחזיר רשימת משימות מוצעות לאישור.", en: "Download the file from the link and send it for extraction. The AI returns a list of suggested tasks to confirm." }) as string}>
                     {loading ? (
                       <><Loader2 className="size-4 animate-spin" />{txt(locale, { he: "מוריד ומעבד...", en: "Downloading & processing..." })}</>
                     ) : (
@@ -1328,7 +1336,7 @@ function ExtractedTasksTable({
               })}
             </CardDescription>
           </div>
-          <Button onClick={onCreate} disabled={selected.size === 0}>
+          <Button onClick={onCreate} disabled={selected.size === 0} title={txt(locale, { he: "צור בבת אחת את כל המשימות המסומנות (בתיבות הסימון). המשימות יישמרו עם האחראי, התאריכים והמקור שזוהו.", en: "Create all checked tasks at once. They are saved with the detected owner, dates and source." }) as string}>
             <Plus className="size-4" />
             {txt(locale, { he: `צור ${selected.size} משימות`, en: `Create ${selected.size} tasks` })}
           </Button>
@@ -1365,6 +1373,7 @@ function ExtractedTasksTable({
                     checked={isSel}
                     onChange={() => toggleSelect(i)}
                     onClick={(e) => e.stopPropagation()}
+                    title={txt(locale, { he: "סמן/בטל את המשימה הזו ליצירה גורפת. רק משימות מסומנות ייווצרו בלחיצה על 'צור משימות'.", en: "Check/uncheck this task for bulk creation. Only checked tasks are created when you click 'Create tasks'." }) as string}
                     className="mt-1"
                   />
                   <div className="flex-1 min-w-0">

@@ -661,7 +661,10 @@ export function AddTaskDialog({
 
           {/* Task Type */}
           <div className="space-y-1.5">
-            <Label htmlFor="task-type">{txt(locale, { he: "סוג משימה", en: "Task Type" })}</Label>
+            <Label htmlFor="task-type" className="inline-flex items-center gap-1.5">
+              {txt(locale, { he: "סוג משימה", en: "Task Type" })}
+              <FieldHint text={txt(locale, { he: "סיווג המשימה — מצגת, מסמך, מענה וכו'. בחר/י את הסוג שמתאר את התוצר; ב'אחר' ניתן להזין סוג חופשי.", en: "The task's classification — presentation, document, reply, etc. Pick the type that describes the deliverable; choose 'Other' to type a custom one." }) as string} />
+            </Label>
             <div className="flex flex-wrap gap-1.5">
               {taskTypes.map((tt) => (
                 <button
@@ -776,7 +779,10 @@ export function AddTaskDialog({
 
           {/* Priority — grouped with scheduling */}
           <div className="space-y-1.5">
-            <Label>{txt(locale, { he: "עדיפות", en: "Priority", ru: "Приоритет", fr: "Priorité", es: "Prioridad" })}</Label>
+            <Label className="inline-flex items-center gap-1.5">
+              {txt(locale, { he: "עדיפות", en: "Priority", ru: "Приоритет", fr: "Priorité", es: "Prioridad" })}
+              <FieldHint text={txt(locale, { he: "דחיפות המשימה — נמוכה / בינונית / גבוהה / קריטית. משפיע על סדר העדיפויות ועל בולטות המשימה ברשימות (שדה חובה).", en: "The task's urgency — Low / Medium / High / Critical. Affects prioritization and how prominently the task surfaces in lists (required)." }) as string} />
+            </Label>
             <div className="flex gap-1.5">
               {[
                 { value: "low", he: "נמוכה", en: "Low", color: "bg-slate-100 text-slate-700 border-slate-300" },
@@ -825,9 +831,10 @@ export function AddTaskDialog({
           {/* Team Members — "who" does it: placed after resources, with the
               built-in workload / calendar-availability check (multi-select). */}
           <div className="space-y-1.5">
-            <Label>
+            <Label className="inline-flex items-center gap-1.5">
               {txt(locale, { he: "צוות", en: "Team" })} <span className="text-red-500">*</span>{" "}
               <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "בחירה מרובה", en: "multi-select" })})</span>
+              <FieldHint text={txt(locale, { he: "חברי הצוות שיבצעו את המשימה — בחירה מרובה. כל מי שנבחר מקבל את המשימה ומשתתף בצ'אט ובמעקב; המערכת מתריעה על עומס/חפיפה ביומן (חובה לבחור לפחות אחד).", en: "The team members who will carry out the task — multi-select. Everyone selected gets the task and joins its chat and tracking; the system warns about overload or calendar overlaps (at least one required)." }) as string} />
             </Label>
             <TeamMultiSelect
               users={users.filter((u) => u.role !== "guest" && u.role !== "viewer")}
@@ -855,6 +862,7 @@ export function AddTaskDialog({
                       <select
                         value={role.type}
                         onChange={(e) => setMemberRole(uid, { type: e.target.value })}
+                        title={txt(locale, { he: "תפקיד חבר הצוות במשימה — מבצע / אחראי / מאשר וכו'. בחר/י מה תפקידו של חבר זה בביצוע המשימה.", en: "This member's role in the task — executor / responsible / approver, etc. Pick what this person's part in the task is." }) as string}
                         className="h-9 rounded-md border border-input bg-background px-2 text-sm min-h-[40px]"
                       >
                         {MEMBER_ROLE_KEYS.map((k) => (
@@ -923,9 +931,10 @@ export function AddTaskDialog({
 
           {/* Assignment: Project or Program */}
           <div className="space-y-1.5">
-            <Label>
+            <Label className="inline-flex items-center gap-1.5">
               {txt(locale, { he: "שיוך", en: "Assignment" })}{" "}
               <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "רשות", en: "optional" })})</span>
+              <FieldHint text={txt(locale, { he: "שיוך המשימה לפרויקט או לפרוגרמה — בחר/י קודם את הסוג ואז את הפריט מהרשימה. אינו חובה: משימה יכולה לעמוד בפני עצמה ללא שיוך.", en: "Link the task to a project or a program — first pick the type, then choose the item from the list. Optional: a task can stand on its own with no assignment." }) as string} />
             </Label>
             <div className="flex gap-2 mb-2">
               <button
