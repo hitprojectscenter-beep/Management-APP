@@ -23,17 +23,24 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (id === admin.id && (body?.isActive === false || (body?.role && body.role !== "admin"))) {
     return NextResponse.json({ error: "cannot_modify_self" }, { status: 400 });
   }
+  if (body?.email !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(body.email).trim())) {
+    return NextResponse.json({ error: "invalid_email" }, { status: 400 });
+  }
 
-  const user = await updateUser(id, {
+  const result = await updateUser(id, {
     name: body?.name,
+    email: body?.email,
     role: body?.role,
     managerId: body?.managerId,
     title: body?.title,
     phone: body?.phone,
     isActive: body?.isActive,
   });
+  if (result && "error" in result) return NextResponse.json({ error: result.error }, { status: 409 });
+  const user = result;
   if (!user) return NextResponse.json({ error: "not_found_or_no_changes" }, { status: 404 });
 
+  if (body?.email) await logAuthEvent({ userId: id, event: "profile_updated", success: true, detail: `email→${String(body.email).trim().toLowerCase()} by ${admin.email}` });
   if (body?.role) await logAuthEvent({ userId: id, event: "role_changed", success: true, detail: `→ ${body.role} by ${admin.email}` });
   if (body?.isActive === false) await logAuthEvent({ userId: id, event: "account_disabled", success: true, detail: `by ${admin.email}` });
   if (body?.isActive === true) await logAuthEvent({ userId: id, event: "account_enabled", success: true, detail: `by ${admin.email}` });

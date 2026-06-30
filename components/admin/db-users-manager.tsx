@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { UserPlus, KeyRound, Trash2, Copy, Shield, X, Loader2 } from "lucide-react";
+import { UserPlus, KeyRound, Trash2, Copy, Shield, X, Loader2, Pencil } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ interface AdminUser {
   role: string;
   image: string | null;
   title: string | null;
+  phone: string | null;
   managerId: string | null;
   isActive: boolean;
 }
@@ -41,8 +42,11 @@ export function DbUsersManager({ locale }: { locale: string }) {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", role: "member", managerId: "" });
+  const [form, setForm] = useState({ name: "", email: "", role: "member", managerId: "", title: "", phone: "" });
   const [tempPw, setTempPw] = useState<{ name: string; password: string } | null>(null);
+  const [editUser, setEditUser] = useState<AdminUser | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", title: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -83,6 +87,40 @@ export function DbUsersManager({ locale }: { locale: string }) {
       }
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const openEdit = (u: AdminUser) => {
+    setEditUser(u);
+    setEditForm({ name: u.name || "", email: u.email, phone: u.phone || "", title: u.title || "" });
+  };
+  const saveEdit = async () => {
+    if (!editUser) return;
+    if (!editForm.name.trim() || !editForm.email.trim()) {
+      toast.error(txt(locale, { he: "נא למלא שם ומייל", en: "Name and email required" }) as string);
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/admin/users/${editUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editForm.name, email: editForm.email, phone: editForm.phone || null, title: editForm.title || null }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUsers((prev) => prev.map((u) => (u.id === editUser.id ? { ...u, ...data.user } : u)));
+        toast.success(txt(locale, { he: "פרטי המשתמש עודכנו", en: "User updated" }) as string);
+        setEditUser(null);
+      } else {
+        toast.error(
+          data.error === "email_exists" ? (txt(locale, { he: "המייל כבר קיים במערכת", en: "Email already exists" }) as string)
+          : data.error === "invalid_email" ? (txt(locale, { he: "כתובת מייל לא תקינה", en: "Invalid email" }) as string)
+          : (txt(locale, { he: "העדכון נכשל", en: "Update failed" }) as string),
+        );
+      }
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -129,14 +167,14 @@ export function DbUsersManager({ locale }: { locale: string }) {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name, email: form.email, role: form.role, managerId: form.managerId || null }),
+        body: JSON.stringify({ name: form.name, email: form.email, role: form.role, managerId: form.managerId || null, title: form.title || null, phone: form.phone || null }),
       });
       const data = await res.json();
       if (res.ok) {
         setUsers((prev) => [...prev, data.user]);
         setTempPw({ name: data.user.name, password: data.tempPassword });
         setShowAdd(false);
-        setForm({ name: "", email: "", role: "member", managerId: "" });
+        setForm({ name: "", email: "", role: "member", managerId: "", title: "", phone: "" });
       } else {
         toast.error(
           data.error === "email_exists"
@@ -218,6 +256,19 @@ export function DbUsersManager({ locale }: { locale: string }) {
             <option value="">{txt(locale, { he: "— מנהל ישיר (רשות) —", en: "— Direct manager (optional) —" })}</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
+          <input
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder={txt(locale, { he: "תפקיד / אגף (רשות)", en: "Title / department (optional)" }) as string}
+            className="min-h-[44px] px-3 rounded-md border bg-background text-sm"
+          />
+          <input
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            placeholder={txt(locale, { he: "טלפון נייד (רשות)", en: "Mobile phone (optional)" }) as string}
+            dir="ltr"
+            className="min-h-[44px] px-3 rounded-md border bg-background text-sm"
+          />
           <div className="sm:col-span-2 flex justify-end gap-2">
             <button onClick={() => setShowAdd(false)} className="px-3 min-h-[40px] rounded-xl border text-sm">{txt(locale, { he: "ביטול", en: "Cancel" })}</button>
             <button onClick={addUser} disabled={busyId === "__add__"} className="px-4 min-h-[40px] rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60">
@@ -289,6 +340,14 @@ export function DbUsersManager({ locale }: { locale: string }) {
                   <td className="px-3 py-2.5">
                     <div className="flex items-center justify-end gap-1">
                       <button
+                        onClick={() => openEdit(u)}
+                        disabled={busyId === u.id}
+                        title={txt(locale, { he: "ערוך פרטים", en: "Edit details" }) as string}
+                        className="p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground"
+                      >
+                        <Pencil className="size-4" />
+                      </button>
+                      <button
                         onClick={() => resetPassword(u)}
                         disabled={busyId === u.id}
                         title={txt(locale, { he: "איפוס סיסמה", en: "Reset password" }) as string}
@@ -319,6 +378,43 @@ export function DbUsersManager({ locale }: { locale: string }) {
           en: "Every change persists to PostgreSQL and is written to the audit log. Disabling an account revokes all its sessions immediately.",
         })}
       </p>
+
+      {/* Edit-user dialog — name / email / phone / title */}
+      {editUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !savingEdit && setEditUser(null)}>
+          <div className="w-full max-w-md rounded-xl bg-background shadow-xl border" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <h3 className="font-semibold text-sm">{txt(locale, { he: "עריכת פרטי משתמש", en: "Edit user details" })}</h3>
+              <button onClick={() => !savingEdit && setEditUser(null)} className="text-muted-foreground hover:text-foreground"><X className="size-4" /></button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "שם מלא *", en: "Full name *" })}</label>
+                <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "מייל ארגוני *", en: "Email *" })}</label>
+                <input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} dir="ltr" className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "טלפון נייד", en: "Mobile phone" })}</label>
+                <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} dir="ltr" className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">{txt(locale, { he: "תפקיד / אגף", en: "Title / department" })}</label>
+                <input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm" style={{ fontSize: "16px" }} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t px-4 py-3">
+              <button onClick={() => setEditUser(null)} disabled={savingEdit} className="px-3 min-h-[40px] rounded-xl border text-sm">{txt(locale, { he: "ביטול", en: "Cancel" })}</button>
+              <button onClick={saveEdit} disabled={savingEdit} className="px-4 min-h-[40px] rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60 inline-flex items-center gap-1">
+                {savingEdit && <Loader2 className="size-3.5 animate-spin" />}
+                {txt(locale, { he: "שמור", en: "Save" })}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

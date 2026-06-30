@@ -22,7 +22,8 @@ export type AuthEvent =
   | "account_disabled"
   | "account_enabled"
   | "user_created"
-  | "role_changed";
+  | "role_changed"
+  | "profile_updated";
 
 export interface AuthEventInput {
   userId?: string | null;

@@ -56,6 +56,7 @@ export async function createUser(
 
 export interface UpdateUserInput {
   name?: string;
+  email?: string;
   role?: UserRole;
   managerId?: string | null;
   title?: string | null;
@@ -63,9 +64,20 @@ export interface UpdateUserInput {
   isActive?: boolean;
 }
 
-export async function updateUser(id: string, input: UpdateUserInput): Promise<PublicUser | null> {
+export async function updateUser(
+  id: string,
+  input: UpdateUserInput,
+): Promise<PublicUser | { error: "email_exists" } | null> {
+  const db = getDb();
   const set: Partial<typeof users.$inferInsert> = {};
   if (input.name !== undefined) set.name = input.name.trim();
+  if (input.email !== undefined) {
+    const email = input.email.trim().toLowerCase();
+    // Email must stay unique — reject if another user already holds it.
+    const clash = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (clash[0] && clash[0].id !== id) return { error: "email_exists" };
+    set.email = email;
+  }
   if (input.role !== undefined) set.role = input.role;
   if (input.managerId !== undefined) set.managerId = input.managerId || null;
   if (input.title !== undefined) set.title = input.title || null;
@@ -73,7 +85,7 @@ export async function updateUser(id: string, input: UpdateUserInput): Promise<Pu
   if (input.isActive !== undefined) set.isActive = input.isActive;
   if (Object.keys(set).length === 0) return null;
 
-  const rows = await getDb().update(users).set(set).where(eq(users.id, id)).returning();
+  const rows = await db.update(users).set(set).where(eq(users.id, id)).returning();
   // Disabling an account revokes its live sessions immediately.
   if (input.isActive === false) {
     try { await revokeAllUserSessions(id); } catch { /* best-effort */ }

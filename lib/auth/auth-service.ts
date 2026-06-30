@@ -36,6 +36,7 @@ export interface PublicUser {
   image: string | null;
   locale: string;
   title: string | null;
+  phone: string | null;
   managerId: string | null;
   isActive: boolean;
   mustChangePassword: boolean;
@@ -53,6 +54,7 @@ export function toPublicUser(u: DbUser): PublicUser {
     image: u.image,
     locale: u.locale,
     title: u.title,
+    phone: u.phone,
     managerId: u.managerId,
     isActive: u.isActive,
     mustChangePassword: u.mustChangePassword,
