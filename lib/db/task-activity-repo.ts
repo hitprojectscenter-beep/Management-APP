@@ -34,7 +34,9 @@ export type HistoryKind =
   // The assignee acknowledged a supervisor decision (read-receipt):
   | "decision_acknowledged"
   // Auto-escalation: an overdue/stuck task was raised up the management chain:
-  | "escalated";
+  | "escalated"
+  // A rejected/cancelled task was reopened (back into the workflow):
+  | "reopened";
 
 /** Valid workflow statuses a task may hold. */
 export const WORKFLOW_STATUS_SET = new Set<string>([
@@ -379,6 +381,43 @@ export async function acknowledgeDecision(
     meta: { refId: historyId, refKind: ref?.kind ?? null },
   });
   return { history, refActorId: ref?.actorId ?? null, refKind: ref?.kind ?? null };
+}
+
+/**
+ * Reopen a REJECTED/CANCELLED task back into the workflow (instead of creating a
+ * new one and losing the history). Restores the status the task held just before
+ * it was closed (fallback "in_progress"), with a mandatory reason. Logged +
+ * notified. Allowed for the creator / a supervisor of the assignee / an admin
+ * (enforced in the API layer).
+ */
+export async function reopenTask(
+  taskId: string,
+  actorId: string,
+  note: string,
+): Promise<{ status: string; history: TaskHistoryRow }> {
+  const core = await getTaskCore(taskId);
+  if (!core) throw new Error("task_not_found");
+  if (core.status !== "rejected" && core.status !== "cancelled") throw new Error("not_closed");
+
+  // Restore the status the task had just before it was closed.
+  const hist = await getDb()
+    .select({ fromStatus: taskHistory.fromStatus, toStatus: taskHistory.toStatus })
+    .from(taskHistory)
+    .where(eq(taskHistory.taskId, taskId))
+    .orderBy(asc(taskHistory.createdAt));
+  let restore = "in_progress";
+  for (let i = hist.length - 1; i >= 0; i--) {
+    const h = hist[i];
+    if ((h.toStatus === "rejected" || h.toStatus === "cancelled") && h.fromStatus) {
+      restore = h.fromStatus;
+      break;
+    }
+  }
+  if (!SETTABLE_STATUS_SET.has(restore)) restore = "in_progress";
+
+  await getDb().update(appTasks).set({ status: restore, updatedAt: new Date() }).where(eq(appTasks.id, taskId));
+  const history = await log(taskId, actorId, "reopened", note, { fromStatus: core.status, toStatus: restore });
+  return { status: restore, history };
 }
 
 // ---- Auto-escalation (#4) ---------------------------------------------------

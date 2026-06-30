@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MessageSquare, Send, CheckCheck, Eye, Clock, Loader2, History,
   CircleDot, CheckCircle2, CalendarClock, ThumbsUp, ThumbsDown, X, Pencil,
-  ShieldAlert, MessageSquarePlus, Download,
+  ShieldAlert, MessageSquarePlus, Download, RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,7 +59,8 @@ type Prompt =
   | { type: "member"; done: boolean }
   | { type: "extension" }
   | { type: "decide"; requestId: string; approve: boolean; newDueDate: string }
-  | { type: "supervisor"; action: "note" | "reject" | "cancel" | "extend" };
+  | { type: "supervisor"; action: "note" | "reject" | "cancel" | "extend" }
+  | { type: "reopen" };
 
 function userName(id: string): string {
   if (id === "system") return "מערכת";
@@ -180,6 +181,9 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
   const myDone = !!activity?.members.find((m) => m.userId === me)?.done;
   // Only the task creator (or an admin) assigns/edits responsibilities.
   const canEditRoles = !!activity && activity.completionMembers.length > 0 && (isCreator || data?.meRole === "admin");
+  // A rejected/cancelled task can be reopened by the creator / supervisor / admin.
+  const taskClosed = activity?.status === "rejected" || activity?.status === "cancelled";
+  const canReopen = !!taskClosed && (isCreator || !!data?.isSupervisor || data?.meRole === "admin");
 
   // ---- actions --------------------------------------------------------------
   const startEditRoles = () => {
@@ -310,6 +314,11 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
           method: "PATCH", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ requestId: prompt.requestId, approve: prompt.approve, note: trimmed }),
         });
+      } else if (prompt.type === "reopen") {
+        res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/reopen`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ note: trimmed }),
+        });
       } else {
         // supervisor (ממונה) action on a subordinate's task
         res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/supervisor`, {
@@ -381,6 +390,8 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
         return txt(locale, { he: "אישר/ה את קבלת החלטת הממונה", en: "Acknowledged the supervisor's decision" }) as string;
       case "escalated":
         return `⚠️ ${txt(locale, { he: "הוסלם אוטומטית לדרג הניהולי", en: "Auto-escalated to management" })}`;
+      case "reopened":
+        return `${txt(locale, { he: "המשימה נפתחה מחדש", en: "Task reopened" })}${h.toStatus ? ` → ${statusLabel(h.toStatus, locale)}` : ""}`;
       default:
         return h.kind;
     }
@@ -459,6 +470,17 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                   {statusLabel(activity.status, locale)}
                 </span>
               </div>
+              {canReopen && (
+                <div className="rounded-md border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30 p-2.5 flex items-center justify-between gap-2">
+                  <span className="text-[13px] text-emerald-800 dark:text-emerald-300">
+                    {txt(locale, { he: "המשימה סגורה — ניתן לפתוח אותה מחדש", en: "Task is closed — you can reopen it" })}
+                  </span>
+                  <Button size="sm" variant="outline" className="h-7 border-emerald-300 text-emerald-700 dark:text-emerald-300" onClick={() => openPrompt({ type: "reopen" })}>
+                    <RotateCcw className="size-3.5 me-1" />
+                    {txt(locale, { he: "פתח מחדש", en: "Reopen" })}
+                  </Button>
+                </div>
+              )}
               {isParticipant && (
                 <>
                   <div className="text-xs text-muted-foreground">{txt(locale, { he: "שנה סטטוס (יידרש הסבר):", en: "Change status (note required):" })}</div>
@@ -828,6 +850,7 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                   : prompt.action === "reject" ? txt(locale, { he: "דחיית המשימה (ממונה)", en: "Reject task (supervisor)" })
                   : prompt.action === "cancel" ? txt(locale, { he: "ביטול המשימה (ממונה)", en: "Cancel task (supervisor)" })
                   : txt(locale, { he: "הוספת זמן ביצוע (ממונה)", en: "Add execution time (supervisor)" }))}
+                {prompt.type === "reopen" && txt(locale, { he: "פתיחת המשימה מחדש", en: "Reopen task" })}
               </h3>
               <button onClick={() => !submitting && setPrompt(null)} className="text-muted-foreground hover:text-foreground"><X className="size-4" /></button>
             </div>
