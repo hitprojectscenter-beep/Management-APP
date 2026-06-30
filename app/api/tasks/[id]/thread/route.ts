@@ -72,17 +72,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const text = typeof body?.body === "string" ? body.body.trim() : "";
   if (!text) return NextResponse.json({ error: "empty" }, { status: 400 });
 
+  // @mentions: only ids that are real participants (and not the author).
+  const mentions: string[] = Array.isArray(body?.mentions)
+    ? [...new Set(body.mentions.filter((m: unknown) => typeof m === "string" && participants.ids.includes(m as string) && m !== viewer.id))] as string[]
+    : [];
+  const mentionSet = new Set(mentions);
+
   const message = await postMessage(id, viewer.id, text);
 
-  // Notify the OTHER participants — in-app bell + email + WhatsApp (best-effort,
-  // fire-and-forget so it never delays the response). Only created tasks have a
-  // real participant set; seeded/shared tasks notify no one.
-  const recipients = participants.ids.filter((uid) => uid !== viewer.id);
-  if (recipients.length > 0) {
-    const author = mockUsers.find((u) => u.id === viewer.id)?.name || "";
-    const taskTitle = participants.title || "";
+  const author = mockUsers.find((u) => u.id === viewer.id)?.name || "";
+  const taskTitle = participants.title || "";
+
+  // Generic "new message" → every other participant EXCEPT those mentioned
+  // (mentioned users get the focused mention notification instead, no dupes).
+  const generic = participants.ids.filter((uid) => uid !== viewer.id && !mentionSet.has(uid));
+  if (generic.length > 0) {
     void dispatchToUsers({
-      recipientIds: recipients,
+      recipientIds: generic,
       type: "task_message",
       taskId: id,
       title: taskTitle ? `הודעה חדשה במשימה: ${taskTitle}` : "הודעה חדשה במשימה",
@@ -91,5 +97,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
   }
 
-  return NextResponse.json({ ok: true, message });
+  // Focused @mention notification.
+  if (mentions.length > 0) {
+    void dispatchToUsers({
+      recipientIds: mentions,
+      type: "task_mention",
+      taskId: id,
+      title: taskTitle ? `📣 ${author || "מישהו"} מזכיר/ה אותך במשימה: ${taskTitle}` : "מוזכרת במשימה",
+      body: author ? `${author}: ${text}` : text,
+      actorId: viewer.id,
+    });
+  }
+
+  return NextResponse.json({ ok: true, message, mentioned: mentions });
 }

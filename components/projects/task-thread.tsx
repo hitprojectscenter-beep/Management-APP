@@ -141,7 +141,10 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
   const [editingRoles, setEditingRoles] = useState(false);
   const [rolesDraft, setRolesDraft] = useState<Record<string, { type: string; detail?: string }>>({});
   const [savingRoles, setSavingRoles] = useState(false);
+  const [mentions, setMentions] = useState<Set<string>>(new Set());
+  const [mentionList, setMentionList] = useState<{ id: string; name: string }[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -257,15 +260,19 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
   const send = async () => {
     const text = input.trim();
     if (!text) return;
+    // Keep only mentions whose @first-name token still appears in the text.
+    const activeMentions = [...mentions].filter((id) => text.includes("@" + userName(id).split(" ")[0]));
     setPosting(true);
     try {
       const res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/thread`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: text }),
+        body: JSON.stringify({ body: text, mentions: activeMentions }),
       });
       if (res.ok) {
         setInput("");
+        setMentions(new Set());
+        setMentionList([]);
         await load();
       } else {
         toast.error(txt(locale, { he: "שליחת ההודעה נכשלה", en: "Failed to send" }) as string);
@@ -274,6 +281,46 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
       setPosting(false);
     }
   };
+
+  // ---- @mention autocomplete (chat) ----------------------------------------
+  const participantOptions = () =>
+    (data?.participants || []).filter((id) => id !== me).map((id) => ({ id, name: userName(id) }));
+  const onMentionInput = (val: string, caret: number) => {
+    setInput(val);
+    const before = val.slice(0, caret);
+    const m = before.match(/(?:^|\s)@([^\s@]*)$/);
+    if (m) {
+      const q = m[1].toLowerCase();
+      setMentionList(
+        participantOptions()
+          .filter((p) => !q || p.name.toLowerCase().includes(q) || p.name.toLowerCase().split(" ").some((w) => w.startsWith(q)))
+          .slice(0, 6),
+      );
+    } else {
+      setMentionList([]);
+    }
+  };
+  const pickMention = (p: { id: string; name: string }) => {
+    const el = inputRef.current;
+    const caret = el?.selectionStart ?? input.length;
+    const before = input.slice(0, caret);
+    const after = input.slice(caret);
+    const first = p.name.split(" ")[0];
+    const newBefore = before.replace(/(^|\s)@([^\s@]*)$/, `$1@${first} `);
+    setInput(newBefore + after);
+    setMentions((prev) => new Set(prev).add(p.id));
+    setMentionList([]);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+  /** Render a chat body, bolding @mention tokens. */
+  const renderBody = (text: string) =>
+    text.split(/(@[^\s@]+)/g).map((part, i) =>
+      part.startsWith("@") ? (
+        <span key={i} className="font-semibold text-primary">{part}</span>
+      ) : (
+        <span key={i}>{part}</span>
+      ),
+    );
 
   const ack = async () => {
     setAcking(true);
@@ -856,7 +903,7 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
                       <div className={cn("text-[10px] mb-0.5", mine ? "text-primary-foreground/70" : "text-muted-foreground")}>
                         {userName(m.authorId)} · {formatDateTime(m.createdAt, locale)}
                       </div>
-                      <div className="text-sm whitespace-pre-wrap leading-relaxed">{m.body}</div>
+                      <div className="text-sm whitespace-pre-wrap leading-relaxed">{renderBody(m.body)}</div>
                     </div>
                   </div>
                 );
@@ -865,20 +912,47 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
             </div>
 
             <div className="flex items-end gap-2">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void send();
-                  }
-                }}
-                rows={1}
-                placeholder={txt(locale, { he: "כתוב הודעה לצוות המשימה…", en: "Message the task team…" }) as string}
-                className="flex-1 min-h-[44px] max-h-32 resize-y rounded-md border bg-background px-3 py-2 text-sm"
-                style={{ fontSize: "16px" }}
-              />
+              <div className="relative flex-1">
+                {mentionList.length > 0 && (
+                  <div className="absolute bottom-full mb-1 inset-x-0 z-20 rounded-md border bg-background shadow-lg max-h-44 overflow-y-auto">
+                    {mentionList.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => pickMention(p)}
+                        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-sm hover:bg-accent text-start"
+                      >
+                        <Avatar src={userImg(p.id)} fallback={p.name[0]} className="size-5 shrink-0" />
+                        <span className="truncate">{p.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => onMentionInput(e.target.value, e.target.selectionStart ?? e.target.value.length)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setMentionList([]);
+                      return;
+                    }
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      if (mentionList.length > 0) {
+                        e.preventDefault();
+                        pickMention(mentionList[0]);
+                        return;
+                      }
+                      e.preventDefault();
+                      void send();
+                    }
+                  }}
+                  rows={1}
+                  placeholder={txt(locale, { he: "כתוב הודעה… (@ לאזכור)", en: "Message… (@ to mention)" }) as string}
+                  className="w-full min-h-[44px] max-h-32 resize-y rounded-md border bg-background px-3 py-2 text-sm"
+                  style={{ fontSize: "16px" }}
+                />
+              </div>
               <Button onClick={send} disabled={posting || !input.trim()} className="min-h-[44px]">
                 {posting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
               </Button>
