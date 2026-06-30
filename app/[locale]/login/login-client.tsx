@@ -129,6 +129,7 @@ export default function LoginClient({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="user@mapi.gov.il"
+                title={txt(locale, { he: "הזן/י את כתובת המייל הארגוני שלך (למשל name@mapi.gov.il). זוהי כתובת ההתחברות שקיבלת במייל ההזמנה.", en: "Enter your organizational email (e.g. name@mapi.gov.il). This is the sign-in address from your invitation." }) as string}
                 dir="ltr"
                 autoComplete="email"
                 className="w-full min-h-[44px] px-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring transition"
@@ -143,6 +144,7 @@ export default function LoginClient({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                title={txt(locale, { he: "הזן/י את הסיסמה שלך. בכניסה הראשונה — הסיסמה הראשונית מהמייל (תתבקש/י להחליפה מיד). לאחר מכן — הסיסמה שבחרת.", en: "Enter your password. On first login use the initial password from the email (you'll be asked to change it). Afterwards, your chosen password." }) as string}
                 dir="ltr"
                 autoComplete="current-password"
                 className="w-full min-h-[44px] px-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring transition"

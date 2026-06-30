@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 import { apiChangePassword } from "@/lib/auth/client-auth";
+import { FieldHint } from "@/components/ui/field-hint";
 
 /** Live mirror of the server password policy — for instant feedback only;
  *  the server (checkPasswordPolicy) remains authoritative. */
@@ -123,7 +124,10 @@ export function ChangePasswordForm({
       )}
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">{txt(locale, { he: "סיסמה נוכחית", en: "Current password" })}</label>
+        <label className="text-sm font-medium inline-flex items-center gap-1.5">
+          {txt(locale, { he: "סיסמה נוכחית", en: "Current password" })}
+          <FieldHint text={txt(locale, { he: "הסיסמה שאיתה את/ה מחובר/ת כעת (בכניסה ראשונה — הסיסמה הראשונית מהמייל). נדרשת לאימות זהותך לפני ההחלפה.", en: "The password you're currently signed in with (on first login, the initial one from the email). Required to verify your identity before changing." }) as string} />
+        </label>
         <Input
           type={show ? "text" : "password"}
           value={current}
@@ -135,7 +139,10 @@ export function ChangePasswordForm({
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
-          <label className="text-sm font-medium">{txt(locale, { he: "סיסמה חדשה", en: "New password" })}</label>
+          <label className="text-sm font-medium inline-flex items-center gap-1.5">
+            {txt(locale, { he: "סיסמה חדשה", en: "New password" })}
+            <FieldHint text={txt(locale, { he: "הסיסמה שתשמש אותך מעתה. חייבת לעמוד בכל הדרישות המסומנות למטה (12+ תווים, אותיות אנגלית גדולה+קטנה, ספרה ותו מיוחד). אפשר ללחוץ 'צור סיסמה חזקה'.", en: "The password you'll use from now on. Must meet all the requirements below (12+ chars, English upper+lower, a digit and a symbol). You can click 'Generate strong'." }) as string} />
+          </label>
           <button
             type="button"
             onClick={fillGenerated}
@@ -181,7 +188,10 @@ export function ChangePasswordForm({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">{txt(locale, { he: "אימות סיסמה חדשה", en: "Confirm new password" })}</label>
+        <label className="text-sm font-medium inline-flex items-center gap-1.5">
+          {txt(locale, { he: "אימות סיסמה חדשה", en: "Confirm new password" })}
+          <FieldHint text={txt(locale, { he: "הקלד/י שוב את הסיסמה החדשה, בדיוק כפי שהוקלדה למעלה, כדי לוודא שאין טעות הקלדה.", en: "Re-type the new password exactly as above, to make sure there's no typo." }) as string} />
+        </label>
         <Input
           type={show ? "text" : "password"}
           value={confirm}

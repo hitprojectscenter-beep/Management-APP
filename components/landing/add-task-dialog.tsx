@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
+import { FieldHint } from "@/components/ui/field-hint";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { X, AlertTriangle, CalendarClock } from "lucide-react";
@@ -616,8 +617,9 @@ export function AddTaskDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
           <div className="space-y-1.5">
-            <Label htmlFor="task-title">
+            <Label htmlFor="task-title" className="inline-flex items-center gap-1.5">
               {txt(locale, { he: "כותרת המשימה", en: "Task Title", ru: "Название задачи", fr: "Titre de la tâche", es: "Título de la tarea" })} <span className="text-red-500">*</span>
+              <FieldHint text={txt(locale, { he: "כותרת קצרה וברורה — מה צריך לעשות. זהו השם שיוצג ברשימות ובלוחות המשימות (שדה חובה).", en: "A short, clear title — what needs to be done. This name appears in task lists and boards (required)." }) as string} />
             </Label>
             <Input
               id="task-title"
@@ -633,9 +635,10 @@ export function AddTaskDialog({
               logical order it is the second-most important field a reader scans
               (what the task IS), before classification/assignment. */}
           <div className="space-y-1.5">
-            <Label htmlFor="task-desc">
+            <Label htmlFor="task-desc" className="inline-flex items-center gap-1.5">
               {txt(locale, { he: "תיאור", en: "Description", ru: "Описание", fr: "Description", es: "Descripción" })}{" "}
               <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "עד 300 תווים", en: "max 300 chars" })})</span>
+              <FieldHint text={txt(locale, { he: "הסבר קצר: מה כוללת המשימה, מטרתה ופרטים חשובים. עד 300 תווים (רשות).", en: "A brief explanation: the task's scope, goal and key details. Up to 300 chars (optional)." }) as string} />
             </Label>
             <textarea
               id="task-desc"
@@ -694,8 +697,9 @@ export function AddTaskDialog({
 
           {/* Task Source */}
           <div className="space-y-1.5">
-            <Label>
+            <Label className="inline-flex items-center gap-1.5">
               {txt(locale, { he: "מקור המשימה", en: "Task Source" })} <span className="text-red-500">*</span>
+              <FieldHint text={txt(locale, { he: "מהיכן הגיעה המשימה — החלטת מנהל, פגישה, מסמך וכו'. בחר/י את המקור המתאים (שדה חובה).", en: "Where the task originated — a manager decision, a meeting, a document, etc. Pick the matching source (required)." }) as string} />
             </Label>
             <div className="flex flex-wrap gap-1.5">
               {TASK_SOURCES.map((src) => (
@@ -735,8 +739,9 @@ export function AddTaskDialog({
           {/* Dates — "when" (scheduling group) */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="task-start">
+              <Label htmlFor="task-start" className="inline-flex items-center gap-1.5">
                 {txt(locale, { he: "תאריך התחלה", en: "Start Date" })} <span className="text-red-500">*</span>
+                <FieldHint text={txt(locale, { he: "מתי מתחילים לעבוד על המשימה. ברירת המחדל היא היום — ניתן לשנות (שדה חובה).", en: "When work on the task begins. Defaults to today — you can change it (required)." }) as string} />
               </Label>
               <DateField
                 id="task-start"
@@ -755,8 +760,9 @@ export function AddTaskDialog({
               {errors.plannedStart && <p className="text-xs text-red-500">{errors.plannedStart}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="task-end">
+              <Label htmlFor="task-end" className="inline-flex items-center gap-1.5">
                 {txt(locale, { he: "תאריך סיום משוער", en: "Est. End Date" })} <span className="text-red-500">*</span>
+                <FieldHint text={txt(locale, { he: "תאריך היעד לסיום. חייב להיות אחרי תאריך ההתחלה; לפיו מחושב 'באיחור' (שדה חובה).", en: "The target completion date. Must be after the start date; 'overdue' is computed from it (required)." }) as string} />
               </Label>
               <DateField
                 id="task-end"

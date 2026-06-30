@@ -81,6 +81,7 @@ export function ContactButton() {
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder={txt(locale, { he: "נושא (רשות)", en: "Subject (optional)" })}
+                title={txt(locale, { he: "כותרת קצרה לפנייה (רשות), למשל 'תקלה בהוספת משימה' או 'הצעת ייעול'. עוזרת לנו לנתב את הפנייה.", en: "A short subject (optional), e.g. 'Issue adding a task' or 'Improvement idea'. Helps us route it." }) as string}
                 className="w-full min-h-[40px] px-3 rounded-md border bg-background text-sm"
                 style={{ fontSize: "16px" }}
                 maxLength={150}
@@ -91,6 +92,7 @@ export function ContactButton() {
                 rows={5}
                 autoFocus
                 placeholder={txt(locale, { he: "כתוב/י את הפנייה כאן…", en: "Write your message…" })}
+                title={txt(locale, { he: "פרט/י כאן את השאלה, התקלה או ההצעה לייעול. ככל שתוסיף/י פרטים — נוכל לעזור מהר ומדויק יותר.", en: "Describe your question, issue, or suggestion. The more detail, the faster and more precisely we can help." }) as string}
                 className="w-full px-3 py-2 rounded-md border bg-background text-sm resize-y"
                 style={{ fontSize: "16px" }}
                 maxLength={4000}
