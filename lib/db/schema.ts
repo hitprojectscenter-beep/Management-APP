@@ -123,6 +123,23 @@ export const userSessions = pgTable("user_sessions", {
 });
 
 /**
+ * Password history — the last few bcrypt HASHES per user (never plaintext), so
+ * a password change can reject reuse of a recent old password. Aligns with the
+ * INCD / Privacy-Protection password-history guidance referenced in
+ * lib/auth/password.ts.
+ */
+export const passwordHistory = pgTable(
+  "password_history",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id").notNull(),
+    passwordHash: text("password_hash").notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => ({ userIdx: index("password_history_user_idx").on(t.userId) }),
+);
+
+/**
  * Security audit log for authentication events (login ok/fail, logout,
  * lockout, password change, account disabled). Separate from the general
  * auditLogs so security monitoring has a focused, append-only trail —

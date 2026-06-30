@@ -21,6 +21,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
 import { verifyPassword, hashPassword, checkPasswordPolicy } from "./password";
+import { isPasswordReused, recordOldPasswordHash, PASSWORD_HISTORY_LIMIT } from "./password-history";
 import { createSession } from "./server-session";
 import { logAuthEvent } from "./audit";
 import type { UserRole } from "@/lib/db/types";
@@ -162,9 +163,13 @@ export async function changeOwnPassword(
   const policy = checkPasswordPolicy(newPassword, { name: u.name ?? undefined, email: u.email });
   if (!policy.ok) return { ok: false, reason: "weak", errors: policy.errors };
 
-  // Forbid reusing the exact same password.
-  if (u.passwordHash && (await verifyPassword(newPassword, u.passwordHash))) {
-    return { ok: false, reason: "weak", errors: ["הסיסמה החדשה חייבת להיות שונה מהנוכחית"] };
+  // Forbid reusing the current password OR any of the recent previous ones.
+  if (await isPasswordReused(userId, newPassword, u.passwordHash)) {
+    return {
+      ok: false,
+      reason: "weak",
+      errors: [`אין להשתמש בסיסמה הנוכחית או באחת מ-${PASSWORD_HISTORY_LIMIT} הסיסמאות האחרונות`],
+    };
   }
 
   const passwordHash = await hashPassword(newPassword);
@@ -178,5 +183,7 @@ export async function changeOwnPassword(
       lockedUntil: null,
     })
     .where(eq(users.id, userId));
+  // Remember the password we just replaced, so it can't be reused next time.
+  await recordOldPasswordHash(userId, u.passwordHash);
   return { ok: true };
 }

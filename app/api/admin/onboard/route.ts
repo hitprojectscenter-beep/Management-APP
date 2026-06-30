@@ -4,6 +4,7 @@ import { isDatabaseConfigured, getDb } from "@/lib/db/client";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { users } from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/password";
+import { recordOldPasswordHash } from "@/lib/auth/password-history";
 import { revokeAllUserSessions } from "@/lib/auth/server-session";
 import { sendEmail, sendWhatsApp, getAppBaseUrl, type EmailAttachment } from "@/lib/notify/transport";
 import { logAuthEvent } from "@/lib/auth/audit";
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
   const ids: string[] = Array.isArray(body?.ids) && body.ids.length ? body.ids : ONBOARD_IDS;
 
   const db = getDb();
-  const rows = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone }).from(users).where(inArray(users.id, ids));
+  const rows = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone, passwordHash: users.passwordHash }).from(users).where(inArray(users.id, ids));
 
   // Fetch the public guide PDF once (so it can be attached to every email).
   let pdf: Buffer | null = null;
@@ -99,6 +100,7 @@ export async function POST(req: Request) {
     if (!dryRun) {
       try {
         await db.update(users).set({ passwordHash: hash, passwordChangedAt: new Date(), mustChangePassword: true, failedLoginAttempts: 0, lockedUntil: null }).where(eq(users.id, u.id));
+        await recordOldPasswordHash(u.id, u.passwordHash); // remember the replaced password
         await revokeAllUserSessions(u.id);
         r.passwordSet = true;
         await logAuthEvent({ userId: u.id, email: u.email, event: "password_set", success: true, detail: "onboarding initial password (force-change)" });

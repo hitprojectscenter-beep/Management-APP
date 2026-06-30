@@ -3,6 +3,7 @@ import { eq, asc } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
 import { hashPassword, generateTempPassword } from "./password";
+import { recordOldPasswordHash } from "./password-history";
 import { revokeAllUserSessions } from "./server-session";
 import { toPublicUser, type PublicUser } from "./auth-service";
 import type { UserRole } from "@/lib/db/types";
@@ -96,14 +97,17 @@ export async function updateUser(
 /** Reset a user's password to a fresh temp value, force change on next login,
  *  clear any lockout, and revoke their sessions. Returns the temp password. */
 export async function resetUserPassword(id: string): Promise<{ tempPassword: string } | null> {
+  const db = getDb();
+  const before = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, id)).limit(1);
   const tempPassword = generateTempPassword();
   const passwordHash = await hashPassword(tempPassword);
-  const rows = await getDb()
+  const rows = await db
     .update(users)
     .set({ passwordHash, passwordChangedAt: new Date(), mustChangePassword: true, failedLoginAttempts: 0, lockedUntil: null })
     .where(eq(users.id, id))
     .returning({ id: users.id });
   if (!rows[0]) return null;
+  await recordOldPasswordHash(id, before[0]?.hash); // remember the replaced password
   try { await revokeAllUserSessions(id); } catch { /* best-effort */ }
   return { tempPassword };
 }
