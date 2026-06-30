@@ -14,6 +14,8 @@ import "server-only";
 import { eq, asc, and } from "drizzle-orm";
 import { getDb } from "./client";
 import { appTasks, taskHistory, taskMemberStatus, users, type TaskHistoryRow, type TaskMemberStatusRow } from "./schema";
+import { daysBetween } from "@/lib/utils";
+import { dispatchToUsers } from "@/lib/notify/dispatch";
 
 export type HistoryKind =
   | "created"
@@ -30,7 +32,9 @@ export type HistoryKind =
   | "supervisor_cancel"
   | "supervisor_extend"
   // The assignee acknowledged a supervisor decision (read-receipt):
-  | "decision_acknowledged";
+  | "decision_acknowledged"
+  // Auto-escalation: an overdue/stuck task was raised up the management chain:
+  | "escalated";
 
 /** Valid workflow statuses a task may hold. */
 export const WORKFLOW_STATUS_SET = new Set<string>([
@@ -375,4 +379,122 @@ export async function acknowledgeDecision(
     meta: { refId: historyId, refKind: ref?.kind ?? null },
   });
   return { history, refActorId: ref?.actorId ?? null, refKind: ref?.kind ?? null };
+}
+
+// ---- Auto-escalation (#4) ---------------------------------------------------
+
+/** Active statuses that can be escalated (not done/handled/completed/cancelled/rejected). */
+const ESCALATABLE = new Set<string>(["new", "in_progress", "frozen", "waiting"]);
+const ESCALATE_OVERDUE_DAYS = 3; // overdue by ≥ this many days
+const ESCALATE_STUCK_DAYS = 7; // frozen/waiting with no movement ≥ this many days
+const ESCALATE_COOLDOWN_DAYS = 7; // don't re-escalate the same task within this window
+
+export interface EscalationRecord {
+  taskId: string;
+  title: string;
+  assigneeId: string;
+  reason: "overdue" | "stuck";
+  days: number;
+  recipients: string[];
+}
+
+/**
+ * Scan all created tasks and escalate the ones that are OVERDUE (≥3 days past
+ * the due date) or STUCK (frozen/waiting with no movement ≥7 days) UP the
+ * assignee's management chain to the division head (סמנכ"ל) + the creator.
+ * Idempotent-ish: a task isn't re-escalated within a 7-day cooldown, so the
+ * daily cron won't spam. Returns a summary. Called by the daily Vercel Cron
+ * (or manually by an admin) at /api/cron/escalate.
+ */
+export async function runEscalations(now: Date = new Date()): Promise<{ scanned: number; escalated: EscalationRecord[] }> {
+  const db = getDb();
+  const today = now.toISOString().slice(0, 10);
+
+  // One pass over users → name map + a local "chain up to VP" (avoids N+1).
+  const allUsers = await db.select({ id: users.id, name: users.name, managerId: users.managerId }).from(users);
+  const byId = new Map(allUsers.map((u) => [u.id, u]));
+  const ceoId = allUsers.find((u) => !u.managerId)?.id;
+  const chainUpToVP = (actorId: string): string[] => {
+    const chain: string[] = [];
+    const seen = new Set<string>();
+    let cur = byId.get(actorId);
+    while (cur?.managerId) {
+      const mgr = byId.get(cur.managerId);
+      if (!mgr || !mgr.managerId) break; // reached the CEO — stop (don't include)
+      if (seen.has(mgr.id)) break;
+      seen.add(mgr.id);
+      chain.push(mgr.id);
+      if (mgr.managerId === ceoId) break; // mgr is a division head (VP) — included, stop
+      cur = mgr;
+    }
+    return chain;
+  };
+
+  const tasks = await db
+    .select({
+      id: appTasks.id,
+      title: appTasks.title,
+      status: appTasks.status,
+      assigneeId: appTasks.assigneeId,
+      creatorId: appTasks.creatorId,
+      plannedEnd: appTasks.plannedEnd,
+      updatedAt: appTasks.updatedAt,
+    })
+    .from(appTasks);
+
+  const escalated: EscalationRecord[] = [];
+  for (const t of tasks) {
+    if (!ESCALATABLE.has(t.status)) continue;
+    const assignee = t.assigneeId;
+    if (!assignee) continue;
+
+    let reason: "overdue" | "stuck" | null = null;
+    let days = 0;
+    if (t.plannedEnd && t.plannedEnd < today) {
+      const d = daysBetween(t.plannedEnd, today);
+      if (d >= ESCALATE_OVERDUE_DAYS) {
+        reason = "overdue";
+        days = d;
+      }
+    }
+    if (!reason && (t.status === "frozen" || t.status === "waiting")) {
+      const idle = daysBetween(t.updatedAt, now);
+      if (idle >= ESCALATE_STUCK_DAYS) {
+        reason = "stuck";
+        days = idle;
+      }
+    }
+    if (!reason) continue;
+
+    // Cooldown — skip if this task was escalated within the window.
+    const prior = await db
+      .select({ createdAt: taskHistory.createdAt })
+      .from(taskHistory)
+      .where(and(eq(taskHistory.taskId, t.id), eq(taskHistory.kind, "escalated")));
+    const lastEsc = prior.map((r) => r.createdAt).sort((a, b) => a.getTime() - b.getTime()).pop();
+    if (lastEsc && daysBetween(lastEsc, now) < ESCALATE_COOLDOWN_DAYS) continue;
+
+    // Recipients: the assignee's chain up to the VP + the creator, minus the assignee.
+    const recipients = [...new Set([...chainUpToVP(assignee), t.creatorId].filter((x): x is string => !!x))].filter((uid) => uid !== assignee);
+    if (recipients.length === 0) continue;
+
+    const reasonText =
+      reason === "overdue"
+        ? `המשימה באיחור ${days} ימים מתאריך היעד`
+        : `המשימה ${t.status === "frozen" ? "מוקפאת" : "ממתינה"} ${days} ימים ללא התקדמות`;
+    await log(t.id, "system", "escalated", reasonText, { meta: { reason, days, escalatedTo: recipients } });
+
+    const assigneeName = byId.get(assignee)?.name || "";
+    void dispatchToUsers({
+      recipientIds: recipients,
+      type: "task_escalated",
+      taskId: t.id,
+      title: `⚠️ הסלמה: ${t.title}`,
+      body: `${reasonText}. אחראי/ת: ${assigneeName}. נדרשת התערבות ניהולית.`,
+    });
+
+    escalated.push({ taskId: t.id, title: t.title, assigneeId: assignee, reason, days, recipients });
+  }
+
+  return { scanned: tasks.length, escalated };
 }

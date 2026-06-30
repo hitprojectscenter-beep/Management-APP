@@ -62,6 +62,7 @@ type Prompt =
   | { type: "supervisor"; action: "note" | "reject" | "cancel" | "extend" };
 
 function userName(id: string): string {
+  if (id === "system") return "מערכת";
   return mockUsers.find((u) => u.id === id)?.name || id;
 }
 function userImg(id: string): string | undefined {
@@ -378,6 +379,8 @@ export function TaskThread({ taskId, locale }: { taskId: string; locale: string 
         return `${txt(locale, { he: "ממונה הוסיף/ה זמן ביצוע — יעד חדש", en: "Supervisor added time — new due" })} ${formatDateDDMMYYYY(String(m.newDueDate || ""))}`;
       case "decision_acknowledged":
         return txt(locale, { he: "אישר/ה את קבלת החלטת הממונה", en: "Acknowledged the supervisor's decision" }) as string;
+      case "escalated":
+        return `⚠️ ${txt(locale, { he: "הוסלם אוטומטית לדרג הניהולי", en: "Auto-escalated to management" })}`;
       default:
         return h.kind;
     }

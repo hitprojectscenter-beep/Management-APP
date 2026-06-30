@@ -46,7 +46,10 @@ export async function dispatchToUsers(input: DispatchInput): Promise<void> {
     /* best-effort */
   }
 
-  if (input.bellOnly) return;
+  // Kill-switch: NOTIFY_DISABLED=1 keeps the in-app bell but skips outbound
+  // email/WhatsApp (maintenance windows, staging, and safe test runs).
+  const externalDisabled = process.env.NOTIFY_DISABLED === "1" || process.env.NOTIFY_DISABLED === "true";
+  if (input.bellOnly || externalDisabled) return;
 
   // 2) Email + WhatsApp — resolve contact details from the users table.
   let contacts: { id: string; email: string | null; phone: string | null }[] = [];
