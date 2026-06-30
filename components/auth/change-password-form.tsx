@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, X, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
+import { Check, X, Eye, EyeOff, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,21 @@ import { apiChangePassword } from "@/lib/auth/client-auth";
 function rules(pw: string, locale: string) {
   return [
     { ok: pw.length >= 12, label: txt(locale, { he: "לפחות 12 תווים", en: "At least 12 characters" }) },
-    { ok: /[a-z]/.test(pw), label: txt(locale, { he: "אות לטינית קטנה", en: "A lowercase letter" }) },
-    { ok: /[A-Z]/.test(pw), label: txt(locale, { he: "אות לטינית גדולה", en: "An uppercase letter" }) },
-    { ok: /[0-9]/.test(pw), label: txt(locale, { he: "ספרה", en: "A digit" }) },
+    { ok: /[a-z]/.test(pw), label: txt(locale, { he: "אות אנגלית קטנה (a-z)", en: "A lowercase letter" }) },
+    { ok: /[A-Z]/.test(pw), label: txt(locale, { he: "אות אנגלית גדולה (A-Z)", en: "An uppercase letter" }) },
+    { ok: /[0-9]/.test(pw), label: txt(locale, { he: "ספרה (0-9)", en: "A digit" }) },
     { ok: /[^A-Za-z0-9]/.test(pw), label: txt(locale, { he: "תו מיוחד (!@#$...)", en: "A special character" }) },
   ];
+}
+
+/** Generate a strong, policy-compliant password (client-side helper button). */
+function generateStrongPassword(): string {
+  const U = "ABCDEFGHJKLMNPQRSTUVWXYZ", L = "abcdefghijkmnpqrstuvwxyz", D = "23456789", S = "!@#$%^&*";
+  const all = U + L + D + S;
+  const pick = (set: string, n: number) =>
+    Array.from({ length: n }, () => set[Math.floor((crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32) * set.length)]).join("");
+  const base = pick(U, 2) + pick(L, 6) + pick(D, 3) + pick(S, 2) + pick(all, 2);
+  return base.split("").map((ch) => ({ ch, k: crypto.getRandomValues(new Uint32Array(1))[0] })).sort((a, b) => a.k - b.k).map((x) => x.ch).join("");
 }
 
 export function ChangePasswordForm({
@@ -44,14 +54,29 @@ export function ChangePasswordForm({
   const checks = useMemo(() => rules(next, locale), [next, locale]);
   const policyOk = checks.every((c) => c.ok);
   const matchOk = next.length > 0 && next === confirm;
-  const canSubmit = current.length > 0 && policyOk && matchOk && !submitting;
+
+  const fillGenerated = () => {
+    const p = generateStrongPassword();
+    setNext(p);
+    setConfirm(p);
+    setShow(true);
+  };
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setTopError(null);
     setServerErrors([]);
+    // Validate on click and explain exactly what's missing — never a silent "dead" button.
+    if (current.length === 0) {
+      setTopError(txt(locale, { he: "יש להזין את הסיסמה הנוכחית", en: "Enter your current password" }) as string);
+      return;
+    }
+    if (!policyOk) {
+      setTopError(txt(locale, { he: "הסיסמה החדשה אינה עומדת בכל הדרישות — ראה/י את הסימון הירוק מתחת לשדה", en: "New password doesn't meet all requirements — see the checklist" }) as string);
+      return;
+    }
     if (!matchOk) {
-      setTopError(txt(locale, { he: "האימות אינו תואם לסיסמה החדשה", en: "Confirmation doesn't match" }) as string);
+      setTopError(txt(locale, { he: "אימות הסיסמה אינו תואם לסיסמה החדשה", en: "Confirmation doesn't match" }) as string);
       return;
     }
     setSubmitting(true);
@@ -109,7 +134,17 @@ export function ChangePasswordForm({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">{txt(locale, { he: "סיסמה חדשה", en: "New password" })}</label>
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-sm font-medium">{txt(locale, { he: "סיסמה חדשה", en: "New password" })}</label>
+          <button
+            type="button"
+            onClick={fillGenerated}
+            className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+          >
+            <Sparkles className="size-3.5" />
+            {txt(locale, { he: "צור סיסמה חזקה", en: "Generate strong" })}
+          </button>
+        </div>
         <div className="relative">
           <Input
             type={show ? "text" : "password"}
@@ -137,6 +172,12 @@ export function ChangePasswordForm({
             </li>
           ))}
         </ul>
+        <p className="text-[11px] text-muted-foreground pt-0.5">
+          {txt(locale, {
+            he: "השתמש/י באותיות אנגלית (גדולות וקטנות), מספרים ותו מיוחד — או לחצ/י 'צור סיסמה חזקה'.",
+            en: "Use English letters (upper & lower), digits and a symbol — or click 'Generate strong'.",
+          })}
+        </p>
       </div>
 
       <div className="space-y-1.5">
@@ -155,7 +196,7 @@ export function ChangePasswordForm({
       </div>
 
       <div className="flex items-center gap-2 pt-1">
-        <Button type="submit" disabled={!canSubmit} className="min-w-[44px]">
+        <Button type="submit" disabled={submitting} className="min-w-[44px]">
           {submitting && <Loader2 className="size-4 animate-spin me-2" />}
           {txt(locale, { he: "עדכן סיסמה", en: "Update password" })}
         </Button>
