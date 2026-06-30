@@ -14,8 +14,9 @@ import "server-only";
 import { eq, asc, and } from "drizzle-orm";
 import { getDb } from "./client";
 import { appTasks, taskHistory, taskMemberStatus, users, type TaskHistoryRow, type TaskMemberStatusRow } from "./schema";
-import { daysBetween } from "@/lib/utils";
+import { daysBetween, formatDateDDMMYYYY } from "@/lib/utils";
 import { dispatchToUsers } from "@/lib/notify/dispatch";
+import { STATUS_LABELS_ML } from "@/lib/utils/locale-text";
 
 export type HistoryKind =
   | "created"
@@ -555,7 +556,7 @@ export async function runEscalations(now: Date = new Date()): Promise<{ scanned:
     await log(t.id, "system", "escalated", reasonText, { meta: { reason, days, escalatedTo: recipients } });
 
     const assigneeName = byId.get(assignee)?.name || "";
-    void dispatchToUsers({
+    await dispatchToUsers({
       recipientIds: recipients,
       type: "task_escalated",
       taskId: t.id,
@@ -567,4 +568,88 @@ export async function runEscalations(now: Date = new Date()): Promise<{ scanned:
   }
 
   return { scanned: tasks.length, escalated };
+}
+
+// ---- Weekly digest (#9) -----------------------------------------------------
+
+export interface DigestRecord {
+  managerId: string;
+  atRisk: number;
+}
+
+/**
+ * Weekly per-manager digest: for every user who has subordinates, collect the
+ * AT-RISK tasks in their reporting subtree — overdue, due within 7 days, or
+ * frozen/waiting — and send them one summary (in-app bell + email). Managers
+ * with nothing at risk get nothing. Returns who was notified. Called by the
+ * weekly Vercel Cron (or manually by an admin) at /api/cron/digest.
+ */
+export async function runWeeklyDigest(now: Date = new Date()): Promise<{ managers: number; sent: DigestRecord[] }> {
+  const db = getDb();
+  const today = now.toISOString().slice(0, 10);
+
+  const allUsers = await db.select({ id: users.id, name: users.name, managerId: users.managerId }).from(users);
+  const nameById = new Map(allUsers.map((u) => [u.id, u.name]));
+  const childrenOf = new Map<string, string[]>();
+  for (const u of allUsers) {
+    if (u.managerId) {
+      const arr = childrenOf.get(u.managerId);
+      if (arr) arr.push(u.id);
+      else childrenOf.set(u.managerId, [u.id]);
+    }
+  }
+  const descendants = (root: string): Set<string> => {
+    const out = new Set<string>();
+    const q = [...(childrenOf.get(root) ?? [])];
+    while (q.length) {
+      const id = q.shift() as string;
+      if (out.has(id)) continue;
+      out.add(id);
+      for (const ch of childrenOf.get(id) ?? []) q.push(ch);
+    }
+    return out;
+  };
+
+  const tasks = await db
+    .select({
+      id: appTasks.id,
+      title: appTasks.title,
+      status: appTasks.status,
+      assigneeId: appTasks.assigneeId,
+      plannedEnd: appTasks.plannedEnd,
+    })
+    .from(appTasks);
+
+  const managers = allUsers.filter((u) => childrenOf.has(u.id));
+  const sent: DigestRecord[] = [];
+  for (const m of managers) {
+    const subtree = descendants(m.id);
+    if (subtree.size === 0) continue;
+    const atRisk = tasks.filter((t) => {
+      if (!t.assigneeId || !subtree.has(t.assigneeId)) return false;
+      if (!ESCALATABLE.has(t.status)) return false; // active only
+      const overdue = !!t.plannedEnd && t.plannedEnd < today;
+      const dueSoon = !!t.plannedEnd && t.plannedEnd >= today && daysBetween(today, t.plannedEnd) <= 7;
+      const stuck = t.status === "frozen" || t.status === "waiting";
+      return overdue || dueSoon || stuck;
+    });
+    if (atRisk.length === 0) continue;
+
+    const lines = atRisk.slice(0, 25).map((t) => {
+      const st = STATUS_LABELS_ML[t.status]?.he || t.status;
+      const due = t.plannedEnd ? formatDateDDMMYYYY(t.plannedEnd) : "—";
+      const flag = t.plannedEnd && t.plannedEnd < today ? " ⚠️ באיחור" : "";
+      return `• ${t.title} — ${st} — יעד ${due} — ${nameById.get(t.assigneeId!) || ""}${flag}`;
+    });
+    const more = atRisk.length > 25 ? `\n…ועוד ${atRisk.length - 25} משימות` : "";
+    await dispatchToUsers({
+      recipientIds: [m.id],
+      type: "weekly_digest",
+      title: `תקציר שבועי — ${atRisk.length} משימות בסיכון בצוות שלך`,
+      body: `שלום ${m.name},\nלהלן המשימות בסיכון (באיחור / יעד בשבוע הקרוב / מוקפאות) בתת-העץ הניהולי שלך:\n\n${lines.join("\n")}${more}`,
+    });
+    sent.push({ managerId: m.id, atRisk: atRisk.length });
+  }
+
+  return { managers: managers.length, sent };
 }
