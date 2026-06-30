@@ -12,16 +12,32 @@ export function TaskList({
   tasks,
   users,
   locale,
+  selectable = false,
+  selected,
+  onToggle,
+  allChecked = false,
+  onToggleAll,
 }: {
   tasks: MockTask[];
   users: MockUser[];
   locale: string;
+  /** When true, a leading checkbox column lets the user multi-select rows. */
+  selectable?: boolean;
+  selected?: Set<string>;
+  onToggle?: (id: string) => void;
+  allChecked?: boolean;
+  onToggleAll?: () => void;
 }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="text-xs text-muted-foreground border-b">
           <tr>
+            {selectable && (
+              <th className="w-8 px-2 py-2">
+                <input type="checkbox" checked={allChecked} onChange={onToggleAll} aria-label="select all" className="align-middle" />
+              </th>
+            )}
             <th className="text-start py-2 font-medium px-2">{locale === "he" ? "משימה" : "Task"}</th>
             <th className="text-start py-2 font-medium px-2">{locale === "he" ? "סטטוס" : "Status"}</th>
             <th className="text-start py-2 font-medium px-2">{locale === "he" ? "עדיפות" : "Priority"}</th>
@@ -35,7 +51,12 @@ export function TaskList({
             const user = users.find((u) => u.id === task.assigneeId);
             const overdue = isOverdue(task.plannedEnd, task.status);
             return (
-              <tr key={task.id} className="border-b hover:bg-muted/40">
+              <tr key={task.id} className={cn("border-b hover:bg-muted/40", selectable && selected?.has(task.id) && "bg-primary/5")}>
+                {selectable && (
+                  <td className="px-2 py-3">
+                    <input type="checkbox" checked={selected?.has(task.id) || false} onChange={() => onToggle?.(task.id)} aria-label="select task" className="align-middle" />
+                  </td>
+                )}
                 <td className="py-3 px-2">
                   <Link href={`/tasks/${task.id}`} className="font-medium hover:text-primary">
                     {locale === "he" ? task.title : task.titleEn || task.title}
