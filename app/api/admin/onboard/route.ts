@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 
 const INITIAL_PW = "Mapi-Start#2026";
 const APP_LINK = "https://management-app-hitprojectscenter-6566s-projects.vercel.app";
-/** The 7 users to onboard (עידית, אלכס, חן, אלעד, סופיה, אפי, ניר). */
-const ONBOARD_IDS = ["u68", "u30", "u28", "u3", "u74", "u4", "u2"];
+/** The users to onboard (עידית, אלכס, חן, אלעד, סופיה, אפי, ניר ברלוביץ', ניר אלוש). */
+const ONBOARD_IDS = ["u68", "u30", "u28", "u3", "u74", "u4", "u2", "u43"];
 const ADMIN_SUMMARY_EMAIL = "hitprojectscenter@gmail.com";
 
 const SUBJECT = "הזמנה להצטרף ליישום ניהול משימות PMO++ — המרכז למיפוי ישראל";
