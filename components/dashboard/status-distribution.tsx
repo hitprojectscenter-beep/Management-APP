@@ -17,6 +17,12 @@ export function StatusDistribution({
     done: { he: "הושלם", en: "Done", ru: "Завершена", fr: "Terminé", es: "Completada" },
     blocked: { he: "חסום", en: "Blocked", ru: "Заблокирована", fr: "Bloqué", es: "Bloqueada" },
     cancelled: { he: "בוטל", en: "Cancelled", ru: "Отменена", fr: "Annulé", es: "Cancelada" },
+    new: { he: "חדשה", en: "New", ru: "Новая", fr: "Nouvelle", es: "Nueva" },
+    frozen: { he: "הוקפאה", en: "Frozen", ru: "Заморожена", fr: "Gelé", es: "Congelada" },
+    waiting: { he: "ממתינה", en: "Waiting", ru: "Ожидает", fr: "En attente", es: "En espera" },
+    handled: { he: "טופל", en: "Handled", ru: "Обработана", fr: "Traité", es: "Atendida" },
+    rejected: { he: "נדחתה", en: "Rejected", ru: "Отклонена", fr: "Rejeté", es: "Rechazada" },
+    completed: { he: "הושלם", en: "Completed", ru: "Завершена", fr: "Terminé", es: "Completada" },
   };
 
   const counts = tasks.reduce((acc, task) => {
@@ -25,7 +31,7 @@ export function StatusDistribution({
   }, {} as Record<string, number>);
 
   const data = Object.entries(counts).map(([status, value]) => ({
-    name: statusLabels[status][locale],
+    name: statusLabels[status]?.[locale] || status,
     value,
     color: STATUS_COLORS[status as keyof typeof STATUS_COLORS],
   }));

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar } from "@/components/ui/avatar";
+import { isOpenStatus, isClosedStatus } from "@/lib/db/types";
 import {
   Briefcase,
   Building2,
@@ -229,7 +230,7 @@ function ProjectManagerView({
       t.priority === "critical" &&
       t.plannedEnd &&
       new Date(t.plannedEnd).getTime() < Date.now() &&
-      t.status !== "done"
+      isOpenStatus(t.status)
   ).length;
 
   // KPI 2: Throughput (planned vs delivered, last 6 weeks)
@@ -254,8 +255,8 @@ function ProjectManagerView({
     const userTasks = tasks.filter((t) => t.assigneeId === u.id);
     return {
       name: u.name.split(" ")[0],
-      open: userTasks.filter((t) => t.status === "in_progress" || t.status === "not_started").length,
-      done: userTasks.filter((t) => t.status === "done").length,
+      open: userTasks.filter((t) => isOpenStatus(t.status) && t.status !== "blocked").length,
+      done: userTasks.filter((t) => isClosedStatus(t.status)).length,
       blocked: userTasks.filter((t) => t.status === "blocked").length,
     };
   });
@@ -325,7 +326,7 @@ function ProjectManagerView({
           popupContent={
             <div className="space-y-2">
               {tasks.filter((t) => t.priority === "critical" && t.plannedEnd).slice(0, 6).map((t) => {
-                const isLate = new Date(t.plannedEnd).getTime() < Date.now() && t.status !== "done";
+                const isLate = new Date(t.plannedEnd).getTime() < Date.now() && isOpenStatus(t.status);
                 return (
                   <div key={t.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
                     <span className="font-medium truncate flex-1">{locale === "he" ? t.title : t.titleEn || t.title}</span>
@@ -1039,7 +1040,7 @@ function PmoManagerView({
             <div className="space-y-2">
               {users.map((u) => {
                 const fte = mockProjectMembers.filter((m) => m.userId === u.id).reduce((s, m) => s + m.ftePercent, 0);
-                const openTasks = tasks.filter((t) => t.assigneeId === u.id && t.status !== "done" && t.status !== "cancelled").length;
+                const openTasks = tasks.filter((t) => t.assigneeId === u.id && isOpenStatus(t.status)).length;
                 return (
                   <div key={u.id} className="p-2 rounded-md bg-muted/30">
                     <div className="flex items-center justify-between">
@@ -1076,7 +1077,7 @@ function PmoManagerView({
           popupTitle={txt(locale, { he: "סיכונים פעילים", en: "Active Risks" })}
           popupContent={
             <div className="space-y-2">
-              {tasks.filter((t) => t.status === "blocked" || (t.plannedEnd && new Date(t.plannedEnd).getTime() < Date.now() && t.status !== "done" && t.status !== "cancelled")).slice(0, 8).map((t) => (
+              {tasks.filter((t) => t.status === "blocked" || (t.plannedEnd && new Date(t.plannedEnd).getTime() < Date.now() && isOpenStatus(t.status))).slice(0, 8).map((t) => (
                 <div key={t.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
                   <span className="font-medium truncate flex-1">{locale === "he" ? t.title : t.titleEn || t.title}</span>
                   <Badge variant={t.status === "blocked" ? "destructive" : "outline"}>

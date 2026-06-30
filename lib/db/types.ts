@@ -75,6 +75,18 @@ export const STATUS_COLORS: Record<TaskStatus, string> = {
   completed: "hsl(142, 71%, 45%)", // הושלם — green
 };
 
+/** Statuses that mean the task is finished/closed (no longer active work):
+ *  done, completed, cancelled, handled (טופל), rejected (נדחתה). */
+export const CLOSED_STATUSES: readonly TaskStatus[] = ["done", "completed", "cancelled", "handled", "rejected"];
+/** True when the status means the task is closed/finished. */
+export function isClosedStatus(status: string): boolean {
+  return (CLOSED_STATUSES as readonly string[]).includes(status);
+}
+/** True when the task is still open/active (anything that isn't closed). */
+export function isOpenStatus(status: string): boolean {
+  return !isClosedStatus(status);
+}
+
 export const PRIORITY_COLORS: Record<TaskPriority, string> = {
   low: "hsl(220, 13%, 70%)",
   medium: "hsl(217, 91%, 60%)",

@@ -13,6 +13,7 @@
 import type { MockTask, MockUser, MockProjectMember } from "../db/mock-data";
 import type { RiskSeverity } from "../db/types";
 import { computeCriticalPath } from "../gantt/critical-path";
+import { isOpenStatus, isClosedStatus } from "../db/types";
 
 export interface DetectedRisk {
   taskId: string;
@@ -28,7 +29,7 @@ export function scanTasksForRisks(tasks: MockTask[]): DetectedRisk[] {
   const now = Date.now();
 
   for (const task of tasks) {
-    if (task.status === "done" || task.status === "cancelled") continue;
+    if (isClosedStatus(task.status)) continue;
 
     // 1. Overdue (status already filtered above, just check the date)
     if (task.plannedEnd && new Date(task.plannedEnd).getTime() < now) {
@@ -124,12 +125,12 @@ export function calculateProjectHealth(tasks: MockTask[]): {
   let completed = 0;
 
   for (const task of tasks) {
-    if (task.status === "done") completed++;
+    if (task.status === "done" || task.status === "completed" || task.status === "handled") completed++;
     if (task.status === "blocked") blocked++;
     if (
       task.plannedEnd &&
       new Date(task.plannedEnd).getTime() < now &&
-      task.status !== "done"
+      isOpenStatus(task.status)
     ) {
       overdue++;
     } else if (task.status !== "cancelled") {
@@ -194,7 +195,7 @@ export function detectResourceBottlenecks(
     const userMemberships = members.filter((m) => m.userId === user.id);
     const totalFte = userMemberships.reduce((sum, m) => sum + m.ftePercent, 0);
     const userTasks = tasks.filter((t) => t.assigneeId === user.id);
-    const openTasks = userTasks.filter((t) => t.status !== "done" && t.status !== "cancelled");
+    const openTasks = userTasks.filter((t) => isOpenStatus(t.status));
     const criticalAssignments = openTasks.filter((t) => cpm.criticalTaskIds.has(t.id));
     const blockedAssignments = openTasks.filter((t) => t.status === "blocked");
 
@@ -281,7 +282,7 @@ export function predictProjectEndDate(tasks: MockTask[]): ProjectForecast | null
 
   const now = Date.now();
   const completed = tasks.filter((t) => t.status === "done" && t.actualEnd);
-  const remaining = tasks.filter((t) => t.status !== "done" && t.status !== "cancelled");
+  const remaining = tasks.filter((t) => isOpenStatus(t.status));
 
   if (remaining.length === 0) {
     // All done - return last actual end
@@ -571,7 +572,7 @@ export function scanMethodologyRisks(
 ): DetectedRisk[] {
   const risks: DetectedRisk[] = [];
   const now = Date.now();
-  const activeTasks = tasks.filter(t => t.status !== "done" && t.status !== "cancelled");
+  const activeTasks = tasks.filter(t => isOpenStatus(t.status));
   const inProgressTasks = activeTasks.filter(t => t.status === "in_progress");
   const blockedTasks = activeTasks.filter(t => t.status === "blocked");
   const doneTasks = tasks.filter(t => t.status === "done");
@@ -582,7 +583,7 @@ export function scanMethodologyRisks(
       if (task.dependencies.length === 0) continue;
       for (const depId of task.dependencies) {
         const dep = tasks.find(t => t.id === depId);
-        if (dep && dep.status !== "done" && task.status === "in_progress") {
+        if (dep && isOpenStatus(dep.status) && task.status === "in_progress") {
           risks.push({
             taskId: task.id,
             type: "waterfall_dependency_violation",

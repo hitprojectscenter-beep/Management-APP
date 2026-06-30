@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, isOverdue } from "@/lib/utils";
 import { AlertTriangle, Clock, Layers, Briefcase, Calendar as CalIcon, User as UserIcon } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
 import { txt, STATUS_LABELS_ML, PRIORITY_LABELS_ML, TAB_LABELS_ML } from "@/lib/utils/locale-text";
@@ -44,10 +44,7 @@ export function MyTasksTabs({
       not_started: tasks.filter((t) => t.status === "not_started" || t.status === "new").length,
       blocked: tasks.filter((t) => t.status === "blocked").length,
       review: tasks.filter((t) => t.status === "review").length,
-      overdue: tasks.filter((t) => {
-        if (!t.plannedEnd) return false;
-        return new Date(t.plannedEnd).getTime() < Date.now();
-      }).length,
+      overdue: tasks.filter((t) => isOverdue(t.plannedEnd, t.status)).length,
     };
     const base = [
       { key: "all" as TabKey, count: counts.all },
@@ -67,10 +64,7 @@ export function MyTasksTabs({
     if (activeTab === "subordinates") return subordinateTasks || [];
     if (activeTab === "all" || activeTab === "by_project") return tasks;
     if (activeTab === "overdue") {
-      return tasks.filter((t) => {
-        if (!t.plannedEnd) return false;
-        return new Date(t.plannedEnd).getTime() < Date.now();
-      });
+      return tasks.filter((t) => isOverdue(t.plannedEnd, t.status));
     }
     return tasks.filter((t) => t.status === activeTab || (activeTab === "not_started" && t.status === "new"));
   }, [tasks, activeTab, subordinateTasks]);

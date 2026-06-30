@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { isClosedStatus } from "@/lib/db/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -74,6 +75,7 @@ export function calculateVariance(
 }
 
 export function isOverdue(plannedEnd: string | null, status: string): boolean {
-  if (!plannedEnd || status === "done" || status === "cancelled") return false;
+  // A closed task (done/completed/cancelled/handled/rejected) is never overdue.
+  if (!plannedEnd || isClosedStatus(status)) return false;
   return new Date(plannedEnd).getTime() < Date.now();
 }

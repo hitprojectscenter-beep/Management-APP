@@ -134,8 +134,10 @@ export function computeCriticalPath(tasks: MockTask[]): CpmResult {
  * green = on track, amber = at risk, red = behind/blocked
  */
 export function getTaskHealth(task: MockTask): "green" | "amber" | "red" {
-  if (task.status === "done") return "green";
-  if (task.status === "blocked" || task.status === "cancelled") return "red";
+  // Closed-successfully → green; blocked / cancelled / rejected → red. Closed
+  // statuses must return here so a finished-late task isn't painted red below.
+  if (task.status === "done" || task.status === "completed" || task.status === "handled") return "green";
+  if (task.status === "blocked" || task.status === "cancelled" || task.status === "rejected") return "red";
 
   const now = Date.now();
   if (!task.plannedEnd) return "green";

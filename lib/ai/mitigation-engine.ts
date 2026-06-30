@@ -9,6 +9,7 @@
  */
 import type { MockTask, MockUser, MockProjectMember } from "../db/mock-data";
 import type { RiskSeverity } from "../db/types";
+import { isOpenStatus, isClosedStatus } from "../db/types";
 import {
   detectResourceBottlenecks,
   predictProjectEndDate,
@@ -78,7 +79,7 @@ export function findBestReassignment(
 
       // Active task count penalty
       const activeTasks = allTasks.filter(
-        (t) => t.assigneeId === u.id && t.status !== "done" && t.status !== "cancelled"
+        (t) => t.assigneeId === u.id && isOpenStatus(t.status)
       ).length;
       const loadPenalty = Math.min(30, activeTasks * 5);
 
@@ -158,8 +159,7 @@ export function generateReassignmentSuggestions(
     const candidateTasks = tasks.filter(
       (t) =>
         t.assigneeId === b.userId &&
-        t.status !== "done" &&
-        t.status !== "cancelled" &&
+        isOpenStatus(t.status) &&
         !cpm.criticalTaskIds.has(t.id)
     );
     // Sort by estimate hours descending (move biggest load first)
@@ -345,7 +345,7 @@ export function generateMitigationStrategies(
   const now = Date.now();
 
   for (const task of tasks) {
-    if (task.status === "done" || task.status === "cancelled") continue;
+    if (isClosedStatus(task.status)) continue;
 
     let riskType = "";
     let severity: RiskSeverity = "low";
