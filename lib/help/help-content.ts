@@ -737,6 +737,80 @@ export const HELP_ENTRIES: HelpEntry[] = [
       en: "🎨 The primary color matches the **Survey of Israel** brand. #2050a0 (HSL 218°, 67%, 38%) was sampled directly from the official Mapi logo. All buttons, sidebar, progress bars, borders and KPI accents use this hue. The deep sidebar navy (#0E1E39) replaces the previous purple.",
     },
   },
+
+  // ============================================================
+  // WORKFLOW · SUPERVISOR · ACCOUNT · SUPPORT (recent features)
+  // ============================================================
+  {
+    id: "workflow-statuses",
+    category: "tasks",
+    keywords: { he: ["סטטוס", "סטטוסים", "חדשה", "בטיפול", "הוקפאה", "ממתינה", "טופל", "נדחתה", "הושלם", "זרימת עבודה", "שינוי סטטוס"], en: ["status", "statuses", "workflow", "new", "frozen", "waiting", "handled", "rejected", "completed", "change status"] },
+    question: { he: "אילו סטטוסים יש למשימה ואיך משנים?", en: "What task statuses exist and how to change them?" },
+    answer: {
+      he: "🔄 זרימת הסטטוסים: **חדשה → בטיפול → הוקפאה / ממתינה → טופל / נדחתה → הושלם**. משנים במסך המשימה, בכרטיס 'סטטוס וזרימת עבודה' — לחיצה על הסטטוס הרצוי. **בכל שינוי חובה להזין הסבר קצר** (לשקיפות); כל שינוי מתועד ביומן המשימה ונשלח לצוות. 'הושלם' נקבע אוטומטית כשכל חברי הצוות סימנו 'בוצע'.",
+      en: "🔄 Statuses flow: New → In progress → Frozen / Waiting → Handled / Rejected → Completed. Change them on the task screen, 'Status & workflow' card. Every change requires a short explanation and is logged + sent to the team. 'Completed' is set automatically once all members sign off.",
+    },
+  },
+  {
+    id: "supervisor-actions",
+    category: "tasks",
+    keywords: { he: ["ממונה", "פעולות ממונה", "כפוף", "הערת ממונה", "דחה משימה", "בטל משימה", "הוסף זמן ביצוע"], en: ["supervisor", "supervisor actions", "subordinate", "reject task", "cancel task", "add time"] },
+    question: { he: "מה ממונה יכול לעשות במשימה של כפוף?", en: "What can a supervisor do on a subordinate's task?" },
+    answer: {
+      he: "👤 על משימה של עובד הכפוף אליך מופיע כרטיס **'פעולות ממונה'**: הוספת **הערה**, **דחיית** המשימה, **ביטול** המשימה, או **הוספת זמן ביצוע** (יעד חדש). כל פעולה דורשת סיבה, נרשמת ביומן, ומיודעת ליוצר, למבצע/צוות ולממונים מעליך עד הסמנכ\"ל. (ממונה אינו יכול למחוק.)",
+      en: "👤 On a subordinate's task you get a 'Supervisor actions' card: add a note, reject, cancel, or add execution time (new due date). Each action needs a reason, is logged, and notifies the creator, assignee/team and your managers up to the VP. (A supervisor cannot delete.)",
+    },
+  },
+  {
+    id: "reopen-reassign",
+    category: "tasks",
+    keywords: { he: ["פתח מחדש", "פתיחה מחדש", "שיוך מחדש", "האצלה", "להעביר משימה", "להחליף אחראי"], en: ["reopen", "reassign", "delegate", "move task", "change assignee"] },
+    question: { he: "אפשר לפתוח מחדש או לשייך מחדש משימה?", en: "Can a task be reopened or reassigned?" },
+    answer: {
+      he: "↩️ **פתיחה מחדש**: משימה שנדחתה/בוטלה ניתן לפתוח מחדש מהמסך שלה (חוזרת ל'בטיפול'). **שיוך מחדש**: ממונה/יוצר יכול להעביר משימה למבצע אחר — המבצע החדש והישן מקבלים התראה והשינוי מתועד.",
+      en: "↩️ Reopen: a rejected/cancelled task can be reopened from its screen (returns to In progress). Reassign: a supervisor/creator can move a task to another assignee — both old and new assignees are notified and it's logged.",
+    },
+  },
+  {
+    id: "member-roles",
+    category: "tasks",
+    keywords: { he: ["תפקיד", "אחריות", "מי עושה מה", "לספק מידע", "להכין דוח", "תפקיד חבר צוות"], en: ["role", "responsibility", "who does what", "raci", "member role"] },
+    question: { he: "איך מגדירים מי אחראי על מה במשימה?", en: "How to define who does what in a task?" },
+    answer: {
+      he: "🧩 בהוספת חבר לצוות המשימה מגדירים את **תפקידו** (לבצע / לספק מידע / לקיים פגישה / להכין דו\"ח / לבדוק ולאשר / לתאם / לייעץ) + פירוט חופשי. יוצר המשימה יכול לערוך תפקידים בכל עת בכרטיס 'ביצוע חברי הצוות'. כל חבר מסמן 'בוצע' לחלקו.",
+      en: "🧩 When adding a team member you set their role (execute / provide info / meeting / report / review / coordinate / consult) plus free detail. The creator can edit roles anytime. Each member signs off 'done' on their part.",
+    },
+  },
+  {
+    id: "password-change",
+    category: "settings",
+    keywords: { he: ["סיסמה", "החלפת סיסמה", "סיסמה ראשונית", "כניסה ראשונה", "לשנות סיסמה", "סיסמה חזקה"], en: ["password", "change password", "first login", "initial password", "strong password"] },
+    question: { he: "איך מחליפים סיסמה / החלפה בכניסה ראשונה?", en: "How to change my password / forced first-login change?" },
+    answer: {
+      he: "🔑 בכניסה הראשונה עם הסיסמה הראשונית **תתבקש/י להחליף סיסמה**. בכל עת — לחיצה על שמך בראש המסך ← 'החלפת סיסמה'. דרישות: 12+ תווים, אות אנגלית גדולה+קטנה, ספרה ותו מיוחד, ולא אחת מ-5 הסיסמאות האחרונות. אפשר ללחוץ **'צור סיסמה חזקה'** ליצירה אוטומטית.",
+      en: "🔑 On first login you must change the initial password. Anytime: click your name (top bar) → 'Change password'. Requirements: 12+ chars, English upper+lower, a digit and a symbol, and not one of your last 5 passwords. Click 'Generate strong' to auto-fill a valid one.",
+    },
+  },
+  {
+    id: "contact-support",
+    category: "general",
+    keywords: { he: ["צור קשר", "תמיכה", "פנייה", "שאלה", "הצעה", "לפנות", "מי עוזר"], en: ["contact", "support", "help desk", "question", "suggestion", "issue"] },
+    question: { he: "איך פונים לתמיכה / שולחים הצעה?", en: "How to contact support / send a suggestion?" },
+    answer: {
+      he: "📨 בכל מסך יש כפתור כתום **'צור קשר'** (פינה תחתונה) — טופס לשאלה/תקלה/הצעת ייעול. הפנייה נשלחת ישירות לצוות ה-PMO (pmoplusops@gmail.com) עם פרטיך, ואפשר גם לפנות למארק ישראל, PMO.",
+      en: "📨 Every screen has an orange 'Contact' button (bottom corner) — a form for a question / issue / suggestion. It goes straight to the PMO team (pmoplusops@gmail.com) with your details.",
+    },
+  },
+  {
+    id: "escalation-digest",
+    category: "tasks",
+    keywords: { he: ["הסלמה", "התראה", "באיחור", "תקוע", "תזכורת", "סיכום שבועי", "מייל שבועי"], en: ["escalation", "overdue alert", "stuck", "weekly digest", "reminder"] },
+    question: { he: "מה זו הסלמה אוטומטית ומה הסיכום השבועי?", en: "What are auto-escalation and the weekly digest?" },
+    answer: {
+      he: "🔔 **הסלמה אוטומטית**: משימה שבאיחור או תקועה זמן רב מייצרת התראה אוטומטית ליוצר, למבצע ולממונה. **סיכום שבועי**: מנהלים מקבלים מייל שבועי עם תמונת מצב של המשימות בתחום אחריותם (פתוחות / באיחור / הושלמו).",
+      en: "🔔 Auto-escalation: an overdue or long-stuck task automatically alerts the creator, assignee and supervisor. Weekly digest: managers get a weekly email summary of their area's tasks (open / overdue / completed).",
+    },
+  },
 ];
 
 /**
