@@ -8,7 +8,7 @@
  * in so a DB leak alone can't be brute-forced offline.
  *
  * Policy: aligned with the Privacy-Protection (Data Security) Regulations
- * 2017 ("strong authentication") and INCD password guidance — min 12 chars,
+ * 2017 ("strong authentication") and INCD password guidance — min 9 chars,
  * mixed character classes, and a block-list of trivial/common passwords.
  */
 
@@ -58,7 +58,7 @@ export function checkPasswordPolicy(password: string, opts?: { name?: string; em
   const errors: string[] = [];
   const pw = password || "";
 
-  if (pw.length < 12) errors.push("לפחות 12 תווים");
+  if (pw.length < 9) errors.push("לפחות 9 תווים");
   if (pw.length > 128) errors.push("עד 128 תווים");
   if (!/[a-z]/.test(pw)) errors.push("אות לטינית קטנה אחת לפחות");
   if (!/[A-Z]/.test(pw)) errors.push("אות לטינית גדולה אחת לפחות");

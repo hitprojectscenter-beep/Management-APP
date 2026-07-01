@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
 import { hashPassword, generateTempPassword } from "./password";
@@ -31,7 +31,8 @@ export async function createUser(
 ): Promise<{ user: PublicUser; tempPassword: string } | { error: "email_exists" }> {
   const db = getDb();
   const email = input.email.trim().toLowerCase();
-  const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+  // Case-insensitive uniqueness — never allow two accounts that differ only by case.
+  const existing = await db.select({ id: users.id }).from(users).where(sql`lower(${users.email}) = ${email}`).limit(1);
   if (existing[0]) return { error: "email_exists" };
 
   const tempPassword = generateTempPassword();
@@ -74,8 +75,8 @@ export async function updateUser(
   if (input.name !== undefined) set.name = input.name.trim();
   if (input.email !== undefined) {
     const email = input.email.trim().toLowerCase();
-    // Email must stay unique — reject if another user already holds it.
-    const clash = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    // Email must stay unique (case-insensitive) — reject if another user holds it.
+    const clash = await db.select({ id: users.id }).from(users).where(sql`lower(${users.email}) = ${email}`).limit(1);
     if (clash[0] && clash[0].id !== id) return { error: "email_exists" };
     set.email = email;
   }

@@ -787,8 +787,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     keywords: { he: ["סיסמה", "החלפת סיסמה", "סיסמה ראשונית", "כניסה ראשונה", "לשנות סיסמה", "סיסמה חזקה"], en: ["password", "change password", "first login", "initial password", "strong password"] },
     question: { he: "איך מחליפים סיסמה / החלפה בכניסה ראשונה?", en: "How to change my password / forced first-login change?" },
     answer: {
-      he: "🔑 בכניסה הראשונה עם הסיסמה הראשונית **תתבקש/י להחליף סיסמה**. בכל עת — לחיצה על שמך בראש המסך ← 'החלפת סיסמה'. דרישות: 12+ תווים, אות אנגלית גדולה+קטנה, ספרה ותו מיוחד, ולא אחת מ-5 הסיסמאות האחרונות. אפשר ללחוץ **'צור סיסמה חזקה'** ליצירה אוטומטית.",
-      en: "🔑 On first login you must change the initial password. Anytime: click your name (top bar) → 'Change password'. Requirements: 12+ chars, English upper+lower, a digit and a symbol, and not one of your last 5 passwords. Click 'Generate strong' to auto-fill a valid one.",
+      he: "🔑 בכניסה הראשונה עם הסיסמה הראשונית **תתבקש/י להחליף סיסמה**. בכל עת — לחיצה על שמך בראש המסך ← 'החלפת סיסמה'. דרישות: 9+ תווים, אות אנגלית גדולה+קטנה, ספרה ותו מיוחד, ולא אחת מ-5 הסיסמאות האחרונות. אפשר ללחוץ **'צור סיסמה חזקה'** ליצירה אוטומטית. כתובת המייל אינה תלוית רישיות (אותיות גדולות/קטנות).",
+      en: "🔑 On first login you must change the initial password. Anytime: click your name (top bar) → 'Change password'. Requirements: 9+ chars, English upper+lower, a digit and a symbol, and not one of your last 5 passwords. Click 'Generate strong' to auto-fill a valid one. Email is case-insensitive.",
     },
   },
   {

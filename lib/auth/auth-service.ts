@@ -17,7 +17,7 @@
  */
 
 import "server-only";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
 import { verifyPassword, hashPassword, checkPasswordPolicy } from "./password";
@@ -78,7 +78,11 @@ export async function authenticate(input: AuthInput): Promise<AuthResult> {
   const email = input.email.trim().toLowerCase();
   const meta = { ip: input.ip, userAgent: input.userAgent };
 
-  const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  // Case-insensitive lookup: match on lower(stored) = lower(input) so login is
+  // never sensitive to how the address was typed or stored (email is
+  // case-insensitive by RFC for the domain, and in practice for the local part
+  // at every mailbox we use). `email` is already lowercased above.
+  const rows = await db.select().from(users).where(sql`lower(${users.email}) = ${email}`).limit(1);
   const u = rows[0];
 
   // Unknown email → generic "invalid" (no enumeration). Still audited.

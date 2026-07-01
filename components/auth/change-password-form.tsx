@@ -14,7 +14,7 @@ import { FieldHint } from "@/components/ui/field-hint";
  *  the server (checkPasswordPolicy) remains authoritative. */
 function rules(pw: string, locale: string) {
   return [
-    { ok: pw.length >= 12, label: txt(locale, { he: "לפחות 12 תווים", en: "At least 12 characters" }) },
+    { ok: pw.length >= 9, label: txt(locale, { he: "לפחות 9 תווים", en: "At least 9 characters" }) },
     { ok: /[a-z]/.test(pw), label: txt(locale, { he: "אות אנגלית קטנה (a-z)", en: "A lowercase letter" }) },
     { ok: /[A-Z]/.test(pw), label: txt(locale, { he: "אות אנגלית גדולה (A-Z)", en: "An uppercase letter" }) },
     { ok: /[0-9]/.test(pw), label: txt(locale, { he: "ספרה (0-9)", en: "A digit" }) },
@@ -141,7 +141,7 @@ export function ChangePasswordForm({
         <div className="flex items-center justify-between gap-2">
           <label className="text-sm font-medium inline-flex items-center gap-1.5">
             {txt(locale, { he: "סיסמה חדשה", en: "New password" })}
-            <FieldHint text={txt(locale, { he: "הסיסמה שתשמש אותך מעתה. חייבת לעמוד בכל הדרישות המסומנות למטה (12+ תווים, אותיות אנגלית גדולה+קטנה, ספרה ותו מיוחד). אפשר ללחוץ 'צור סיסמה חזקה'.", en: "The password you'll use from now on. Must meet all the requirements below (12+ chars, English upper+lower, a digit and a symbol). You can click 'Generate strong'." }) as string} />
+            <FieldHint text={txt(locale, { he: "הסיסמה שתשמש אותך מעתה. חייבת לעמוד בכל הדרישות המסומנות למטה (9+ תווים, אותיות אנגלית גדולה+קטנה, ספרה ותו מיוחד). אפשר ללחוץ 'צור סיסמה חזקה'.", en: "The password you'll use from now on. Must meet all the requirements below (9+ chars, English upper+lower, a digit and a symbol). You can click 'Generate strong'." }) as string} />
           </label>
           <button
             type="button"
