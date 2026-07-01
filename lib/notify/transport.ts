@@ -99,14 +99,47 @@ function normalizePhone(phone: string): string | null {
   return digits; // assume it already carries a country code
 }
 
-/** Twilio WhatsApp (Messages API). Free trial + sandbox for testing. */
+/** Sanitize a message for use as a WhatsApp TEMPLATE variable: Meta forbids
+ *  newlines, tabs and >4 consecutive spaces inside variable values, so collapse
+ *  them into a single-line summary and cap the length. */
+function sanitizeTemplateVar(message: string): string {
+  return message
+    .replace(/\s*\n\s*/g, " — ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .slice(0, 1500);
+}
+
+/**
+ * Twilio WhatsApp (Messages API). Two modes, chosen by env:
+ *  - **Production (business-initiated):** set `TWILIO_WHATSAPP_CONTENT_SID` to an
+ *    APPROVED Content template whose body is a single {{1}} variable. The message
+ *    is sent as that variable — required by WhatsApp for messages outside the
+ *    24h service window (our invites / notifications). Optionally route through a
+ *    Messaging Service via `TWILIO_MESSAGING_SERVICE_SID`.
+ *  - **Sandbox / 24h window:** no Content SID → free-form Body (testing only;
+ *    delivers only to numbers that sent the sandbox `join` code).
+ */
 async function sendViaTwilio(to: string, message: string): Promise<DeliveryResult | null> {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_WHATSAPP_FROM; // e.g. "whatsapp:+14155238886" (sandbox) or your number
-  if (!sid || !token || !from) return null;
-  const fromAddr = from.startsWith("whatsapp:") ? from : `whatsapp:${from.startsWith("+") ? from : "+" + from.replace(/\D/g, "")}`;
-  const params = new URLSearchParams({ From: fromAddr, To: `whatsapp:+${to}`, Body: message });
+  const from = process.env.TWILIO_WHATSAPP_FROM; // e.g. "whatsapp:+14155238886" (sandbox) or your approved number
+  const contentSid = process.env.TWILIO_WHATSAPP_CONTENT_SID; // approved template (production)
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID; // optional
+  if (!sid || !token) return null;
+  if (!from && !messagingServiceSid) return null;
+
+  const params = new URLSearchParams({ To: `whatsapp:+${to}` });
+  if (messagingServiceSid) params.set("MessagingServiceSid", messagingServiceSid);
+  else if (from) params.set("From", from.startsWith("whatsapp:") ? from : `whatsapp:${from.startsWith("+") ? from : "+" + from.replace(/\D/g, "")}`);
+
+  if (contentSid) {
+    // Production template send — the whole message becomes the {{1}} variable.
+    params.set("ContentSid", contentSid);
+    params.set("ContentVariables", JSON.stringify({ "1": sanitizeTemplateVar(message) }));
+  } else {
+    params.set("Body", message);
+  }
   try {
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
       method: "POST",
