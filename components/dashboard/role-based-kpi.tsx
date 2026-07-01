@@ -214,7 +214,7 @@ function ProjectManagerView({
 
 
   // KPI 1: Schedule Variance (in days)
-  const completedTasks = tasks.filter((t) => t.status === "done" && t.actualEnd && t.plannedEnd);
+  const completedTasks = tasks.filter((t) => (t.status === "done" || t.status === "completed" || t.status === "handled") && t.actualEnd && t.plannedEnd);
   const schedVar =
     completedTasks.length > 0
       ? completedTasks.reduce((sum, t) => {
@@ -286,7 +286,7 @@ function ProjectManagerView({
           popupContent={
             <div className="space-y-2">
               {projects.map((p) => {
-                const pTasks = tasks.filter((t) => t.status === "done" && t.actualEnd && t.plannedEnd);
+                const pTasks = tasks.filter((t) => (t.status === "done" || t.status === "completed" || t.status === "handled") && t.actualEnd && t.plannedEnd);
                 const variance = pTasks.length > 0
                   ? pTasks.slice(0, 3).reduce((sum, t) => sum + (new Date(t.actualEnd!).getTime() - new Date(t.plannedEnd).getTime()) / 86400000, 0) / Math.min(pTasks.length, 3)
                   : 0;

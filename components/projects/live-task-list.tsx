@@ -8,6 +8,8 @@ import { TaskList } from "@/components/projects/task-list";
 import { Button } from "@/components/ui/button";
 import { useLiveTasks, syncTasksFromDb } from "@/lib/db/local-tasks";
 import { txt, PRIORITY_LABELS_ML } from "@/lib/utils/locale-text";
+import { isOpenStatus, isClosedStatus } from "@/lib/db/types";
+import { cn } from "@/lib/utils";
 
 /**
  * Client wrapper around <TaskList> that merges in tasks created during this
@@ -32,8 +34,21 @@ export function LiveTaskList({
   const [priorityVal, setPriorityVal] = useState("high");
   const [dueVal, setDueVal] = useState("");
   const [applying, setApplying] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed" | "new" | "rejected">("all");
 
-  const ids = useMemo(() => tasks.map((t) => t.id), [tasks]);
+  // Lifecycle filter: open = not finished; closed = done/completed/cancelled/
+  // handled/rejected; new = new/not-started; rejected = נדחתה.
+  const visibleTasks = useMemo(() => {
+    switch (statusFilter) {
+      case "open": return tasks.filter((t) => isOpenStatus(t.status));
+      case "closed": return tasks.filter((t) => isClosedStatus(t.status));
+      case "new": return tasks.filter((t) => t.status === "new" || t.status === "not_started");
+      case "rejected": return tasks.filter((t) => t.status === "rejected");
+      default: return tasks;
+    }
+  }, [tasks, statusFilter]);
+
+  const ids = useMemo(() => visibleTasks.map((t) => t.id), [visibleTasks]);
   const allChecked = ids.length > 0 && ids.every((id) => selected.has(id));
   const toggle = (id: string) =>
     setSelected((prev) => {
@@ -82,13 +97,47 @@ export function LiveTaskList({
     <>
       <div className="-mt-2 mb-3 flex items-center justify-between gap-2">
         <p className="text-muted-foreground text-sm">
-          {tasks.length} {txt(locale, { he: "משימות בסך הכל", en: "total tasks" })}
+          {statusFilter === "all"
+            ? `${tasks.length} ${txt(locale, { he: "משימות בסך הכל", en: "total tasks" })}`
+            : `${visibleTasks.length} / ${tasks.length} ${txt(locale, { he: "משימות", en: "tasks" })}`}
         </p>
         {selected.size > 0 && (
           <span className="text-xs font-medium text-primary">
             {selected.size} {txt(locale, { he: "נבחרו", en: "selected" })}
           </span>
         )}
+      </div>
+
+      {/* Lifecycle filter: open / closed / new / rejected */}
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {(["all", "open", "closed", "new", "rejected"] as const).map((f) => {
+          const count =
+            f === "all" ? tasks.length
+              : f === "open" ? tasks.filter((t) => isOpenStatus(t.status)).length
+                : f === "closed" ? tasks.filter((t) => isClosedStatus(t.status)).length
+                  : f === "new" ? tasks.filter((t) => t.status === "new" || t.status === "not_started").length
+                    : tasks.filter((t) => t.status === "rejected").length;
+          const label = {
+            all: { he: "הכל", en: "All" },
+            open: { he: "פתוחות", en: "Open" },
+            closed: { he: "סגורות", en: "Closed" },
+            new: { he: "חדשות", en: "New" },
+            rejected: { he: "נדחו", en: "Rejected" },
+          }[f];
+          return (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setStatusFilter(f)}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+                statusFilter === f ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              {txt(locale, label)} <span className="text-[10px] opacity-70">({count})</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Bulk action bar — appears when rows are selected */}
@@ -137,7 +186,7 @@ export function LiveTaskList({
       )}
 
       <TaskList
-        tasks={tasks}
+        tasks={visibleTasks}
         users={users}
         locale={locale}
         selectable

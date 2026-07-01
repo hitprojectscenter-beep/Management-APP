@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn, formatDate, isOverdue } from "@/lib/utils";
-import { AlertTriangle, Clock, Layers, Briefcase, Calendar as CalIcon, User as UserIcon } from "lucide-react";
+import { AlertTriangle, Clock, Layers, Briefcase, Calendar as CalIcon, User as UserIcon, Users } from "lucide-react";
 import { Link } from "@/lib/i18n/routing";
 import { txt, STATUS_LABELS_ML, PRIORITY_LABELS_ML, TAB_LABELS_ML } from "@/lib/utils/locale-text";
 import { STATUS_COLORS, type TaskStatus } from "@/lib/db/types";
@@ -115,13 +115,19 @@ export function MyTasksTabs({
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
+                title={tab.key === "subordinates" ? (txt(locale, { he: "משימות ופניות של העובדים הכפופים אליך — לצפייה ומעקב.", en: "Tasks & requests from your subordinates — to review and track." }) as string) : undefined}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  tab.key === "subordinates"
+                    ? isActive
+                      ? "bg-amber-500 text-white shadow-md ring-2 ring-amber-300"
+                      : "bg-amber-100 text-amber-900 ring-1 ring-amber-300 font-semibold hover:bg-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800"
+                    : isActive
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
+                {tab.key === "subordinates" && <Users className="size-3.5" />}
                 <span>{txt(locale, TAB_LABELS_ML[tab.key])}</span>
                 {tab.count !== undefined && (
                   <span

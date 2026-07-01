@@ -1,6 +1,7 @@
 "use client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import type { MockTask, MockUser } from "@/lib/db/mock-data";
+import { isOpenStatus, isClosedStatus } from "@/lib/db/types";
 
 export function WorkloadChart({
   users,
@@ -15,8 +16,8 @@ export function WorkloadChart({
     const userTasks = tasks.filter((t) => t.assigneeId === user.id);
     return {
       name: user.name.split(" ")[0],
-      open: userTasks.filter((t) => t.status === "in_progress" || t.status === "not_started").length,
-      done: userTasks.filter((t) => t.status === "done").length,
+      open: userTasks.filter((t) => isOpenStatus(t.status) && t.status !== "blocked").length,
+      done: userTasks.filter((t) => isClosedStatus(t.status)).length,
       blocked: userTasks.filter((t) => t.status === "blocked").length,
     };
   });
