@@ -1,6 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart3, FileText, Info } from "lucide-react";
+import { BarChart3, FileText, Info, PieChart, ArrowLeft, ArrowRight, Filter } from "lucide-react";
+import { Link } from "@/lib/i18n/routing";
 import { ExportPdfButton } from "@/components/reports/export-pdf-button";
 import { mockTasks, mockUsers } from "@/lib/db/mock-data";
 import { calculateProjectHealth } from "@/lib/ai/risk-engine";
@@ -32,6 +33,31 @@ export default async function ReportsPage({
         </div>
         <ExportPdfButton locale={locale} />
       </div>
+
+      {/* Prominent entry to the adapted, filterable reporting center */}
+      <Link
+        href="/analytics"
+        className="group flex items-center gap-4 rounded-2xl border border-blue-200/60 dark:border-blue-900/50 bg-gradient-to-l from-blue-600 to-indigo-600 text-white p-4 sm:p-5 shadow-card hover:shadow-pop transition-all hover:-translate-y-0.5"
+      >
+        <div className="shrink-0 inline-flex items-center justify-center size-12 rounded-xl bg-white/15 ring-1 ring-white/30">
+          <PieChart className="size-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-lg">
+            {locale === "he" ? "מרכז הדוחות המלא והמותאם →" : "Full adapted reporting center →"}
+          </div>
+          <p className="text-sm text-white/85 mt-0.5">
+            {locale === "he"
+              ? "דוחות ודשבורדים נפרדים למשימות ולפרויקטים, בונה דוח לפי מאפיינים וטווח תאריכים, חיפוש מילות מפתח, פילוח פתוח/סגור/חדש/נדחה, והתפלגות לפי חטיבה/אגף/עובד."
+              : "Separate task/project dashboards, a report builder by attribute & date, keyword search, open/closed/new/rejected buckets, and distribution by division/department/employee."}
+          </p>
+        </div>
+        <div className="shrink-0 hidden sm:inline-flex items-center gap-1.5 rounded-full bg-white/15 ring-1 ring-white/30 px-4 py-2 text-sm font-semibold">
+          <Filter className="size-4" />
+          {locale === "he" ? "פתח" : "Open"}
+          {locale === "he" ? <ArrowLeft className="size-4" /> : <ArrowRight className="size-4" />}
+        </div>
+      </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">

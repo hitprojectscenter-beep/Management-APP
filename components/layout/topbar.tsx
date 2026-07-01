@@ -1,12 +1,12 @@
 "use client";
 
-import { useTranslations, useLocale } from "next-intl";
+import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/routing";
-import { Search, Sun, Moon, Globe, Menu, ChevronDown, Crown, Shield, User as UserIcon, Eye, UserX, LogOut, KeyRound } from "lucide-react";
+import { Sun, Moon, Globe, Menu, ChevronDown, Crown, Shield, User as UserIcon, Eye, UserX, LogOut, KeyRound } from "lucide-react";
 import { logout } from "@/lib/auth/session";
 import { apiLogout, fetchSession } from "@/lib/auth/client-auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { GlobalSearch } from "./global-search";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -43,7 +43,6 @@ const ROLE_BADGE_COLORS: Record<UserRole, string> = {
 };
 
 export function Topbar() {
-  const t = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -91,14 +90,8 @@ export function Topbar() {
         </SheetContent>
       </Sheet>
 
-      {/* Search */}
-      <div className="flex-1 max-w-md relative">
-        <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-        <Input
-          placeholder={t("search") + "..."}
-          className="ps-9 h-9 bg-muted/30 border-0"
-        />
-      </div>
+      {/* Global search (functional — tasks / projects / people / pages) */}
+      <GlobalSearch />
 
       <div className="flex items-center gap-0.5 sm:gap-1">
         {/* ==== ROLE SWITCHER ==== */}

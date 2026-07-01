@@ -1,19 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Users, ShieldCheck, Tag, GitBranch, Table2, Activity } from "lucide-react";
+import { Users, ShieldCheck, Tag, GitBranch, Table2, Activity, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { txt } from "@/lib/utils/locale-text";
 import { fetchSession } from "@/lib/auth/client-auth";
 import { UsersManager } from "./users-manager";
 import { DbUsersManager } from "./db-users-manager";
+import { SecurityConsole } from "./security-console";
 import { RolesManager } from "./roles-manager";
 import { TypesManager } from "./types-manager";
 import { HierarchyManager } from "./hierarchy-manager";
 import { UserPermissionsTable } from "./user-permissions-table";
 import { ActivityLog } from "./activity-log";
 
-type Tab = "users" | "roles" | "types" | "hierarchy" | "permissions" | "activity";
+type Tab = "users" | "security" | "roles" | "types" | "hierarchy" | "permissions" | "activity";
 
 export function AdminTabs({ locale }: { locale: string }) {
   const [tab, setTab] = useState<Tab>("users");
@@ -28,6 +29,11 @@ export function AdminTabs({ locale }: { locale: string }) {
       key: "users", labelHe: "משתמשים", labelEn: "Users", icon: Users,
       descHe: "ניהול משתמשים - הוספה, עריכה, השעיה",
       descEn: "Manage users - add, edit, suspend",
+    },
+    {
+      key: "security", labelHe: "הזדהות ואבטחה", labelEn: "Identity & Security", icon: KeyRound,
+      descHe: "ניהול סיסמאות ונעילות — איפוס סיסמה, שחרור נעילה וסטטוס כניסה (למנהל המערכת בלבד)",
+      descEn: "Passwords & lockouts — reset password, unlock, and sign-in status (admin only)",
     },
     {
       key: "roles", labelHe: "תפקידים והרשאות", labelEn: "Roles & Permissions", icon: ShieldCheck,
@@ -60,7 +66,7 @@ export function AdminTabs({ locale }: { locale: string }) {
     <Card>
       {/* Tab navigation */}
       <div className="border-b flex overflow-x-auto scrollbar-none">
-        {tabs.map((t) => {
+        {tabs.filter((t) => t.key !== "security" || dbConfigured).map((t) => {
           const Icon = t.icon;
           const isActive = tab === t.key;
           return (
@@ -91,6 +97,7 @@ export function AdminTabs({ locale }: { locale: string }) {
       {/* Tab content */}
       <div className="p-6">
         {tab === "users" && (dbConfigured ? <DbUsersManager locale={locale} /> : <UsersManager locale={locale} />)}
+        {tab === "security" && dbConfigured && <SecurityConsole locale={locale} />}
         {tab === "roles" && <RolesManager locale={locale} />}
         {tab === "types" && <TypesManager locale={locale} />}
         {tab === "hierarchy" && <HierarchyManager locale={locale} />}
