@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -9,6 +9,8 @@ import { Link } from "@/lib/i18n/routing";
 import { MyTasksTabs } from "@/components/landing/my-tasks-tabs";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { txt } from "@/lib/utils/locale-text";
+import { cn } from "@/lib/utils";
+import { isOpenStatus } from "@/lib/db/types";
 import { useRole } from "@/lib/auth/role-context";
 import { useLiveTasks } from "@/lib/db/local-tasks";
 import type { MockUser, MockTask, MockWbsNode, MockProjectMember } from "@/lib/db/mock-data";
@@ -51,6 +53,8 @@ export function MyDashboardContent({
   // Merge in tasks created this session (localStorage) so a freshly-made
   // task shows up here without a refresh.
   const liveTasks = useLiveTasks(allTasks);
+  // Which set to show: tasks assigned to me for handling, or tasks I opened.
+  const [scope, setScope] = useState<"assigned" | "created">("assigned");
 
   // Derive everything the original server component computed, but from
   // the *active* user. Memoize so a re-render from any other source
@@ -61,7 +65,12 @@ export function MyDashboardContent({
     const myNodes = allWbsNodes.filter((n) => myNodeIds.has(n.id));
     const myProjects = myNodes.filter((n) => n.level === "project");
     const myOpenTasks = liveTasks.filter(
-      (t) => t.assigneeId === userId && t.status !== "done" && t.status !== "cancelled",
+      (t) => t.assigneeId === userId && isOpenStatus(t.status),
+    );
+    // Tasks I OPENED (created) that are still open — shown separately from the
+    // tasks that were assigned to me for handling.
+    const myCreatedOpenTasks = liveTasks.filter(
+      (t) => (t as MockTask & { creatorId?: string }).creatorId === userId && isOpenStatus(t.status),
     );
     const totalFte = myMemberships.reduce((sum, m) => sum + m.ftePercent, 0);
     const now = Date.now();
@@ -102,7 +111,7 @@ export function MyDashboardContent({
           );
         })
       : null;
-    return { myMemberships, myNodes, myProjects, myOpenTasks, totalFte, inProgress, overdue, dueThisWeek, subordinateTasks };
+    return { myMemberships, myNodes, myProjects, myOpenTasks, myCreatedOpenTasks, totalFte, inProgress, overdue, dueThisWeek, subordinateTasks };
   }, [userId, liveTasks, allWbsNodes, allMembers, allUsers]);
 
   return (
@@ -147,19 +156,46 @@ export function MyDashboardContent({
             title={
               <span className="flex items-center gap-2">
                 <CheckSquare className="size-4 text-blue-600" />
-                {txt(locale, { he: "משימות פתוחות", en: "Open Tasks", ru: "Открытые задачи", fr: "Tâches ouvertes", es: "Tareas abiertas" })}
+                {txt(locale, { he: "המשימות שלי", en: "My Tasks", ru: "Мои задачи", fr: "Mes tâches", es: "Mis tareas" })}
               </span>
             }
-            badge={<Badge variant="outline">{derived.myOpenTasks.length}</Badge>}
+            badge={<Badge variant="outline">{(scope === "created" ? derived.myCreatedOpenTasks : derived.myOpenTasks).length}</Badge>}
           >
-            <div className="p-4">
+            <div className="p-4 space-y-3">
+              {/* Separate tasks I OPENED from tasks ASSIGNED to me for handling. */}
+              <div className="inline-flex rounded-lg border bg-muted/40 p-0.5" data-tour="task-scope">
+                <button
+                  type="button"
+                  onClick={() => setScope("assigned")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                    scope === "assigned" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                  title={txt(locale, { he: "משימות שהוקצו לך לביצוע ע\"י אחרים (או על ידך).", en: "Tasks assigned to you for handling." }) as string}
+                >
+                  {txt(locale, { he: "התקבלו לטיפולי", en: "Assigned to me", ru: "Назначены мне", fr: "Assignées à moi", es: "Asignadas a mí" })}
+                  <span className="text-xs opacity-70"> ({derived.myOpenTasks.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScope("created")}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                    scope === "created" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
+                  )}
+                  title={txt(locale, { he: "משימות שאתה פתחת/יצרת (בין אם שויכו אליך או לאחרים).", en: "Tasks you opened / created (whether assigned to you or others)." }) as string}
+                >
+                  {txt(locale, { he: "שאני פתחתי", en: "Created by me", ru: "Созданы мной", fr: "Créées par moi", es: "Creadas por mí" })}
+                  <span className="text-xs opacity-70"> ({derived.myCreatedOpenTasks.length})</span>
+                </button>
+              </div>
               <MyTasksTabs
-                tasks={derived.myOpenTasks}
+                tasks={scope === "created" ? derived.myCreatedOpenTasks : derived.myOpenTasks}
                 users={allUsers}
                 projects={projects}
                 wbsNodes={allWbsNodes}
                 locale={locale}
-                subordinateTasks={derived.subordinateTasks ?? undefined}
+                subordinateTasks={scope === "assigned" ? (derived.subordinateTasks ?? undefined) : undefined}
               />
             </div>
           </CollapsibleSection>

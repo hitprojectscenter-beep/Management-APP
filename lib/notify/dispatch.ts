@@ -6,7 +6,7 @@
  */
 
 import "server-only";
-import { inArray } from "drizzle-orm";
+import { inArray, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
 import { createNotifications } from "@/lib/db/notifications-repo";
@@ -67,7 +67,20 @@ export async function dispatchToUsers(input: DispatchInput): Promise<void> {
   const link = input.taskId ? `${appUrl}/${locale}/tasks/${encodeURIComponent(input.taskId)}` : appUrl;
   const openLine = locale === "en" ? "Open in the app:" : "פתח/י ביישום:";
   const signature = locale === "en" ? "—\nPMO++ (Survey of Israel)" : '—\nPMO++ מפ"י';
-  const text = `${input.body ? input.body + "\n\n" : ""}${openLine}\n${link}\n\n${signature}`;
+
+  // Resolve the actor's (sender's) name so the email states who triggered it,
+  // in addition to the existing content.
+  let actorName = "";
+  if (input.actorId) {
+    try {
+      const a = await getDb().select({ name: users.name }).from(users).where(eq(users.id, input.actorId)).limit(1);
+      actorName = a[0]?.name || "";
+    } catch {
+      /* best-effort */
+    }
+  }
+  const fromLine = actorName ? (locale === "en" ? `From: ${actorName}\n\n` : `מאת: ${actorName}\n\n`) : "";
+  const text = `${fromLine}${input.body ? input.body + "\n\n" : ""}${openLine}\n${link}\n\n${signature}`;
 
   await Promise.all(
     contacts.map(async (c) => {
