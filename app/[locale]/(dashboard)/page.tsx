@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/mock-data";
 import { ActiveUserGreeting } from "@/components/landing/active-user-greeting";
 import { MyDashboardContent } from "@/components/landing/my-dashboard-content";
+import { TrainingBanner } from "@/components/landing/training-banner";
 
 /**
  * Home page. The shell + greeting are server-rendered; everything
@@ -32,6 +33,7 @@ export default async function LandingPage({
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 max-w-[1600px] mx-auto">
       <ActiveUserGreeting locale={locale} fallbackUser={fallbackUser} />
+      <TrainingBanner locale={locale} />
       <MyDashboardContent
         allTasks={mockTasks}
         allUsers={mockUsers}

@@ -150,14 +150,14 @@ const M = [
         <div class='mrow' style='margin-top:8px'><span class='chip on'>כניסה</span></div></div>`,
       say:"בכניסה הראשונה מזינים את המייל הארגוני ואת הסיסמה הראשונית שקיבלתם במייל ההזמנה. מטעמי אבטחה, המערכת תדרוש מכם מיד להחליף את הסיסמה לסיסמה אישית. אם קשה להמציא סיסמה שעומדת בדרישות — פשוט לחצו על 'צור סיסמה חזקה', והמערכת תמלא עבורכם סיסמה תקינה שרק תצטרכו לשמור." },
     { eyebrow:"סרטון 2 · אבטחה", h:"ההיגיון: אבטחת מידע", points:[
-        "מדיניות סיסמה חזקה: <b>12+ תווים</b>, אותיות, ספרה ותו מיוחד.",
+        "מדיניות סיסמה חזקה: <b>9+ תווים</b>, אותיות, ספרה ותו מיוחד.",
         "<b>היסטוריית סיסמאות</b> — אי-אפשר לחזור ל-5 האחרונות.",
         "סיסמאות נשמרות <b>מוצפנות בלבד</b> (bcrypt) — לעולם לא כטקסט."],
       mock:`<div class='box'><div class='h'>מדיניות סיסמה</div>
-        <div class='kv'><span>אורך 12+</span><span class='pill g'>✓</span></div>
+        <div class='kv'><span>אורך 9+</span><span class='pill g'>✓</span></div>
         <div class='kv'><span>אות גדולה+קטנה+ספרה+תו</span><span class='pill g'>✓</span></div>
         <div class='kv'><span>לא אחת מ-5 האחרונות</span><span class='pill g'>✓</span></div></div>`,
-      say:"ההיגיון מאחורי החומרה הזו הוא אבטחת מידע. המערכת עומדת בהנחיות מערך הסייבר: סיסמה של לפחות שנים-עשר תווים עם אותיות, ספרה ותו מיוחד, ואיסור לחזור לאחת מחמש הסיסמאות האחרונות. הסיסמאות נשמרות אך ורק בהצפנה חד-כיוונית — אף אחד, גם לא מנהל המערכת, לא יכול לראות את הסיסמה שלכם." },
+      say:"ההיגיון מאחורי הדרישות הללו הוא אבטחת מידע. המערכת עומדת בהנחיות מערך הסייבר הלאומי: סיסמה של לפחות תשעה תווים הכוללת אותיות, ספרה ותו מיוחד, ואיסור לחזור לאחת מחמש הסיסמאות האחרונות. הסיסמאות נשמרות אך ורק בהצפנה חד-כיוונית — איש, ובכלל זה מנהל המערכת, אינו יכול לראות את סיסמתכם." },
   ]},
 
   { t:"דף הבית — המשימות שלי", d:"התקבלו לטיפולי / שאני פתחתי", icon:"🏠", scenes:[
@@ -348,25 +348,58 @@ function render(){
 }
 function next(){ const m=M[mi]; if(si<m.scenes.length-1){si++;render();} else if(mi<M.length-1){mi++;si=0;render();} else {stop();} }
 function prev(){ if(si>0){si--;} else if(mi>0){mi--;si=M[mi].scenes.length-1;} render(); }
+/* Pronunciation tweaks for the narrator (spoken text only — captions keep the
+   original wording). Helps the he-IL voice read a few loan-words cleanly. */
+const PRON=[[/\bמייל\b/g,'אימייל']];
+function applyPron(t){ let s=t; for(const [re,to] of PRON) s=s.replace(re,to); return s; }
+
+/* Split the narration into short, sentence-sized chunks. Speaking a long
+   paragraph as ONE utterance hits the Chrome ~15-second cut-off (the voice
+   stops mid-sentence and the old code then skipped ahead). Short chunks spoken
+   back-to-back avoid that, and we advance to the next scene only when the LAST
+   chunk truly finishes. */
+function splitChunks(text){
+  const parts=applyPron(text).split(/(?<=[.!?…])\s+/).filter(Boolean);
+  const out=[];
+  for(let p of parts){
+    p=p.trim();
+    while(p.length>170){
+      let cut=p.lastIndexOf(',',170); if(cut<70) cut=170;
+      out.push(p.slice(0,cut+1).trim()); p=p.slice(cut+1).trim();
+    }
+    if(p) out.push(p);
+  }
+  return out.length?out:[text];
+}
+let chunks=[], ci=0;
+function pickHeVoice(){ const vs=window.speechSynthesis.getVoices(); return vs.find(v=>/he|iw/i.test(v.lang))||null; }
 function speak(text){
   clearTimeout(timer);
   try{ window.speechSynthesis.cancel(); }catch(e){}
-  const wordDur=Math.max(4500, text.length*55);
-  if(voiceOn && 'speechSynthesis' in window){
-    const u=new SpeechSynthesisUtterance(text); u.lang='he-IL'; u.rate=1; u.pitch=1;
-    const vs=window.speechSynthesis.getVoices(); const hv=vs.find(v=>/he|iw/i.test(v.lang));
-    if(hv) u.voice=hv;
-    u.onend=()=>{ if(playing) timer=setTimeout(next,600); };
-    u.onerror=()=>{ if(playing) timer=setTimeout(next,wordDur); };
-    window.speechSynthesis.speak(u);
-    // safety fallback if speech never fires end (no Hebrew voice installed)
-    timer=setTimeout(()=>{ if(playing){ try{window.speechSynthesis.cancel();}catch(e){} next(); } }, wordDur+4000);
-  } else {
-    timer=setTimeout(()=>{ if(playing) next(); }, wordDur);
+  if(!(voiceOn && 'speechSynthesis' in window)){
+    // No speech engine — pace by reading time, then advance.
+    timer=setTimeout(()=>{ if(playing) next(); }, Math.max(5000, text.length*70));
+    return;
   }
+  chunks=splitChunks(text); ci=0;
+  speakChunk();
+}
+function speakChunk(){
+  if(!playing) return;
+  clearTimeout(timer);
+  if(ci>=chunks.length){ timer=setTimeout(()=>{ if(playing) next(); }, 700); return; } // whole scene narrated
+  const text=chunks[ci];
+  const u=new SpeechSynthesisUtterance(text); u.lang='he-IL'; u.rate=0.97; u.pitch=1;
+  const hv=pickHeVoice(); if(hv) u.voice=hv;
+  let moved=false; const go=()=>{ if(moved) return; moved=true; ci++; speakChunk(); };
+  u.onend=go; u.onerror=go;
+  // Per-chunk safety net ONLY if neither event fires — comfortably longer than
+  // the spoken text so it never chops a chunk that is still being read.
+  timer=setTimeout(go, Math.max(6000, text.length*140)+3000);
+  try{ window.speechSynthesis.speak(u); }catch(e){ go(); }
 }
 function play(){ playing=true; playBtn.textContent='⏸ השהה'; render(); }
-function stop(){ playing=false; playBtn.textContent='▶ נגן'; clearTimeout(timer); try{window.speechSynthesis.cancel();}catch(e){} }
+function stop(){ playing=false; playBtn.textContent='▶ נגן'; clearTimeout(timer); chunks=[]; ci=0; try{window.speechSynthesis.cancel();}catch(e){} }
 playBtn.onclick=()=> playing?stop():play();
 document.getElementById('nextBtn').onclick=()=>{stop();next();};
 document.getElementById('prevBtn').onclick=()=>{stop();prev();};
