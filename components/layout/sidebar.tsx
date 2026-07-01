@@ -62,8 +62,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     if (item.key === "ai") return can("ai_access");
     // Settings: need manage_settings or admin
     if (item.key === "settings") return role === "admin" || can("manage_settings");
-    // Reports: need view_reports
-    if (item.key === "reports") return can("view_reports");
+    // Reports + Analytics: need view_reports (analytics self-scopes by RBAC too)
+    if (item.key === "reports" || item.key === "analytics") return can("view_reports");
     // Risks: need view_all (managers+)
     if (item.key === "risks") return can("view_all");
     // Everything else is visible to all
