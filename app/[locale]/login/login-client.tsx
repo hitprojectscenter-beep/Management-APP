@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogIn, Mail, Lock, AlertTriangle, ChevronDown, Sparkles } from "lucide-react";
+import { LogIn, Mail, Lock, AlertTriangle, ChevronDown, Sparkles, Eye, EyeOff } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { TopoBackdrop } from "@/components/brand/topo-backdrop";
 import { login, loginAsUser, DEMO_PASSWORD } from "@/lib/auth/session";
@@ -29,6 +29,7 @@ export default function LoginClient({
   const [error, setError] = useState<string | null>(null);
   const [showDemo, setShowDemo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showPw, setShowPw] = useState(false);
   // null = still checking; true = real DB auth; false = demo (no DB)
   const [dbAuth, setDbAuth] = useState<boolean | null>(null);
 
@@ -144,16 +145,28 @@ export default function LoginClient({
               <label className="text-sm font-medium flex items-center gap-1.5">
                 <Lock className="size-3.5" /> {txt(locale, { he: "סיסמה", en: "Password" })}
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                title={txt(locale, { he: "הזן/י את הסיסמה שלך. בכניסה הראשונה — הסיסמה הראשונית מהמייל (תתבקש/י להחליפה מיד). לאחר מכן — הסיסמה שבחרת.", en: "Enter your password. On first login use the initial password from the email (you'll be asked to change it). Afterwards, your chosen password." }) as string}
-                dir="ltr"
-                autoComplete="current-password"
-                className="w-full min-h-[44px] px-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring transition"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPw ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  title={txt(locale, { he: "הזן/י את הסיסמה שלך. בכניסה הראשונה — הסיסמה הראשונית מהמייל (תתבקש/י להחליפה מיד). לאחר מכן — הסיסמה שבחרת.", en: "Enter your password. On first login use the initial password from the email (you'll be asked to change it). Afterwards, your chosen password." }) as string}
+                  dir="ltr"
+                  autoComplete="current-password"
+                  className="w-full min-h-[44px] ps-3 pe-10 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring transition"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((s) => !s)}
+                  className="absolute inset-y-0 end-2 flex items-center text-muted-foreground hover:text-foreground"
+                  aria-label={txt(locale, { he: "הצג או הסתר את הסיסמה", en: "Show or hide password" }) as string}
+                  title={txt(locale, { he: "לחצ/י כדי לראות את תווי הסיסמה במקום נקודות", en: "Click to reveal the password characters instead of dots" }) as string}
+                  tabIndex={-1}
+                >
+                  {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
             </div>
 
             {error && (

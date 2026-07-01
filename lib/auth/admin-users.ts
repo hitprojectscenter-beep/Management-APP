@@ -113,6 +113,17 @@ export async function resetUserPassword(id: string): Promise<{ tempPassword: str
   return { tempPassword };
 }
 
+/** Clear a brute-force lockout: reset the failed-attempt counter and unlock now.
+ *  Does NOT touch the password. Returns the updated public user (or null). */
+export async function unlockUser(id: string): Promise<PublicUser | null> {
+  const rows = await getDb()
+    .update(users)
+    .set({ failedLoginAttempts: 0, lockedUntil: null })
+    .where(eq(users.id, id))
+    .returning();
+  return rows[0] ? toPublicUser(rows[0]) : null;
+}
+
 export async function deleteUser(id: string): Promise<boolean> {
   const rows = await getDb().delete(users).where(eq(users.id, id)).returning({ id: users.id });
   if (rows[0]) { try { await revokeAllUserSessions(id); } catch { /* ignore */ } }

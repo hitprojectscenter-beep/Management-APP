@@ -21,6 +21,7 @@ export type AuthEvent =
   | "password_set"
   | "account_disabled"
   | "account_enabled"
+  | "account_unlocked"
   | "user_created"
   | "role_changed"
   | "profile_updated";

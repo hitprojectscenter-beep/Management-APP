@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { UserPlus, KeyRound, Trash2, Copy, Shield, X, Loader2, Pencil } from "lucide-react";
+import { UserPlus, KeyRound, Trash2, Copy, Shield, X, Loader2, Pencil, Unlock, Lock } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,8 @@ interface AdminUser {
   phone: string | null;
   managerId: string | null;
   isActive: boolean;
+  /** ISO timestamp until which the account is brute-force locked, or null. */
+  lockedUntil: string | null;
 }
 
 const ROLES = [
@@ -131,6 +133,24 @@ export function DbUsersManager({ locale }: { locale: string }) {
       const data = await res.json();
       if (res.ok) setTempPw({ name: u.name || u.email, password: data.tempPassword });
       else toast.error(txt(locale, { he: "איפוס הסיסמה נכשל", en: "Password reset failed" }) as string);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const isLocked = (u: AdminUser) => !!u.lockedUntil && new Date(u.lockedUntil).getTime() > Date.now();
+
+  const unlockAccount = async (u: AdminUser) => {
+    setBusyId(u.id);
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}/unlock`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, ...data.user } : x)));
+        toast.success(txt(locale, { he: `הנעילה של ${u.name || u.email} שוחררה`, en: "Account unlocked" }) as string);
+      } else {
+        toast.error(txt(locale, { he: "שחרור הנעילה נכשל", en: "Unlock failed" }) as string);
+      }
     } finally {
       setBusyId(null);
     }
@@ -332,14 +352,25 @@ export function DbUsersManager({ locale }: { locale: string }) {
                     </select>
                   </td>
                   <td className="px-3 py-2.5">
-                    <button
-                      onClick={() => patchUser(u.id, { isActive: !u.isActive }, txt(locale, { he: "הסטטוס עודכן", en: "Status updated" }) as string)}
-                      disabled={busyId === u.id}
-                    >
-                      <Badge variant="outline" className={cn("cursor-pointer", u.isActive ? "border-emerald-300 text-emerald-700 dark:text-emerald-300" : "border-slate-300 text-muted-foreground")}>
-                        {u.isActive ? txt(locale, { he: "פעיל", en: "Active" }) : txt(locale, { he: "מושבת", en: "Disabled" })}
-                      </Badge>
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        onClick={() => patchUser(u.id, { isActive: !u.isActive }, txt(locale, { he: "הסטטוס עודכן", en: "Status updated" }) as string)}
+                        disabled={busyId === u.id}
+                      >
+                        <Badge variant="outline" className={cn("cursor-pointer", u.isActive ? "border-emerald-300 text-emerald-700 dark:text-emerald-300" : "border-slate-300 text-muted-foreground")}>
+                          {u.isActive ? txt(locale, { he: "פעיל", en: "Active" }) : txt(locale, { he: "מושבת", en: "Disabled" })}
+                        </Badge>
+                      </button>
+                      {isLocked(u) && (
+                        <Badge
+                          variant="outline"
+                          className="border-red-300 text-red-600 gap-1"
+                          title={txt(locale, { he: "החשבון נעול זמנית עקב 5 ניסיונות התחברות כושלים. לחצ/י על כפתור השחרור בעמודת הפעולות.", en: "Temporarily locked after 5 failed sign-in attempts. Use the unlock button in the actions column." }) as string}
+                        >
+                          <Lock className="size-3" /> {txt(locale, { he: "נעול", en: "Locked" })}
+                        </Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center justify-end gap-1">
@@ -350,6 +381,14 @@ export function DbUsersManager({ locale }: { locale: string }) {
                         className="p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground"
                       >
                         <Pencil className="size-4" />
+                      </button>
+                      <button
+                        onClick={() => unlockAccount(u)}
+                        disabled={busyId === u.id}
+                        title={txt(locale, { he: "שחרור נעילת חשבון — מאפס את מונה הניסיונות הכושלים ומאפשר כניסה מיד (אינו משנה את הסיסמה).", en: "Unlock account — resets the failed-attempt counter and allows sign-in immediately (does not change the password)." }) as string}
+                        className={cn("p-2 rounded-lg hover:bg-accent", isLocked(u) ? "text-amber-600 hover:text-amber-700" : "text-muted-foreground hover:text-foreground")}
+                      >
+                        <Unlock className="size-4" />
                       </button>
                       <button
                         onClick={() => resetPassword(u)}
@@ -378,8 +417,8 @@ export function DbUsersManager({ locale }: { locale: string }) {
 
       <p className="text-[11px] text-muted-foreground">
         {txt(locale, {
-          he: "כל שינוי נשמר מיידית ב-PostgreSQL ונרשם ב-audit log. השבתת חשבון מנתקת מיד את כל ה-sessions שלו.",
-          en: "Every change persists to PostgreSQL and is written to the audit log. Disabling an account revokes all its sessions immediately.",
+          he: "כל שינוי נשמר מיידית ב-PostgreSQL ונרשם ב-audit log. השבתת חשבון מנתקת מיד את כל ה-sessions שלו. חשבון ננעל אוטומטית ל-2 דקות אחרי 5 ניסיונות כושלים — לשחרור מיידי לחצ/י על כפתור השחרור (🔓).",
+          en: "Every change persists to PostgreSQL and is written to the audit log. Disabling an account revokes all its sessions immediately. An account auto-locks for 2 minutes after 5 failed attempts — use the unlock button (🔓) to release it immediately.",
         })}
       </p>
 

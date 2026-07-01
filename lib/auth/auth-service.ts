@@ -27,7 +27,7 @@ import { logAuthEvent } from "./audit";
 import type { UserRole } from "@/lib/db/types";
 
 const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+const LOCKOUT_MS = 2 * 60 * 1000; // 2 minutes
 
 export interface PublicUser {
   id: string;
@@ -41,6 +41,8 @@ export interface PublicUser {
   managerId: string | null;
   isActive: boolean;
   mustChangePassword: boolean;
+  /** ISO timestamp until which the account is locked (brute-force), or null. */
+  lockedUntil: string | null;
 }
 
 type DbUser = typeof users.$inferSelect;
@@ -59,6 +61,7 @@ export function toPublicUser(u: DbUser): PublicUser {
     managerId: u.managerId,
     isActive: u.isActive,
     mustChangePassword: u.mustChangePassword,
+    lockedUntil: u.lockedUntil ? u.lockedUntil.toISOString() : null,
   };
 }
 
@@ -71,7 +74,8 @@ export interface AuthInput {
 
 export type AuthResult =
   | { ok: true; user: PublicUser; token: string; expiresAt: Date; mustChangePassword: boolean }
-  | { ok: false; reason: "invalid" | "locked" | "disabled" };
+  | { ok: false; reason: "invalid" | "disabled" }
+  | { ok: false; reason: "locked"; lockedUntil: Date | null };
 
 export async function authenticate(input: AuthInput): Promise<AuthResult> {
   const db = getDb();
@@ -98,7 +102,7 @@ export async function authenticate(input: AuthInput): Promise<AuthResult> {
 
   if (u.lockedUntil && u.lockedUntil.getTime() > Date.now()) {
     await logAuthEvent({ userId: u.id, email, event: "login_locked", success: false, detail: "still_locked", ...meta });
-    return { ok: false, reason: "locked" };
+    return { ok: false, reason: "locked", lockedUntil: u.lockedUntil };
   }
 
   const passwordOk = u.passwordHash ? await verifyPassword(input.password, u.passwordHash) : false;
@@ -106,12 +110,10 @@ export async function authenticate(input: AuthInput): Promise<AuthResult> {
   if (!passwordOk) {
     const failed = (u.failedLoginAttempts ?? 0) + 1;
     const lockNow = failed >= MAX_FAILED_ATTEMPTS;
+    const lockedUntil = lockNow ? new Date(Date.now() + LOCKOUT_MS) : u.lockedUntil ?? null;
     await db
       .update(users)
-      .set({
-        failedLoginAttempts: failed,
-        lockedUntil: lockNow ? new Date(Date.now() + LOCKOUT_MS) : u.lockedUntil ?? null,
-      })
+      .set({ failedLoginAttempts: failed, lockedUntil })
       .where(eq(users.id, u.id));
     await logAuthEvent({
       userId: u.id, email,
@@ -120,7 +122,8 @@ export async function authenticate(input: AuthInput): Promise<AuthResult> {
       detail: `failed_attempts=${failed}`,
       ...meta,
     });
-    return { ok: false, reason: lockNow ? "locked" : "invalid" };
+    if (lockNow) return { ok: false, reason: "locked", lockedUntil };
+    return { ok: false, reason: "invalid" };
   }
 
   // Success — reset the counters, stamp last login, mint a session.

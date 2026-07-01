@@ -37,14 +37,24 @@ export async function POST(req: Request) {
 
   const res = await authenticate({ email, password, ip, userAgent });
   if (!res.ok) {
-    const error =
-      res.reason === "locked"
-        ? "החשבון נעול זמנית עקב ניסיונות התחברות כושלים. נסה שוב מאוחר יותר."
-        : res.reason === "disabled"
-          ? "החשבון מושבת. פנה למנהל המערכת."
-          : "פרטי התחברות שגויים.";
+    let error: string;
+    let retryAfterMinutes: number | undefined;
+    if (res.reason === "locked") {
+      const ms = res.lockedUntil ? res.lockedUntil.getTime() - Date.now() : 2 * 60 * 1000;
+      retryAfterMinutes = Math.max(1, Math.ceil(ms / 60000));
+      error =
+        `החשבון ננעל זמנית לאחר 5 ניסיונות התחברות כושלים (אמצעי אבטחה). ` +
+        `אפשר לנסות שוב בעוד כ-${retryAfterMinutes} דקות, או לפנות למנהל המערכת (מארק ישראל, PMO) לשחרור מיידי.`;
+    } else if (res.reason === "disabled") {
+      error = "החשבון מושבת. פנה/י למנהל המערכת (מארק ישראל, PMO).";
+    } else {
+      error = "פרטי התחברות שגויים. בדוק/י את כתובת המייל ואת הסיסמה (אין הבדל בין אותיות גדולות לקטנות במייל).";
+    }
     // 423 Locked for lockout, 401 otherwise.
-    return NextResponse.json({ ok: false, reason: res.reason, error }, { status: res.reason === "locked" ? 423 : 401 });
+    return NextResponse.json(
+      { ok: false, reason: res.reason, error, retryAfterMinutes },
+      { status: res.reason === "locked" ? 423 : 401 },
+    );
   }
 
   await setSessionCookie(res.token, res.expiresAt);
