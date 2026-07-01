@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>מרכז ההדרכה · PMO++ · המרכז למיפוי ישראל</title>
+<style>
+  :root{
+    --navy:#0E1E39; --blue:#2050a0; --blue2:#3b6fd0; --amber:#f59e0b;
+    --green:#16a34a; --red:#dc2626; --ink:#0f172a; --muted:#64748b;
+    --bg:#eef2f8; --card:#ffffff; --line:#e2e8f0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:"Segoe UI",Arial,"Heebo",sans-serif;background:var(--bg);color:var(--ink)}
+  .app{display:grid;grid-template-columns:300px 1fr;height:100vh}
+  @media(max-width:820px){.app{grid-template-columns:1fr;height:auto}}
+  /* Sidebar */
+  .side{background:var(--navy);color:#dbe4f3;padding:18px;overflow:auto}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .logo{width:40px;height:40px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--blue);font-size:13px}
+  .brand h1{font-size:16px;margin:0}
+  .brand p{font-size:11px;margin:0;color:#9fb3d6}
+  .side h2{font-size:12px;color:#9fb3d6;text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px}
+  .chapter{display:flex;gap:10px;align-items:flex-start;padding:10px 11px;border-radius:12px;cursor:pointer;margin-bottom:6px;transition:.15s;border:1px solid transparent}
+  .chapter:hover{background:rgba(255,255,255,.06)}
+  .chapter.active{background:var(--blue);border-color:#5b8ae0}
+  .chapter .num{width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:0 0 auto}
+  .chapter.active .num{background:#fff;color:var(--blue)}
+  .chapter .t{font-size:13.5px;font-weight:600;line-height:1.3}
+  .chapter .d{font-size:11px;color:#9fb3d6;margin-top:2px}
+  .chapter.active .d{color:#dbe6fb}
+  /* Stage */
+  .main{display:flex;flex-direction:column;min-width:0;height:100vh}
+  @media(max-width:820px){.main{height:auto}}
+  .stagewrap{flex:1;padding:22px;overflow:auto;display:flex;flex-direction:column}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 10px 40px rgba(14,30,57,.08);flex:1;min-height:460px;position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .stage .band{height:6px;background:linear-gradient(90deg,var(--blue),#6a8fe0,var(--amber))}
+  .scene{padding:30px 34px;flex:1;display:flex;flex-direction:column;gap:16px}
+  .scene .eyebrow{font-size:12px;color:var(--blue);font-weight:800;letter-spacing:.04em;text-transform:uppercase;opacity:0;transform:translateY(8px);animation:rise .5s .05s forwards}
+  .scene h3{font-size:26px;margin:0;opacity:0;transform:translateY(10px);animation:rise .5s .12s forwards}
+  .body{display:grid;grid-template-columns:1fr 1fr;gap:22px;flex:1}
+  @media(max-width:680px){.body{grid-template-columns:1fr}}
+  ul.points{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:11px}
+  ul.points li{display:flex;gap:10px;align-items:flex-start;font-size:16px;line-height:1.5;opacity:0;transform:translateX(10px);animation:slidein .5s forwards}
+  ul.points li b{color:var(--blue)}
+  .tick{color:#fff;background:var(--blue);width:22px;height:22px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px}
+  /* schematic mock */
+  .mock{background:#f7f9fc;border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:9px;opacity:0;animation:fadein .6s .3s forwards;font-size:12.5px;min-height:0}
+  .mrow{display:flex;gap:8px;align-items:center}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted)}
+  .chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .chip.amber{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+  .box{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px}
+  .box .h{font-weight:700;margin-bottom:6px}
+  .pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700}
+  .pill.g{background:#dcfce7;color:#166534}.pill.a{background:#fef3c7;color:#92400e}.pill.r{background:#fee2e2;color:#991b1b}.pill.b{background:#dbeafe;color:#1e40af}.pill.gray{background:#e2e8f0;color:#475569}
+  .bar{height:8px;background:#e2e8f0;border-radius:9px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--blue)}
+  .kv{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px dashed var(--line)}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px}
+  .stat .n{font-size:20px;font-weight:800}
+  .avset{display:flex}
+  .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#6a8fe0);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-inline-start:-8px;border:2px solid #fff}
+  /* caption + controls */
+  .caption{background:var(--navy);color:#eaf1fc;border-radius:14px;margin:14px 22px 0;padding:14px 18px;font-size:15.5px;line-height:1.6;min-height:56px;display:flex;gap:12px;align-items:flex-start}
+  .caption .spk{flex:0 0 auto;width:28px;height:28px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .controls{display:flex;align-items:center;gap:10px;padding:14px 22px 20px;flex-wrap:wrap}
+  button.ctrl{border:1px solid var(--line);background:#fff;border-radius:11px;padding:9px 14px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s}
+  button.ctrl:hover{background:#f1f5f9}
+  button.play{background:var(--blue);color:#fff;border-color:var(--blue);padding:9px 20px}
+  button.play:hover{background:#1a4488}
+  .toggle{margin-inline-start:auto;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .prog{flex:1;height:7px;background:#e2e8f0;border-radius:9px;overflow:hidden;min-width:120px}
+  .prog>i{display:block;height:100%;background:var(--blue);width:0;transition:width .3s}
+  .scenedots{display:flex;gap:5px}
+  .dot{width:9px;height:9px;border-radius:50%;background:#cbd5e1;cursor:pointer}
+  .dot.on{background:var(--blue);transform:scale(1.2)}
+  .switch{position:relative;width:40px;height:22px;background:#cbd5e1;border-radius:20px;cursor:pointer;transition:.2s}
+  .switch.on{background:var(--green)}
+  .switch>i{position:absolute;top:2px;inset-inline-start:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.2s}
+  .switch.on>i{inset-inline-start:20px}
+  @keyframes rise{to{opacity:1;transform:none}}
+  @keyframes slidein{to{opacity:1;transform:none}}
+  @keyframes fadein{to{opacity:1}}
+  .hint{font-size:12px;color:var(--muted);text-align:center;padding:0 22px 14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">מפ"י</div>
+      <div><h1>מרכז ההדרכה</h1><p>PMO++ · המרכז למיפוי ישראל</p></div>
+    </div>
+    <h2>סרטוני הדרכה</h2>
+    <div id="chapters"></div>
+  </aside>
+
+  <main class="main">
+    <div class="stagewrap">
+      <div class="stage">
+        <div class="band"></div>
+        <div class="scene" id="scene"></div>
+      </div>
+      <div class="caption"><div class="spk">🔊</div><div id="cap">לחצו "נגן" כדי להתחיל את ההדרכה עם קריינות קולית בעברית.</div></div>
+      <div class="controls">
+        <button class="ctrl play" id="playBtn">▶ נגן</button>
+        <button class="ctrl" id="prevBtn">⟶ הקודם</button>
+        <button class="ctrl" id="nextBtn">הבא ⟵</button>
+        <div class="scenedots" id="dots"></div>
+        <div class="prog"><i id="prog"></i></div>
+        <div class="toggle">קריינות<div class="switch on" id="voiceSw"><i></i></div></div>
+      </div>
+      <div class="hint" id="hint"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ===== Training script: every module + the logic behind it ===== */
+const M = [
+  { t:"מבוא — מהי המערכת וההיגיון", d:"סקירה ומטרות", icon:"🎯", scenes:[
+    { eyebrow:"סרטון 1 · מבוא", h:"PMO++ — ניהול משימות ופרויקטים", points:[
+        "מערכת אחת לניהול <b>כל המשימות והפרויקטים</b> של המרכז למיפוי ישראל.",
+        "כל משימה מעוגנת: <b>אחראי, צוות, מקור, יעד</b> וזרימת-עבודה מבוקרת.",
+        "<b>שקיפות מלאה</b> — כל שינוי מתועד ומיודע לצוות ולשרשרת הניהולית."],
+      mock:`<div class='box'><div class='h'>מה תלמדו בסדרה</div>
+        <div class='mrow'><span class='chip on'>כניסה</span><span class='chip'>משימות</span><span class='chip'>זרימת עבודה</span></div>
+        <div class='mrow'><span class='chip'>ממונה</span><span class='chip'>ייבוא AI</span><span class='chip'>דוחות</span><span class='chip'>ניהול</span></div></div>`,
+      say:"ברוכים הבאים למרכז ההדרכה של PMO plus plus, מערכת ניהול המשימות והפרויקטים של המרכז למיפוי ישראל. ההיגיון של המערכת פשוט: כל משימה מקבלת אחראי, צוות, מקור ותאריך יעד, ומנוהלת בזרימת עבודה שקופה שבה כל שינוי מתועד ומיודע לכל הנוגעים בדבר. בסדרה נעבור על כל היכולות — מהכניסה הראשונה ועד הדוחות הניהוליים." },
+    { eyebrow:"סרטון 1 · מבוא", h:"למי מיועדת המערכת", points:[
+        "<b>עובד</b> — רואה את המשימות שקיבל לטיפול ומדווח עליהן.",
+        "<b>ממונה/מנהל</b> — עוקב אחר משימות הכפופים ומפקח.",
+        "<b>הנהלה</b> — תמונת-על: KPI, דוחות, סיכונים ועומסים."],
+      mock:`<div class='box'><div class='h'>שלושה מבטים, מערכת אחת</div>
+        <div class='kv'><span>עובד</span><span class='pill b'>המשימות שלי</span></div>
+        <div class='kv'><span>ממונה</span><span class='pill a'>הכפופים אלי</span></div>
+        <div class='kv'><span>הנהלה</span><span class='pill g'>דוחות ו-KPI</span></div></div>`,
+      say:"המערכת משרתת שלושה סוגי מבטים באותה מערכת: העובד רואה את המשימות שהתקבלו לטיפולו ומדווח; הממונה עוקב אחר משימות הכפופים אליו ומפקח; וההנהלה מקבלת תמונת-על של מדדים, דוחות, סיכונים ועומסים. כל אחד רואה בדיוק את מה שרלוונטי לתפקידו." },
+  ]},
+
+  { t:"כניסה, סיסמה ואבטחה", d:"כניסה ראשונה + החלפת סיסמה", icon:"🔑", scenes:[
+    { eyebrow:"סרטון 2 · כניסה", h:"כניסה ראשונה למערכת", points:[
+        "מזינים את <b>המייל הארגוני</b> ואת <b>הסיסמה הראשונית</b> מהמייל.",
+        "בכניסה הראשונה — <b>מחליפים סיסמה חובה</b> (דרישת אבטחה).",
+        "כפתור <b>'צור סיסמה חזקה'</b> ממלא סיסמה תקינה בלחיצה אחת."],
+      mock:`<div class='box'><div class='h'>מסך כניסה</div>
+        <div class='kv'><span>מייל</span><span class='pill gray'>name@mapi.gov.il</span></div>
+        <div class='kv'><span>סיסמה</span><span class='pill gray'>• • • • • • •</span></div>
+        <div class='mrow' style='margin-top:8px'><span class='chip on'>כניסה</span></div></div>`,
+      say:"בכניסה הראשונה מזינים את המייל הארגוני ואת הסיסמה הראשונית שקיבלתם במייל ההזמנה. מטעמי אבטחה, המערכת תדרוש מכם מיד להחליף את הסיסמה לסיסמה אישית. אם קשה להמציא סיסמה שעומדת בדרישות — פשוט לחצו על 'צור סיסמה חזקה', והמערכת תמלא עבורכם סיסמה תקינה שרק תצטרכו לשמור." },
+    { eyebrow:"סרטון 2 · אבטחה", h:"ההיגיון: אבטחת מידע", points:[
+        "מדיניות סיסמה חזקה: <b>12+ תווים</b>, אותיות, ספרה ותו מיוחד.",
+        "<b>היסטוריית סיסמאות</b> — אי-אפשר לחזור ל-5 האחרונות.",
+        "סיסמאות נשמרות <b>מוצפנות בלבד</b> (bcrypt) — לעולם לא כטקסט."],
+      mock:`<div class='box'><div class='h'>מדיניות סיסמה</div>
+        <div class='kv'><span>אורך 12+</span><span class='pill g'>✓</span></div>
+        <div class='kv'><span>אות גדולה+קטנה+ספרה+תו</span><span class='pill g'>✓</span></div>
+        <div class='kv'><span>לא אחת מ-5 האחרונות</span><span class='pill g'>✓</span></div></div>`,
+      say:"ההיגיון מאחורי החומרה הזו הוא אבטחת מידע. המערכת עומדת בהנחיות מערך הסייבר: סיסמה של לפחות שנים-עשר תווים עם אותיות, ספרה ותו מיוחד, ואיסור לחזור לאחת מחמש הסיסמאות האחרונות. הסיסמאות נשמרות אך ורק בהצפנה חד-כיוונית — אף אחד, גם לא מנהל המערכת, לא יכול לראות את הסיסמה שלכם." },
+  ]},
+
+  { t:"דף הבית — המשימות שלי", d:"התקבלו לטיפולי / שאני פתחתי", icon:"🏠", scenes:[
+    { eyebrow:"סרטון 3 · דף הבית", h:"שתי קבוצות משימות", points:[
+        "<b>התקבלו לטיפולי</b> — משימות שהוקצו לך לביצוע.",
+        "<b>שאני פתחתי</b> — משימות שאתה יצרת (גם אם שויכו לאחרים).",
+        "מתג עליון מפריד ביניהן, עם <b>ספירה</b> לכל קבוצה."],
+      mock:`<div class='box'><div class='h'>המשימות שלי</div>
+        <div class='mrow'><span class='chip on'>התקבלו לטיפולי (7)</span><span class='chip'>שאני פתחתי (4)</span></div>
+        <div class='kv'><span>הכנת דו"ח רבעוני</span><span class='pill a'>בטיפול</span></div>
+        <div class='kv'><span>בדיקת שכבת GIS</span><span class='pill b'>חדשה</span></div></div>`,
+      say:"דף הבית מציג מיד את המשימות שלך, מחולקות לשתי קבוצות ברורות. 'התקבלו לטיפולי' הן המשימות שהוקצו לך לביצוע — מה שאתה צריך לעשות. 'שאני פתחתי' הן משימות שאתה יצרת, גם אם שייכת אותן לאחרים — כדי שתוכל לעקוב אחריהן. מתג פשוט בראש הרשימה מפריד בין השתיים, עם ספירה לכל קבוצה." },
+    { eyebrow:"סרטון 3 · דף הבית", h:"כרטיסי מצב ולשוניות", points:[
+        "ארבעה כרטיסי <b>KPI</b>: פתוחות · בביצוע · באיחור · השבוע.",
+        "לשוניות סינון: הכל / בביצוע / לא התחילו / חסומות / באיחור.",
+        "מנהלים מקבלים לשונית <b>מודגשת</b>: 'משימות הכפופים אלי'."],
+      mock:`<div class='grid3'><div class='stat'><div class='n' style='color:#2050a0'>12</div><div>פתוחות</div></div>
+        <div class='stat'><div class='n' style='color:#16a34a'>5</div><div>בביצוע</div></div>
+        <div class='stat'><div class='n' style='color:#dc2626'>2</div><div>באיחור</div></div></div>
+        <div class='mrow' style='margin-top:10px'><span class='chip'>הכל</span><span class='chip'>באיחור</span><span class='chip amber'>👥 הכפופים אלי</span></div>`,
+      say:"מעל הרשימה מוצגים ארבעה כרטיסי מדד: כמה משימות פתוחות, כמה בביצוע, כמה באיחור וכמה מגיעות ליעד השבוע. לשוניות הסינון מאפשרות למקד את הרשימה. מנהלים מקבלים לשונית נוספת ומודגשת — 'משימות הכפופים אלי' — שמרכזת את כל המשימות של העובדים הכפופים אליהם, למעקב ופיקוח." },
+  ]},
+
+  { t:"יצירת משימה + ההיגיון", d:"מקור, צוות, תפקידים, יעד", icon:"➕", scenes:[
+    { eyebrow:"סרטון 4 · יצירת משימה", h:"שדות המשימה", points:[
+        "<b>כותרת</b> ותיאור — מה צריך לעשות.",
+        "<b>מקור המשימה</b> — החלטת מנהל / פגישה / מסמך. מאיפה זה בא.",
+        "<b>תאריך התחלה</b> (ברירת מחדל: היום) ו<b>יעד</b>, ועדיפות."],
+      mock:`<div class='box'><div class='h'>משימה חדשה</div>
+        <div class='kv'><span>כותרת *</span><span class='pill gray'>הכנת מצגת לוועדה</span></div>
+        <div class='mrow'><span class='chip'>מקור:</span><span class='chip on'>החלטת מנהל</span><span class='chip'>פגישה</span></div>
+        <div class='kv'><span>התחלה → יעד</span><span class='pill b'>01/07 → 15/07</span></div>
+        <div class='mrow'><span class='chip'>עדיפות:</span><span class='chip amber'>גבוהה</span></div></div>`,
+      say:"יצירת משימה נעשית ממסך המשימות. ממלאים כותרת ברורה ותיאור קצר — מה צריך לעשות. שדה חשוב הוא 'מקור המשימה': האם היא נובעת מהחלטת מנהל, מפגישה או ממסמך. ההיגיון כאן הוא שקיפות — לכל משימה יש הצדקה ומקור. בוחרים תאריך התחלה, שברירת המחדל שלו היא היום, תאריך יעד ועדיפות." },
+    { eyebrow:"סרטון 4 · ההיגיון", h:"צוות ותפקיד לכל חבר", points:[
+        "בוחרים <b>צוות</b>, ולכל חבר מגדירים <b>תפקיד</b>:",
+        "לבצע · לספק מידע · לקיים פגישה · להכין דו\"ח · לבדוק ולאשר.",
+        "ההיגיון: <b>מי-עושה-מה</b> ברור מראש — אין 'נפילה בין הכיסאות'."],
+      mock:`<div class='box'><div class='h'>צוות המשימה</div>
+        <div class='kv'><span>מארק ישראל</span><span class='pill b'>לבצע</span></div>
+        <div class='kv'><span>עידית יוגב</span><span class='pill gray'>לספק מידע</span></div>
+        <div class='kv'><span>אלעד אסרף</span><span class='pill g'>לבדוק ולאשר</span></div></div>`,
+      say:"החלק החשוב ביותר הוא הגדרת הצוות. לא מספיק לצרף אנשים — לכל חבר צוות מגדירים את תפקידו במשימה: מי מבצע, מי מספק מידע, מי מקיים פגישה, מי מכין דו\"ח ומי בודק ומאשר. ההיגיון הוא למנוע עמימות: כשברור מראש מי-עושה-מה, שום משימה לא נופלת בין הכיסאות, ואפשר לעקוב אחר כל אחד בנפרד." },
+  ]},
+
+  { t:"זרימת עבודה במשימה", d:"סטטוסים · בוצע · הארכה · יומן", icon:"🔄", scenes:[
+    { eyebrow:"סרטון 5 · זרימת עבודה", h:"מחזור חיי המשימה", points:[
+        "חדשה → בטיפול → הוקפאה/ממתינה → טופל/נדחתה → <b>הושלם</b>.",
+        "בכל שינוי סטטוס — <b>חובה להזין הסבר</b> (שקיפות).",
+        "כל שינוי נרשם ב<b>יומן המשימה</b> ונשלח לצוות."],
+      mock:`<div class='box'><div class='h'>סטטוס וזרימת עבודה</div>
+        <div class='mrow'><span class='chip'>חדשה</span><span class='chip on'>בטיפול</span><span class='chip'>ממתינה</span><span class='chip'>טופל</span></div>
+        <div class='box' style='margin-top:8px;background:#f8fafc'><div class='kv' style='border:none'><span>הסבר לשינוי *</span><span class='pill a'>חובה</span></div></div></div>`,
+      say:"לכל משימה יש מחזור חיים מוגדר: מחדשה, לבטיפול, דרך הקפאה או המתנה, ועד טופל, נדחתה או הושלם. הנקודה המרכזית: בכל שינוי סטטוס המערכת מחייבת אתכם להזין הסבר קצר. ההיגיון הוא שקיפות ואחריותיות — תמיד יהיה תיעוד למה משימה הוקפאה או נדחתה. כל שינוי נרשם ביומן המשימה ומיודע לכל חברי הצוות." },
+    { eyebrow:"סרטון 5 · השלמה", h:"סימון 'בוצע' והשלמה אוטומטית", points:[
+        "כל חבר צוות מסמן את <b>חלקו כ'בוצע'</b>.",
+        "כשכולם סיימו — המשימה הופכת אוטומטית ל<b>'הושלם'</b>.",
+        "אפשר <b>לבקש הארכת יעד</b> (עם נימוק) — היוצר מאשר/דוחה."],
+      mock:`<div class='box'><div class='h'>ביצוע חברי הצוות</div>
+        <div class='kv'><span>מארק — לבצע</span><span class='pill g'>בוצע ✓</span></div>
+        <div class='kv'><span>עידית — לספק מידע</span><span class='pill g'>בוצע ✓</span></div>
+        <div class='kv'><span>אלעד — לבדוק</span><span class='pill gray'>ממתין</span></div>
+        <div class='bar' style='margin-top:8px'><i style='width:66%'></i></div></div>`,
+      say:"כל חבר צוות אחראי לסמן את החלק שלו כ'בוצע'. ההיגיון האלגנטי כאן: ברגע שכל חברי הצוות סימנו שסיימו, המשימה הופכת אוטומטית לסטטוס 'הושלם' — בלי שאף אחד צריך לזכור לסגור אותה ידנית. אם צריך עוד זמן, אפשר לבקש הארכת יעד עם נימוק, ויוצר המשימה מאשר או דוחה את הבקשה." },
+  ]},
+
+  { t:"פעולות ממונה + היררכיה", d:"פיקוח ניהולי ושקיפות", icon:"👔", scenes:[
+    { eyebrow:"סרטון 6 · ממונה", h:"מה ממונה יכול לעשות", points:[
+        "על משימת כפוף: <b>הערה</b> · <b>דחייה</b> · <b>ביטול</b> · <b>הוספת זמן</b>.",
+        "כל פעולה דורשת <b>סיבה</b> ונרשמת ביומן. (ממונה לא יכול למחוק.)",
+        "ההיגיון: פיקוח ניהולי בלי לפגוע בבעלות של המבצע."],
+      mock:`<div class='box'><div class='h'>פעולות ממונה</div>
+        <div class='mrow'><span class='chip on'>הוסף הערה</span><span class='chip'>הוסף זמן</span></div>
+        <div class='mrow'><span class='chip amber'>דחה משימה</span><span class='chip amber'>בטל משימה</span></div>
+        <div class='kv' style='margin-top:6px'><span>סיבה *</span><span class='pill a'>חובה</span></div></div>`,
+      say:"ממונה מקבל על משימה של עובד הכפוף אליו כרטיס מיוחד: הוא יכול להוסיף הערה, לדחות או לבטל את המשימה, או להוסיף זמן ביצוע. כל פעולה כזו מחייבת ציון סיבה ונרשמת ביומן. שימו לב — ממונה אף פעם לא יכול למחוק משימה, רק לבטל. ההיגיון הוא לאפשר פיקוח ניהולי אמיתי, אך תוך שמירה על תיעוד מלא ועל הבעלות של מבצע המשימה." },
+    { eyebrow:"סרטון 6 · היררכיה", h:"שקיפות לאורך שרשרת הפיקוד", points:[
+        "פעולת ממונה מיודעת <b>ליוצר, למבצע ולממונים מעליו</b> — עד הסמנכ\"ל.",
+        "'משימות הכפופים אלי' מרכזת את כל <b>תת-עץ הכפיפות</b>.",
+        "3 גורמי הנהלה רואים <b>את כל המשימות</b> בארגון."],
+      mock:`<div class='box'><div class='h'>מי רואה את המשימה</div>
+        <div class='kv'><span>יוצר + מבצע + צוות</span><span class='pill b'>✓</span></div>
+        <div class='kv'><span>שרשרת הממונים ↑ עד סמנכ"ל</span><span class='pill b'>✓</span></div>
+        <div class='kv'><span>הנהלה (מנכ"ל / סמנכ"ל / PMO)</span><span class='pill g'>הכל</span></div></div>`,
+      say:"ההיגיון ההיררכי הוא לב המערכת. כל פעולת ממונה מיודעת אוטומטית ליוצר המשימה, למבצע ולצוות, וגם לכל הממונים מעל אותו ממונה — עד רמת הסמנכ\"ל. הלשונית 'משימות הכפופים אלי' מרכזת למנהל את כל המשימות של תת-עץ הכפיפות שלו. ובראש הפירמידה, שלושה גורמי הנהלה — המנכ\"ל, הסמנכ\"ל וה-PMO — רואים את כל המשימות בארגון." },
+  ]},
+
+  { t:"מרכז ייבוא (AI)", d:"חילוץ משימות ממסמך/שמע", icon:"📥", scenes:[
+    { eyebrow:"סרטון 7 · ייבוא", h:"ארבעה ערוצי קלט", points:[
+        "<b>קובץ</b> (Word/PDF/Excel/תמונה) · <b>הדבקת טקסט</b> · <b>קישור</b> · <b>הקלטה</b>.",
+        "בינה מלאכותית <b>מחלצת את המשימות</b> אוטומטית מהתוכן.",
+        "חוסך הקלדה ידנית של עשרות משימות מסיכום פגישה."],
+      mock:`<div class='box'><div class='h'>מרכז ייבוא</div>
+        <div class='mrow'><span class='chip on'>📄 קובץ</span><span class='chip'>📝 טקסט</span><span class='chip'>🔗 קישור</span><span class='chip'>🎙️ הקלטה</span></div>
+        <div class='box' style='margin-top:8px;background:#f8fafc'><div class='kv' style='border:none'><span>סיכום_ישיבה.docx</span><span class='pill g'>נותח ✓</span></div></div></div>`,
+      say:"מרכז הייבוא הוא כלי חכם שחוסך הקלדה. במקום להזין ידנית עשרות משימות מסיכום פגישה, אפשר להעלות קובץ וורד, PDF, אקסל או תמונה; להדביק טקסט; לתת קישור; או אפילו להקליט. הבינה המלאכותית סורקת את התוכן ומחלצת ממנו את המשימות באופן אוטומטי." },
+    { eyebrow:"סרטון 7 · ההיגיון", h:"חילוץ מדויק — לא כל שורה היא משימה", points:[
+        "המערכת מחלצת רק פריטים עם <b>פעולה + עוגן</b> (מבצע/יעד/תוצר).",
+        "אמירה כללית ('כדאי לבחון') <b>אינה</b> הופכת למשימה.",
+        "המשתמש <b>עורך → מאשר</b> — ואז המשימות נשמרות."],
+      mock:`<div class='box'><div class='h'>משימות שחולצו (3)</div>
+        <div class='kv'><span>עידית תכין דו"ח עד 10/07</span><span class='pill g'>משימה ✓</span></div>
+        <div class='kv'><span>אלעד יתאם פגישה מול הספק</span><span class='pill g'>משימה ✓</span></div>
+        <div class='kv' style='opacity:.5'><span>"כדאי לשפר את התהליך"</span><span class='pill gray'>לא משימה</span></div></div>`,
+      say:"ההיגיון בחילוץ הוא דיוק. המערכת לא הופכת כל משפט למשימה — אלא רק פריטים שיש בהם פעולה ממשית ועוגן: מבצע בשם, תאריך יעד או תוצר מוגדר. אמירה כללית כמו 'כדאי לבחון את התהליך' לא תהפוך למשימה. בסיום, המשתמש עובר על המשימות שחולצו, עורך במידת הצורך, ומאשר — ורק אז הן נשמרות במערכת." },
+  ]},
+
+  { t:"פרויקטים, KPI ודוחות", d:"תמונת-על ופילוח", icon:"📊", scenes:[
+    { eyebrow:"סרטון 8 · פרויקטים", h:"פרויקטים ופילטור", points:[
+        "כל פרויקט עם <b>אחוז התקדמות, בריאות וצוות</b>.",
+        "פילטור מחזור-חיים: <b>פתוח / סגור / חדש / נדחה</b>.",
+        "אותו פילטור זמין גם ל<b>משימות</b>, עם ספירה לכל מצב."],
+      mock:`<div class='box'><div class='h'>פרויקטים</div>
+        <div class='mrow'><span class='chip on'>הכל</span><span class='chip'>פתוחים</span><span class='chip'>סגורים</span><span class='chip'>חדשים</span></div>
+        <div class='kv'><span>יישום Salesforce</span><span class='pill g'>72%</span></div>
+        <div class='bar'><i style='width:72%'></i></div></div>`,
+      say:"מסך הפרויקטים מציג כל פרויקט עם אחוז התקדמות, ציון בריאות והצוות שעליו. אפשר לפלח ולסנן פרויקטים לפי מחזור החיים: פתוח, סגור, חדש או נדחה — עם ספירה לכל מצב. אותו מנגנון פילטור זמין גם במסך המשימות, כדי שתמצאו במהירות בדיוק את מה שאתם מחפשים." },
+    { eyebrow:"סרטון 8 · KPI וסיכונים", h:"מדדים, דוחות וניהול סיכונים", points:[
+        "<b>KPI לפי תפקיד</b> — מנהל פרויקט מול מנהל PMO.",
+        "<b>דוחות</b>: עומסי צוות, התפלגות סטטוסים, חריגות לו\"ז.",
+        "<b>מנוע סיכונים</b> מזהה מראש: חסימות, איחורים, עומסי-יתר."],
+      mock:`<div class='grid3'><div class='stat'><div class='n' style='color:#2050a0'>SPI</div><div>לו"ז</div></div>
+        <div class='stat'><div class='n' style='color:#16a34a'>CPI</div><div>תקציב</div></div>
+        <div class='stat'><div class='n' style='color:#dc2626'>3</div><div>סיכונים</div></div></div>
+        <div class='mrow' style='margin-top:8px'><span class='pill r'>● משימה חסומה</span><span class='pill a'>● עומס-יתר</span></div>`,
+      say:"בצד הניהולי, המערכת מציגה מדדי KPI המותאמים לתפקיד — מבט תפעולי למנהל פרויקט ומבט אסטרטגי למנהל PMO. הדוחות כוללים עומסי צוות, התפלגות סטטוסים וחריגות לוח-זמנים. מנוע הסיכונים סורק באופן פרואקטיבי ומזהה מראש בעיות: משימות חסומות, איחורים צפויים ועומסי-יתר על חברי צוות — כדי שאפשר יהיה לפעול לפני שהבעיה מתרחשת." },
+  ]},
+
+  { t:"התראות, תמיכה וניהול", d:"מייל/וואטסאפ · צור קשר · אדמין", icon:"🔔", scenes:[
+    { eyebrow:"סרטון 9 · התראות", h:"שלושה ערוצי התראה", points:[
+        "<b>פעמון</b> ביישום · <b>מייל</b> · <b>וואטסאפ</b> — על כל שינוי רלוונטי.",
+        "כל מייל מציין את <b>שם השולח</b> ואת פרטי המשימה.",
+        "<b>@אזכור</b> בהערות שולח התראה ממוקדת לאדם."],
+      mock:`<div class='box'><div class='h'>📧 מייל התראה</div>
+        <div class='kv'><span>מאת</span><span class='pill b'>מארק ישראל</span></div>
+        <div class='kv'><span>נושא</span><span class='pill gray'>עודכן סטטוס: דו"ח רבעוני</span></div>
+        <div class='mrow'><span class='chip'>🔔 פעמון</span><span class='chip'>📧 מייל</span><span class='chip'>💬 וואטסאפ</span></div></div>`,
+      say:"המערכת שומרת על כולם מעודכנים בשלושה ערוצים: פעמון בתוך היישום, מייל, ווטסאפ — על כל שינוי רלוונטי במשימות שלכם. כל מייל מציין את שם השולח ואת פרטי המשימה, כדי שתדעו מיד מי פנה ובאיזה עניין. אזכור של אדם בהערה, בעזרת שטרודל, שולח לו התראה ממוקדת." },
+    { eyebrow:"סרטון 9 · תמיכה וניהול", h:"צור קשר, עוזר AI וניהול מערכת", points:[
+        "כפתור <b>'צור קשר'</b> בכל מסך — שאלות והצעות לצוות ה-PMO.",
+        "<b>עוזר AI</b> עונה על שאלות ומסייע בפעולות.",
+        "אדמין: <b>ניהול משתמשים, הרשאות והיררכיה</b> מלאים."],
+      mock:`<div class='box'><div class='h'>מרכז ניהול (אדמין)</div>
+        <div class='kv'><span>משתמשים</span><span class='pill b'>הוסף/ערוך/השבת</span></div>
+        <div class='kv'><span>הרשאות</span><span class='pill gray'>מטריצה לפי תפקיד</span></div>
+        <div class='mrow' style='margin-top:6px'><span class='chip amber'>📨 צור קשר</span><span class='chip on'>🤖 עוזר AI</span></div></div>`,
+      say:"לכל שאלה או תקלה יש כפתור 'צור קשר' זמין בכל מסך, שמעביר את הפנייה ישירות לצוות ה-PMO. עוזר ה-AI זמין לענות על שאלות ולסייע בפעולות. ולמנהלי המערכת יש מרכז ניהול מלא: הוספה, עריכה והשבתה של משתמשים, מטריצת הרשאות לפי תפקיד, וניהול ההיררכיה הארגונית. בזאת סיימנו את סדרת ההדרכה — בהצלחה בעבודה עם המערכת!" },
+  ]},
+];
+
+/* ===== Player engine ===== */
+let mi=0, si=0, playing=false, voiceOn=true, timer=null;
+const sc=document.getElementById('scene'), cap=document.getElementById('cap');
+const chaptersEl=document.getElementById('chapters'), dotsEl=document.getElementById('dots'), progEl=document.getElementById('prog');
+const playBtn=document.getElementById('playBtn'), hint=document.getElementById('hint');
+
+function buildChapters(){
+  chaptersEl.innerHTML='';
+  M.forEach((m,i)=>{
+    const d=document.createElement('div'); d.className='chapter'+(i===mi?' active':'');
+    d.innerHTML=`<div class='num'>${i+1}</div><div><div class='t'>${m.icon} ${m.t}</div><div class='d'>${m.d}</div></div>`;
+    d.onclick=()=>{stop();mi=i;si=0;render();};
+    chaptersEl.appendChild(d);
+  });
+}
+function buildDots(){
+  dotsEl.innerHTML='';
+  M[mi].scenes.forEach((_,i)=>{
+    const dot=document.createElement('div'); dot.className='dot'+(i===si?' on':'');
+    dot.onclick=()=>{stop();si=i;render();};
+    dotsEl.appendChild(dot);
+  });
+}
+function render(){
+  const s=M[mi].scenes[si];
+  sc.innerHTML='';
+  const wrap=document.createElement('div'); wrap.style.display='contents';
+  sc.innerHTML=`<div class='eyebrow'>${s.eyebrow}</div><h3>${s.h}</h3>
+    <div class='body'><ul class='points'>${s.points.map((p,idx)=>`<li style='animation-delay:${.25+idx*.5}s'><span class='tick'>✓</span><span>${p}</span></li>`).join('')}</ul>
+    <div class='mock'>${s.mock||''}</div></div>`;
+  cap.textContent=s.say;
+  buildChapters(); buildDots();
+  const totalScenes=M.reduce((a,m)=>a+m.scenes.length,0);
+  const done=M.slice(0,mi).reduce((a,m)=>a+m.scenes.length,0)+si+1;
+  progEl.style.width=(done/totalScenes*100)+'%';
+  hint.textContent=`מודול ${mi+1}/${M.length} · קטע ${si+1}/${M[mi].scenes.length}`;
+  if(playing) speak(s.say);
+}
+function next(){ const m=M[mi]; if(si<m.scenes.length-1){si++;render();} else if(mi<M.length-1){mi++;si=0;render();} else {stop();} }
+function prev(){ if(si>0){si--;} else if(mi>0){mi--;si=M[mi].scenes.length-1;} render(); }
+function speak(text){
+  clearTimeout(timer);
+  try{ window.speechSynthesis.cancel(); }catch(e){}
+  const wordDur=Math.max(4500, text.length*55);
+  if(voiceOn && 'speechSynthesis' in window){
+    const u=new SpeechSynthesisUtterance(text); u.lang='he-IL'; u.rate=1; u.pitch=1;
+    const vs=window.speechSynthesis.getVoices(); const hv=vs.find(v=>/he|iw/i.test(v.lang));
+    if(hv) u.voice=hv;
+    u.onend=()=>{ if(playing) timer=setTimeout(next,600); };
+    u.onerror=()=>{ if(playing) timer=setTimeout(next,wordDur); };
+    window.speechSynthesis.speak(u);
+    // safety fallback if speech never fires end (no Hebrew voice installed)
+    timer=setTimeout(()=>{ if(playing){ try{window.speechSynthesis.cancel();}catch(e){} next(); } }, wordDur+4000);
+  } else {
+    timer=setTimeout(()=>{ if(playing) next(); }, wordDur);
+  }
+}
+function play(){ playing=true; playBtn.textContent='⏸ השהה'; render(); }
+function stop(){ playing=false; playBtn.textContent='▶ נגן'; clearTimeout(timer); try{window.speechSynthesis.cancel();}catch(e){} }
+playBtn.onclick=()=> playing?stop():play();
+document.getElementById('nextBtn').onclick=()=>{stop();next();};
+document.getElementById('prevBtn').onclick=()=>{stop();prev();};
+document.getElementById('voiceSw').onclick=function(){ voiceOn=!voiceOn; this.classList.toggle('on',voiceOn); if(playing&&voiceOn){speak(M[mi].scenes[si].say);} else {try{window.speechSynthesis.cancel();}catch(e){}} };
+if('speechSynthesis' in window){ window.speechSynthesis.onvoiceschanged=()=>{}; }
+render();
+</script>
+</body>
+</html>

@@ -16,6 +16,7 @@ import {
   Shield,
   BookOpen,
   FileInput,
+  GraduationCap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,7 +51,7 @@ export const NAV_GROUP_OF: Record<string, NavGroupKey> = {
   calendar: "calendar",
   dashboard: "management", intake: "management", reports: "management", team: "management",
   risks: "pmo", ai: "pmo", automations: "pmo",
-  admin: "settings", guides: "settings", settings: "settings",
+  admin: "settings", guides: "settings", training: "settings", settings: "settings",
 };
 
 export const NAV_ITEMS: NavItem[] = [
@@ -70,5 +71,6 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "team",        icon: Users,               href: "/team",          labels: { he: "צוות",               en: "Team",              ru: "Команда",             fr: "Équipe",               es: "Equipo"            }, tooltips: { he: "ניהול חברי צוות, הקצאות והזמנות חדשות", en: "Manage team members, allocations and new invitations" } },
   { key: "admin",       icon: Shield,              href: "/admin",         labels: { he: "ניהול מערכת",        en: "Admin",             ru: "Администрирование",   fr: "Administration",       es: "Administración"    }, tooltips: { he: "ניהול משתמשים, תפקידים, הרשאות, סוגי פריטים ויומן פעילות", en: "Manage users, roles, permissions, item types & activity log" } },
   { key: "guides",      icon: BookOpen,            href: "/guides",        labels: { he: "מדריכי משתמש",       en: "User Guides",       ru: "Руководства",         fr: "Guides",               es: "Guías"             }, tooltips: { he: "מדריכי הפעלה מפורטים ל-PMO++ ב-5 שפות", en: "Detailed PMO++ guides in 5 languages" } },
+  { key: "training",    icon: GraduationCap,       href: "/training",      labels: { he: "מרכז הדרכה",         en: "Training",          ru: "Обучение",           fr: "Formation",            es: "Formación"         }, tooltips: { he: "סרטוני הדרכה קוליים על כל יכולות המערכת וההיגיון שמאחוריהן", en: "Voice-narrated training videos covering every feature and the logic behind it" } },
   { key: "settings",    icon: Settings,            href: "/settings",      labels: { he: "הגדרות",             en: "Settings",          ru: "Настройки",           fr: "Paramètres",           es: "Configuración"     }, tooltips: { he: "הגדרות אישיות — שפה, ערכת נושא, התראות ואינטגרציות", en: "Personal settings — language, theme, notifications & integrations" } },
 ];
