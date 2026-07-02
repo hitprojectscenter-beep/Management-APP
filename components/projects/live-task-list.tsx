@@ -7,6 +7,7 @@ import type { MockTask, MockUser } from "@/lib/db/mock-data";
 import { TaskList } from "@/components/projects/task-list";
 import { Button } from "@/components/ui/button";
 import { useLiveTasks, syncTasksFromDb } from "@/lib/db/local-tasks";
+import { useRole } from "@/lib/auth/role-context";
 import { txt, PRIORITY_LABELS_ML } from "@/lib/utils/locale-text";
 import { isOpenStatus, isClosedStatus } from "@/lib/db/types";
 import { cn } from "@/lib/utils";
@@ -29,24 +30,38 @@ export function LiveTaskList({
   locale: string;
 }) {
   const tasks = useLiveTasks(serverTasks);
+  const { currentUser } = useRole();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<"priority" | "dueDate">("priority");
   const [priorityVal, setPriorityVal] = useState("high");
   const [dueVal, setDueVal] = useState("");
   const [applying, setApplying] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "closed" | "new" | "rejected">("all");
+  const [createdByMe, setCreatedByMe] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
-  // Lifecycle filter: open = not finished; closed = done/completed/cancelled/
-  // handled/rejected; new = new/not-started; rejected = נדחתה.
+  // Combined filter: status (lifecycle) AND "created by me" AND date-range
+  // overlap. open = not finished; closed = done/completed/cancelled/handled/
+  // rejected; new = new/not-started; rejected = נדחתה. Date range matches any
+  // task whose window overlaps [from, to] (yyyy-mm-dd lexical compare).
   const visibleTasks = useMemo(() => {
-    switch (statusFilter) {
-      case "open": return tasks.filter((t) => isOpenStatus(t.status));
-      case "closed": return tasks.filter((t) => isClosedStatus(t.status));
-      case "new": return tasks.filter((t) => t.status === "new" || t.status === "not_started");
-      case "rejected": return tasks.filter((t) => t.status === "rejected");
-      default: return tasks;
-    }
-  }, [tasks, statusFilter]);
+    let list = tasks;
+    if (statusFilter === "open") list = list.filter((t) => isOpenStatus(t.status));
+    else if (statusFilter === "closed") list = list.filter((t) => isClosedStatus(t.status));
+    else if (statusFilter === "new") list = list.filter((t) => t.status === "new" || t.status === "not_started");
+    else if (statusFilter === "rejected") list = list.filter((t) => t.status === "rejected");
+    if (createdByMe) list = list.filter((t) => (t as MockTask & { creatorId?: string }).creatorId === currentUser.id);
+    if (dateFrom) list = list.filter((t) => (t.plannedEnd ?? "") >= dateFrom);
+    if (dateTo) list = list.filter((t) => (t.plannedStart ?? "") <= dateTo);
+    return list;
+  }, [tasks, statusFilter, createdByMe, dateFrom, dateTo, currentUser.id]);
+
+  const createdByMeCount = useMemo(
+    () => tasks.filter((t) => (t as MockTask & { creatorId?: string }).creatorId === currentUser.id).length,
+    [tasks, currentUser.id],
+  );
+  const anyFilter = statusFilter !== "all" || createdByMe || !!dateFrom || !!dateTo;
 
   const ids = useMemo(() => visibleTasks.map((t) => t.id), [visibleTasks]);
   const allChecked = ids.length > 0 && ids.every((id) => selected.has(id));
@@ -97,7 +112,7 @@ export function LiveTaskList({
     <>
       <div className="-mt-2 mb-3 flex items-center justify-between gap-2">
         <p className="text-muted-foreground text-sm">
-          {statusFilter === "all"
+          {!anyFilter
             ? `${tasks.length} ${txt(locale, { he: "משימות בסך הכל", en: "total tasks" })}`
             : `${visibleTasks.length} / ${tasks.length} ${txt(locale, { he: "משימות", en: "tasks" })}`}
         </p>
@@ -138,6 +153,50 @@ export function LiveTaskList({
             </button>
           );
         })}
+      </div>
+
+      {/* Extra filters: "created by me" + date range (combine with status) */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setCreatedByMe((v) => !v)}
+          title={txt(locale, { he: "הצג רק משימות שאני יצרתי", en: "Show only tasks I created" }) as string}
+          className={cn(
+            "px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+            createdByMe ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          {txt(locale, { he: "משימות שיצרתי", en: "Created by me" })} <span className="text-[10px] opacity-70">({createdByMeCount})</span>
+        </button>
+
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground text-xs">{txt(locale, { he: "מתאריך", en: "From" })}</span>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            title={txt(locale, { he: "הצג משימות שתאריך היעד שלהן הוא בתאריך זה או אחריו", en: "Tasks whose due date is on/after this date" }) as string}
+            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+          />
+          <span className="text-muted-foreground text-xs">{txt(locale, { he: "עד", en: "to" })}</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            title={txt(locale, { he: "הצג משימות שתאריך ההתחלה שלהן הוא בתאריך זה או לפניו", en: "Tasks whose start date is on/before this date" }) as string}
+            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+          />
+        </div>
+
+        {anyFilter && (
+          <button
+            type="button"
+            onClick={() => { setStatusFilter("all"); setCreatedByMe(false); setDateFrom(""); setDateTo(""); }}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3.5" /> {txt(locale, { he: "נקה סינון", en: "Clear filters" })}
+          </button>
+        )}
       </div>
 
       {/* Bulk action bar — appears when rows are selected */}

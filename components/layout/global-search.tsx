@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Search, X, CheckSquare, Briefcase, Users as UsersIcon, FileText, CornerDownLeft } from "lucide-react";
-import { useRouter } from "@/lib/i18n/routing";
+import { useRouter, usePathname } from "@/lib/i18n/routing";
 import { useLocale } from "next-intl";
 import { mockTasks, mockUsers, getProjects } from "@/lib/db/mock-data";
 import { useLiveTasks } from "@/lib/db/local-tasks";
@@ -36,6 +36,7 @@ export function GlobalSearch() {
   const locale = useLocale();
   const isHe = locale === "he";
   const router = useRouter();
+  const pathname = usePathname();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -51,6 +52,16 @@ export function GlobalSearch() {
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
+
+  // The primary entity type of the page the user is currently on — its matches
+  // are shown first (spec: "results from the page I'm on come first").
+  const currentType: ResultType | null = useMemo(() => {
+    const p = pathname || "";
+    if (p.startsWith("/tasks")) return "task";
+    if (p.startsWith("/projects") || p.startsWith("/portfolios") || p.startsWith("/wbs") || p.startsWith("/gantt")) return "project";
+    if (p.startsWith("/team")) return "user";
+    return null;
+  }, [pathname]);
 
   const results = useMemo<Result[]>(() => {
     const term = q.trim().toLowerCase();
@@ -85,8 +96,10 @@ export function GlobalSearch() {
       const label = n.labels[locale] || n.labels.he;
       if (label.toLowerCase().includes(term)) out.push({ type: "page", id: n.key, label, href: n.href });
     }
+    // Current-page results first, then the rest (each labelled by its location).
+    out.sort((a, b) => (b.type === currentType ? 1 : 0) - (a.type === currentType ? 1 : 0));
     return out.slice(0, 22);
-  }, [q, tasks, projects, locale]);
+  }, [q, tasks, projects, locale, currentType]);
 
   useEffect(() => setActive(0), [q]);
 
@@ -150,9 +163,11 @@ export function GlobalSearch() {
               const Icon = TYPE_META[grp.type].icon;
               return (
                 <div key={grp.type} className="py-1">
-                  <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                  <div className={cn("px-3 py-1 text-[10px] font-semibold uppercase tracking-wide flex items-center gap-1.5", grp.type === currentType ? "text-primary" : "text-muted-foreground")}>
                     <Icon className="size-3" />
-                    {txt(locale, TYPE_META[grp.type].label)}
+                    {grp.type === currentType
+                      ? `${txt(locale, { he: "בדף הנוכחי", en: "On this page" })} · ${txt(locale, TYPE_META[grp.type].label)}`
+                      : txt(locale, TYPE_META[grp.type].label)}
                   </div>
                   {grp.items.map(({ r, idx }) => (
                     <button
