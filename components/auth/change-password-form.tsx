@@ -14,11 +14,11 @@ import { FieldHint } from "@/components/ui/field-hint";
  *  the server (checkPasswordPolicy) remains authoritative. */
 function rules(pw: string, locale: string) {
   return [
-    { ok: pw.length >= 9, label: txt(locale, { he: "לפחות 9 תווים", en: "At least 9 characters" }) },
-    { ok: /[a-z]/.test(pw), label: txt(locale, { he: "אות אנגלית קטנה (a-z)", en: "A lowercase letter" }) },
-    { ok: /[A-Z]/.test(pw), label: txt(locale, { he: "אות אנגלית גדולה (A-Z)", en: "An uppercase letter" }) },
-    { ok: /[0-9]/.test(pw), label: txt(locale, { he: "ספרה (0-9)", en: "A digit" }) },
-    { ok: /[^A-Za-z0-9]/.test(pw), label: txt(locale, { he: "תו מיוחד (!@#$...)", en: "A special character" }) },
+    { ok: pw.length >= 9, label: txt(locale, { he: "לפחות 9 תווים", en: "At least 9 characters" }), req: txt(locale, { he: "יש להזין סיסמה בת 9 תווים לפחות", en: "Enter a password of at least 9 characters" }) as string },
+    { ok: /[a-z]/.test(pw), label: txt(locale, { he: "אות אנגלית קטנה (a-z)", en: "A lowercase letter" }), req: txt(locale, { he: "יש לכלול אות אנגלית קטנה (a-z)", en: "Include a lowercase letter (a-z)" }) as string },
+    { ok: /[A-Z]/.test(pw), label: txt(locale, { he: "אות אנגלית גדולה (A-Z)", en: "An uppercase letter" }), req: txt(locale, { he: "יש לכלול אות אנגלית גדולה (A-Z)", en: "Include an uppercase letter (A-Z)" }) as string },
+    { ok: /[0-9]/.test(pw), label: txt(locale, { he: "ספרה (0-9)", en: "A digit" }), req: txt(locale, { he: "יש לכלול ספרה (0-9)", en: "Include a digit (0-9)" }) as string },
+    { ok: /[^A-Za-z0-9]/.test(pw), label: txt(locale, { he: "תו מיוחד (!@#$...)", en: "A special character" }), req: txt(locale, { he: "יש לכלול תו מיוחד (!@#$...)", en: "Include a special character (!@#$...)" }) as string },
   ];
 }
 
@@ -47,7 +47,9 @@ export function ChangePasswordForm({
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [show, setShow] = useState(false);
+  const [showCur, setShowCur] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConf, setShowConf] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverErrors, setServerErrors] = useState<string[]>([]);
   const [topError, setTopError] = useState<string | null>(null);
@@ -60,7 +62,8 @@ export function ChangePasswordForm({
     const p = generateStrongPassword();
     setNext(p);
     setConfirm(p);
-    setShow(true);
+    setShowNew(true);
+    setShowConf(true);
   };
 
   async function submit(e: React.FormEvent) {
@@ -128,13 +131,26 @@ export function ChangePasswordForm({
           {txt(locale, { he: "סיסמה נוכחית", en: "Current password" })}
           <FieldHint text={txt(locale, { he: "הסיסמה שאיתה את/ה מחובר/ת כעת (בכניסה ראשונה — הסיסמה הראשונית מהמייל). נדרשת לאימות זהותך לפני ההחלפה.", en: "The password you're currently signed in with (on first login, the initial one from the email). Required to verify your identity before changing." }) as string} />
         </label>
-        <Input
-          type={show ? "text" : "password"}
-          value={current}
-          onChange={(e) => setCurrent(e.target.value)}
-          autoComplete="current-password"
-          required
-        />
+        <div className="relative">
+          <Input
+            type={showCur ? "text" : "password"}
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            autoComplete="current-password"
+            required
+            className="pe-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowCur((s) => !s)}
+            className="absolute inset-y-0 end-2 flex items-center text-muted-foreground hover:text-foreground"
+            aria-label={txt(locale, { he: "הצג או הסתר סיסמה", en: "Show or hide password" }) as string}
+            title={txt(locale, { he: "לחצ/י כדי לראות את תווי הסיסמה במקום נקודות", en: "Click to reveal the password characters" }) as string}
+            tabIndex={-1}
+          >
+            {showCur ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
       </div>
 
       <div className="space-y-1.5">
@@ -154,7 +170,7 @@ export function ChangePasswordForm({
         </div>
         <div className="relative">
           <Input
-            type={show ? "text" : "password"}
+            type={showNew ? "text" : "password"}
             value={next}
             onChange={(e) => setNext(e.target.value)}
             autoComplete="new-password"
@@ -163,22 +179,33 @@ export function ChangePasswordForm({
           />
           <button
             type="button"
-            onClick={() => setShow((s) => !s)}
+            onClick={() => setShowNew((s) => !s)}
             className="absolute inset-y-0 end-2 flex items-center text-muted-foreground hover:text-foreground"
-            aria-label={txt(locale, { he: "הצג/הסתר סיסמה", en: "Toggle visibility" }) as string}
+            aria-label={txt(locale, { he: "הצג או הסתר סיסמה", en: "Show or hide password" }) as string}
+            title={txt(locale, { he: "לחצ/י כדי לראות את תווי הסיסמה במקום נקודות", en: "Click to reveal the password characters" }) as string}
+            tabIndex={-1}
           >
-            {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            {showNew ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </button>
         </div>
         {/* Live policy checklist */}
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 pt-1">
           {checks.map((c, i) => (
-            <li key={i} className={cn("flex items-center gap-1.5 text-xs", c.ok ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>
+            <li key={i} className={cn("flex items-center gap-1.5 text-xs", c.ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400 font-bold")}>
               {c.ok ? <Check className="size-3.5" /> : <X className="size-3.5" />}
               {c.label}
             </li>
           ))}
         </ul>
+        {/* Announce the specific failing criteria (aria-live → also read aloud by screen readers). */}
+        {next.length > 0 && !policyOk && (
+          <div role="alert" aria-live="assertive" className="rounded-md border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 p-2.5 text-xs text-red-700 dark:text-red-300 space-y-0.5">
+            <div className="font-bold">{txt(locale, { he: "הסיסמה עדיין אינה עומדת בדרישות:", en: "Password does not meet the requirements yet:" })}</div>
+            {checks.filter((c) => !c.ok).map((c, i) => (
+              <div key={i}>• {(c as { req: string }).req}</div>
+            ))}
+          </div>
+        )}
         <p className="text-[11px] text-muted-foreground pt-0.5">
           {txt(locale, {
             he: "השתמש/י באותיות אנגלית (גדולות וקטנות), מספרים ותו מיוחד — או לחצ/י 'צור סיסמה חזקה'.",
@@ -192,14 +219,26 @@ export function ChangePasswordForm({
           {txt(locale, { he: "אימות סיסמה חדשה", en: "Confirm new password" })}
           <FieldHint text={txt(locale, { he: "הקלד/י שוב את הסיסמה החדשה, בדיוק כפי שהוקלדה למעלה, כדי לוודא שאין טעות הקלדה.", en: "Re-type the new password exactly as above, to make sure there's no typo." }) as string} />
         </label>
-        <Input
-          type={show ? "text" : "password"}
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          autoComplete="new-password"
-          required
-          className={cn(confirm.length > 0 && !matchOk && "border-red-500")}
-        />
+        <div className="relative">
+          <Input
+            type={showConf ? "text" : "password"}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            autoComplete="new-password"
+            required
+            className={cn("pe-10", confirm.length > 0 && !matchOk && "border-red-500")}
+          />
+          <button
+            type="button"
+            onClick={() => setShowConf((s) => !s)}
+            className="absolute inset-y-0 end-2 flex items-center text-muted-foreground hover:text-foreground"
+            aria-label={txt(locale, { he: "הצג או הסתר סיסמה", en: "Show or hide password" }) as string}
+            title={txt(locale, { he: "לחצ/י כדי לראות את תווי הסיסמה במקום נקודות", en: "Click to reveal the password characters" }) as string}
+            tabIndex={-1}
+          >
+            {showConf ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
         {confirm.length > 0 && !matchOk && (
           <p className="text-xs text-red-600">{txt(locale, { he: "לא תואם", en: "Doesn't match" })}</p>
         )}
