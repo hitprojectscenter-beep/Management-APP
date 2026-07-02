@@ -23,11 +23,15 @@ export function CloseTaskDialog({
   locale,
   children,
   onClose,
+  /** A task cannot be closed without an execution owner (אחראי ביצוע).
+   *  Pass !!task.assigneeId. Defaults to true for backward compatibility. */
+  hasExecutionOwner = true,
 }: {
   taskTitle: string;
   locale: string;
   children: React.ReactNode;
   onClose?: (reason: string, description: string) => void;
+  hasExecutionOwner?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -36,6 +40,16 @@ export function CloseTaskDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Guard: no closing a task that has no execution owner (accountability).
+    if (!hasExecutionOwner) {
+      toast.error(
+        txt(locale, {
+          he: "לא ניתן לסגור משימה ללא אחראי ביצוע. שייך/י אחראי ביצוע תחילה.",
+          en: "A task can't be closed without an execution owner. Assign one first.",
+        }) as string,
+      );
+      return;
+    }
     if (!reason) {
       setErrors({ reason: txt(locale, { he: "חובה לבחור סיבת סגירה", en: "Must select a reason" }) });
       return;

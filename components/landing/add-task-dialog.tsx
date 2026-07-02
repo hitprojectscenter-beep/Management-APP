@@ -51,20 +51,6 @@ function todayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// Required-resources / effort categories — multi-select on the form.
-const RESOURCE_OPTIONS = [
-  { value: "manpower", he: "כוח אדם", en: "Manpower" },
-  { value: "budget", he: "תקציב", en: "Budget" },
-  { value: "equipment", he: "ציוד / חומרה", en: "Equipment / Hardware" },
-  { value: "software_license", he: "רישוי תוכנה", en: "Software license" },
-  { value: "external_consulting", he: "ייעוץ חיצוני", en: "External consulting" },
-  { value: "cloud_compute", he: "מחשוב / ענן", en: "Cloud / Compute" },
-  { value: "data_gis", he: "נתונים / GIS", en: "Data / GIS" },
-  { value: "expert_time", he: "זמן מומחה", en: "Expert time" },
-  { value: "training", he: "הדרכה", en: "Training" },
-  { value: "vendor", he: "ספק חיצוני", en: "External vendor" },
-] as const;
-
 // ============================================
 // Task source options (per spec)
 // ============================================
@@ -85,6 +71,9 @@ interface AddTaskFormData {
   teamMembers: string[];
   /** Per-member responsibility within the task: userId → { type, detail }. */
   memberRoles: Record<string, { type: string; detail?: string }>;
+  /** Exactly ONE team member is the execution owner (אחראי ביצוע) — becomes the
+   *  task's assigneeId. Required; auto-set when there's a single member. */
+  executionOwnerId: string;
   /** Required resources / effort categories (multi-select). */
   resources: string[];
   plannedStart: string;
@@ -160,8 +149,6 @@ export function AddTaskDialog({
     onOpenChange?.(v);
   };
 
-  const programs = projects.filter((p) => p.level === "program");
-  const projectsOnly = projects.filter((p) => p.level === "project");
   const taskTypes = mockItemTypes.filter((t) => t.scope === "task");
 
   // Try to map a workTypeLabel ("מצגת" / "מסמך אפיון") to one of the catalog
@@ -218,6 +205,7 @@ export function AddTaskDialog({
     description: initialValues?.description || "",
     teamMembers: initialAssigneeId ? [initialAssigneeId] : [],
     memberRoles: initialAssigneeId ? { [initialAssigneeId]: { type: "execute" } } : {},
+    executionOwnerId: initialAssigneeId || "",
     resources: [],
     // Start date defaults to TODAY for a new (manual) task; intake-extracted
     // tasks keep the source/document date.
@@ -256,6 +244,7 @@ export function AddTaskDialog({
       description: initialValues.description ?? prev.description,
       teamMembers: initialAssigneeId ? [initialAssigneeId] : prev.teamMembers,
       memberRoles: initialAssigneeId ? { [initialAssigneeId]: prev.memberRoles[initialAssigneeId] || { type: "execute" } } : prev.memberRoles,
+      executionOwnerId: initialAssigneeId || prev.executionOwnerId,
       plannedStart: initialValues.plannedStart ?? prev.plannedStart,
       // Guarantee a real window — never start == end.
       plannedEnd: ensureEndAfterStart(
@@ -277,34 +266,19 @@ export function AddTaskDialog({
 
   const validate = (): typeof errors => {
     const errs: typeof errors = {};
+    // Main screen requires only: title, dates, team (+ exactly one execution
+    // owner). Task type / source / priority / resources / project / attachments
+    // moved to "advanced" and default sensibly, so they're no longer required.
     if (!form.title.trim()) errs.title = txt(locale, { he: "חובה למלא כותרת", en: "Title is required" });
-    if (!form.taskType) errs.taskType = txt(locale, { he: "חובה לבחור סוג משימה", en: "Task type required" });
-    // NOTE: parentId (שיוך לפרויקט/פרוגרמה) is intentionally OPTIONAL — a task
-    // doesn't have to belong to a project. (User feedback: "משימה לא חייבת
-    // להיות משוייכת לפרויקט/פרוגרמה כלשהי".)
     if (!form.plannedStart) errs.plannedStart = txt(locale, { he: "חובה", en: "Required" });
     if (!form.plannedEnd) errs.plannedEnd = txt(locale, { he: "חובה", en: "Required" });
-    if (!form.priority) errs.priority = txt(locale, { he: "חובה לבחור עדיפות", en: "Priority required" });
-    if (!form.source) errs.source = txt(locale, { he: "חובה לבחור מקור", en: "Source required" });
     if (form.plannedEnd && form.plannedStart && form.plannedEnd <= form.plannedStart) {
       errs.plannedEnd = txt(locale, { he: "תאריך הסיום חייב להיות אחרי ההתחלה", en: "End must be after start" });
     }
     if (form.description.length > 300) {
       errs.description = txt(locale, { he: `עד 300 תווים (${form.description.length})`, en: `Max 300 chars (${form.description.length})` });
     }
-    if (form.source === "other" && !form.sourceOther.trim()) {
-      errs.sourceOther = txt(locale, { he: "חובה למלא מקור", en: "Source required" });
-    }
-    if (form.source === "other" && form.sourceOther.length > 100) {
-      errs.sourceOther = txt(locale, { he: `עד 100 תווים (${form.sourceOther.length})`, en: `Max 100 chars` });
-    }
-    if (form.taskType === "tt-other" && !form.taskTypeOther.trim()) {
-      errs.taskTypeOther = txt(locale, { he: "חובה לציין סוג משימה", en: "Task type required" });
-    }
-    if (form.taskType === "tt-other" && form.taskTypeOther.length > 100) {
-      errs.taskTypeOther = txt(locale, { he: `עד 100 תווים`, en: `Max 100 chars` });
-    }
-    // Attachments - max 5MB each
+    // Attachments (advanced) - max 5MB each
     for (const file of form.attachments) {
       if (file.size > 5 * 1024 * 1024) {
         errs.attachments = txt(locale, { he: `הקובץ ${file.name} חורג מ-5MB`, en: `File ${file.name} exceeds 5MB` });
@@ -313,6 +287,9 @@ export function AddTaskDialog({
     }
     if (form.teamMembers.length === 0) {
       errs.teamMembers = txt(locale, { he: "חובה לבחור לפחות חבר צוות אחד", en: "Select at least one member" });
+    } else if (!form.executionOwnerId || !form.teamMembers.includes(form.executionOwnerId)) {
+      // Exactly one member must be the execution owner (אחראי ביצוע).
+      errs.executionOwnerId = txt(locale, { he: "יש לבחור אחראי ביצוע אחד מבין חברי הצוות", en: "Select one execution owner from the team" });
     }
     setErrors(errs);
     return errs;
@@ -331,6 +308,7 @@ export function AddTaskDialog({
     source: txt(locale, { he: "מקור", en: "Source" }) as string,
     sourceOther: txt(locale, { he: "מקור (אחר)", en: "Source (other)" }) as string,
     teamMembers: txt(locale, { he: "צוות", en: "Team" }) as string,
+    executionOwnerId: txt(locale, { he: "אחראי ביצוע", en: "Execution owner" }) as string,
     description: txt(locale, { he: "תיאור", en: "Description" }) as string,
     attachments: txt(locale, { he: "קבצים מצורפים", en: "Attachments" }) as string,
   };
@@ -342,7 +320,14 @@ export function AddTaskDialog({
       const memberRoles = { ...prev.memberRoles };
       if (has) delete memberRoles[userId];
       else if (!memberRoles[userId]) memberRoles[userId] = { type: "execute" }; // sensible default on add
-      return { ...prev, teamMembers, memberRoles };
+      // Execution owner (אחראי ביצוע) — exactly one. Auto-assign when the team
+      // has a single member; if the current owner is removed, pass it to the
+      // first remaining member; keep it valid if it fell out of the team.
+      let executionOwnerId = prev.executionOwnerId;
+      if (has && executionOwnerId === userId) executionOwnerId = teamMembers[0] || "";
+      if (!has && teamMembers.length === 1) executionOwnerId = userId;
+      if (executionOwnerId && !teamMembers.includes(executionOwnerId)) executionOwnerId = teamMembers[0] || "";
+      return { ...prev, teamMembers, memberRoles, executionOwnerId };
     });
   };
 
@@ -353,6 +338,10 @@ export function AddTaskDialog({
       return { ...prev, memberRoles: { ...prev.memberRoles, [userId]: { ...current, ...patch } } };
     });
   };
+
+  /** Mark exactly one team member as the execution owner (אחראי ביצוע). */
+  const setExecutionOwner = (userId: string) =>
+    setForm((prev) => ({ ...prev, executionOwnerId: userId }));
 
   /**
    * Notify the assigned team members that they were put on a task.
@@ -510,7 +499,8 @@ export function AddTaskDialog({
       description: form.description.trim() || undefined,
       status: "new",
       priority: (form.priority as any) || "medium",
-      assigneeId: form.teamMembers[0] || null,
+      // The execution owner (אחראי ביצוע) is the task's accountable assignee.
+      assigneeId: form.executionOwnerId || form.teamMembers[0] || null,
       // Persist the FULL team (was dropped before) — every member is a
       // participant in the task's chat + receipts and sees the task.
       team: form.teamMembers.length > 0 ? form.teamMembers : undefined,
@@ -577,6 +567,7 @@ export function AddTaskDialog({
       description: "",
       teamMembers: [],
       memberRoles: {},
+      executionOwnerId: "",
       resources: [],
       sourceOther: "",
       attachments: [],
@@ -585,9 +576,6 @@ export function AddTaskDialog({
     });
     setErrors({});
   };
-
-  const parentOptions =
-    form.parentType === "project" ? projectsOnly : programs;
 
   /** Live workload check for the selected team members across the task
    *  window. Warns (never blocks) when any member is over-allocated or
@@ -659,86 +647,6 @@ export function AddTaskDialog({
             {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
           </div>
 
-          {/* Task Type */}
-          <div className="space-y-1.5">
-            <Label htmlFor="task-type" className="inline-flex items-center gap-1.5">
-              {txt(locale, { he: "סוג משימה", en: "Task Type" })}
-              <FieldHint text={txt(locale, { he: "סיווג המשימה — מצגת, מסמך, מענה וכו'. בחר/י את הסוג שמתאר את התוצר; ב'אחר' ניתן להזין סוג חופשי.", en: "The task's classification — presentation, document, reply, etc. Pick the type that describes the deliverable; choose 'Other' to type a custom one." }) as string} />
-            </Label>
-            <div className="flex flex-wrap gap-1.5">
-              {taskTypes.map((tt) => (
-                <button
-                  key={tt.id}
-                  type="button"
-                  onClick={() => setForm({ ...form, taskType: tt.id, taskTypeOther: "" })}
-                  className={cn(
-                    "px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all min-h-[36px]",
-                    form.taskType === tt.id
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background hover:bg-accent"
-                  )}
-                >
-                  {tt.icon} {txt(locale, { he: tt.nameHe, en: tt.nameEn })}
-                </button>
-              ))}
-            </div>
-            {/* "Other" free text - 100 chars */}
-            {form.taskType === "tt-other" && (
-              <div className="mt-2">
-                <Input
-                  value={form.taskTypeOther}
-                  onChange={(e) => setForm({ ...form, taskTypeOther: e.target.value.slice(0, 100) })}
-                  placeholder={txt(locale, { he: "הזן סוג משימה...", en: "Enter task type..." })}
-                  maxLength={100}
-                  className={cn("min-h-[44px]", errors.taskTypeOther ? "border-red-500" : "")}
-                />
-                <div className="text-[10px] text-muted-foreground text-end mt-0.5">{form.taskTypeOther.length}/100</div>
-                {errors.taskTypeOther && <p className="text-xs text-red-500">{errors.taskTypeOther}</p>}
-              </div>
-            )}
-          </div>
-
-          {/* Task Source */}
-          <div className="space-y-1.5">
-            <Label className="inline-flex items-center gap-1.5">
-              {txt(locale, { he: "מקור המשימה", en: "Task Source" })} <span className="text-red-500">*</span>
-              <FieldHint text={txt(locale, { he: "מהיכן הגיעה המשימה — החלטת מנהל, פגישה, מסמך וכו'. בחר/י את המקור המתאים (שדה חובה).", en: "Where the task originated — a manager decision, a meeting, a document, etc. Pick the matching source (required)." }) as string} />
-            </Label>
-            <div className="flex flex-wrap gap-1.5">
-              {TASK_SOURCES.map((src) => (
-                <button
-                  key={src.value}
-                  type="button"
-                  onClick={() => setForm({ ...form, source: src.value, sourceOther: "" })}
-                  className={cn(
-                    "px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all min-h-[36px]",
-                    form.source === src.value
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background hover:bg-accent"
-                  )}
-                >
-                  {txt(locale, { he: src.labelHe, en: src.labelEn })}
-                </button>
-              ))}
-            </div>
-            {/* "Other" free text (max 100 chars) */}
-            {form.source === "other" && (
-              <div className="mt-2">
-                <Input
-                  value={form.sourceOther}
-                  onChange={(e) => setForm({ ...form, sourceOther: e.target.value.slice(0, 100) })}
-                  placeholder={txt(locale, { he: "הזן מקור משימה...", en: "Enter task source..." })}
-                  maxLength={100}
-                  className={cn("min-h-[44px]", errors.sourceOther ? "border-red-500" : "")}
-                />
-                <div className="text-[10px] text-muted-foreground text-end mt-0.5">
-                  {form.sourceOther.length}/100
-                </div>
-                {errors.sourceOther && <p className="text-xs text-red-500">{errors.sourceOther}</p>}
-              </div>
-            )}
-          </div>
-
           {/* Dates — "when" (scheduling group) */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -777,57 +685,6 @@ export function AddTaskDialog({
             </div>
           </div>
 
-          {/* Priority — grouped with scheduling */}
-          <div className="space-y-1.5">
-            <Label className="inline-flex items-center gap-1.5">
-              {txt(locale, { he: "עדיפות", en: "Priority", ru: "Приоритет", fr: "Priorité", es: "Prioridad" })}
-              <FieldHint text={txt(locale, { he: "דחיפות המשימה — נמוכה / בינונית / גבוהה / קריטית. משפיע על סדר העדיפויות ועל בולטות המשימה ברשימות (שדה חובה).", en: "The task's urgency — Low / Medium / High / Critical. Affects prioritization and how prominently the task surfaces in lists (required)." }) as string} />
-            </Label>
-            <div className="flex gap-1.5">
-              {[
-                { value: "low", he: "נמוכה", en: "Low", color: "bg-slate-100 text-slate-700 border-slate-300" },
-                { value: "medium", he: "בינונית", en: "Medium", color: "bg-blue-100 text-blue-700 border-blue-300" },
-                { value: "high", he: "גבוהה", en: "High", color: "bg-orange-100 text-orange-700 border-orange-300" },
-                { value: "critical", he: "קריטית", en: "Critical", color: "bg-red-100 text-red-700 border-red-300" },
-              ].map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  onClick={() => setForm({ ...form, priority: p.value })}
-                  className={cn(
-                    "flex-1 px-2 py-1.5 rounded-md text-xs font-medium border min-h-[36px] transition-all",
-                    form.priority === p.value
-                      ? `${p.color} ring-2 ring-offset-1 ring-current`
-                      : "border-border bg-background hover:bg-accent"
-                  )}
-                >
-                  {txt(locale, { he: p.he, en: p.en })}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Required resources / effort — multi-select dropdown */}
-          <div className="space-y-1.5">
-            <Label>
-              {txt(locale, { he: "משאבים / מאמץ נדרש", en: "Required Resources / Effort" })}{" "}
-              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "בחירה מרובה · רשות", en: "multi-select · optional" })})</span>
-            </Label>
-            <OptionMultiSelect
-              options={RESOURCE_OPTIONS.map((o) => ({ value: o.value, label: txt(locale, { he: o.he, en: o.en }) as string }))}
-              selected={form.resources}
-              onToggle={(v) =>
-                setForm((prev) => ({
-                  ...prev,
-                  resources: prev.resources.includes(v)
-                    ? prev.resources.filter((x) => x !== v)
-                    : [...prev.resources, v],
-                }))
-              }
-              placeholder={txt(locale, { he: "בחר משאבים נדרשים", en: "Select required resources" }) as string}
-            />
-          </div>
-
           {/* Team Members — "who" does it: placed after resources, with the
               built-in workload / calendar-availability check (multi-select). */}
           <div className="space-y-1.5">
@@ -844,20 +701,32 @@ export function AddTaskDialog({
               error={!!errors.teamMembers}
             />
             {errors.teamMembers && <p className="text-xs text-red-500">{errors.teamMembers}</p>}
+            {errors.executionOwnerId && <p className="text-xs text-red-500">{errors.executionOwnerId}</p>}
 
             {/* Per-member responsibility — "who does what". Set the function for
                 each member as they're added to the team. */}
             {form.teamMembers.length > 0 && (
               <div className="mt-2 space-y-2 rounded-md border bg-muted/30 p-2.5">
                 <div className="text-xs font-semibold text-muted-foreground">
-                  {txt(locale, { he: "תפקיד כל חבר צוות במשימה (מי אחראי על מה)", en: "Each member's role in the task (who does what)" })}
+                  {txt(locale, { he: "תפקיד כל חבר צוות + סימון אחראי ביצוע אחד (חובה)", en: "Each member's role + mark one execution owner (required)" })}
                 </div>
                 {form.teamMembers.map((uid) => {
                   const u = users.find((x) => x.id === uid);
                   if (!u) return null;
                   const role = form.memberRoles[uid] || { type: "execute" };
                   return (
-                    <div key={uid} className="grid grid-cols-1 sm:grid-cols-[7rem_9rem_1fr] gap-2 sm:items-center">
+                    <div key={uid} className="grid grid-cols-1 sm:grid-cols-[auto_7rem_9rem_1fr] gap-2 sm:items-center">
+                      <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                        <input
+                          type="radio"
+                          name="executionOwner"
+                          checked={form.executionOwnerId === uid}
+                          onChange={() => setExecutionOwner(uid)}
+                          title={txt(locale, { he: "סמן/י את חבר הצוות כאחראי הביצוע של המשימה (בחירה אחת בלבד)", en: "Mark this member as the task's execution owner (single choice)" }) as string}
+                          className="size-4 shrink-0"
+                        />
+                        <span className="whitespace-nowrap">{txt(locale, { he: "אחראי ביצוע", en: "Execution owner" })}</span>
+                      </label>
                       <span className="text-sm font-medium truncate">{u.name}</span>
                       <select
                         value={role.type}
@@ -927,108 +796,6 @@ export function AddTaskDialog({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Assignment: Project or Program */}
-          <div className="space-y-1.5">
-            <Label className="inline-flex items-center gap-1.5">
-              {txt(locale, { he: "שיוך", en: "Assignment" })}{" "}
-              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "רשות", en: "optional" })})</span>
-              <FieldHint text={txt(locale, { he: "שיוך המשימה לפרויקט או לפרוגרמה — בחר/י קודם את הסוג ואז את הפריט מהרשימה. אינו חובה: משימה יכולה לעמוד בפני עצמה ללא שיוך.", en: "Link the task to a project or a program — first pick the type, then choose the item from the list. Optional: a task can stand on its own with no assignment." }) as string} />
-            </Label>
-            <div className="flex gap-2 mb-2">
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, parentType: "project", parentId: "" })}
-                className={cn(
-                  "flex-1 px-3 py-2 rounded-md text-sm font-medium border min-h-[44px]",
-                  form.parentType === "project"
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border hover:bg-accent"
-                )}
-              >
-                {txt(locale, { he: "פרויקט", en: "Project" })}
-              </button>
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, parentType: "program", parentId: "" })}
-                className={cn(
-                  "flex-1 px-3 py-2 rounded-md text-sm font-medium border min-h-[44px]",
-                  form.parentType === "program"
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border hover:bg-accent"
-                )}
-              >
-                {txt(locale, { he: "פרוגרמה", en: "Program" })}
-              </button>
-            </div>
-            <select
-              value={form.parentId}
-              onChange={(e) => setForm({ ...form, parentId: e.target.value })}
-              className={cn(
-                "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[44px]",
-                errors.parentId ? "border-red-500" : ""
-              )}
-            >
-              <option value="">{txt(locale, { he: "-- בחר --", en: "-- Select --" })}</option>
-              {parentOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {txt(locale, { he: p.name, en: p.nameEn || p.name })}
-                </option>
-              ))}
-            </select>
-            {errors.parentId && <p className="text-xs text-red-500">{errors.parentId}</p>}
-          </div>
-
-
-          {/* File Attachments (max 5MB each) */}
-          <div className="space-y-1.5">
-            <Label>
-              {txt(locale, { he: "צירוף מסמכים", en: "Attachments" })}{" "}
-              <span className="text-muted-foreground text-[10px]">({txt(locale, { he: "עד 5MB לקובץ", en: "max 5MB each" })})</span>
-            </Label>
-            <div className="border-2 border-dashed rounded-lg p-3 text-center">
-              <input
-                type="file"
-                multiple
-                id="file-upload"
-                className="hidden"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  const valid = files.filter((f) => f.size <= 5 * 1024 * 1024);
-                  const rejected = files.length - valid.length;
-                  if (rejected > 0) {
-                    toast.error(txt(locale, { he: `${rejected} קבצים חרגו מ-5MB ולא נוספו`, en: `${rejected} files exceeded 5MB` }));
-                  }
-                  setForm({ ...form, attachments: [...form.attachments, ...valid] });
-                  e.target.value = ""; // reset input
-                }}
-              />
-              <label
-                htmlFor="file-upload"
-                className="cursor-pointer text-sm text-primary hover:underline font-medium"
-              >
-                {txt(locale, { he: "📎 לחץ לצירוף קבצים", en: "📎 Click to attach files" })}
-              </label>
-              <div className="text-[10px] text-muted-foreground mt-1">
-                {txt(locale, { he: "כל פורמט · עד 5MB לקובץ", en: "Any format · Max 5MB per file" })}
-              </div>
-            </div>
-            {form.attachments.length > 0 && (
-              <div className="space-y-1">
-                {form.attachments.map((file, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs bg-muted/40 px-2 py-1.5 rounded">
-                    <span className="truncate flex-1">📄 {file.name} ({(file.size / 1024).toFixed(0)}KB)</span>
-                    <button
-                      type="button"
-                      onClick={() => setForm({ ...form, attachments: form.attachments.filter((_, i) => i !== idx) })}
-                      className="text-red-500 hover:text-red-700 ms-2 shrink-0"
-                    >✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {errors.attachments && <p className="text-xs text-red-500">{errors.attachments}</p>}
           </div>
 
           {/* Footer */}
@@ -1158,108 +925,6 @@ function TeamMultiSelect({
               );
             })
           )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * Generic multi-select dropdown over {value,label} options. Same UX as
- * TeamMultiSelect (closed pill summary + checkbox list) but decoupled from
- * users — used for the required-resources picker.
- */
-function OptionMultiSelect({
-  options,
-  selected,
-  onToggle,
-  placeholder,
-}: {
-  options: { value: string; label: string }[];
-  selected: string[];
-  onToggle: (value: string) => void;
-  placeholder: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  const selectedLabels = options.filter((o) => selected.includes(o.value)).map((o) => o.label);
-  const summary = selectedLabels.length === 0 ? placeholder : selectedLabels.join(", ");
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className={cn(
-          "w-full flex items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[44px] text-start",
-          selectedLabels.length === 0 && "text-muted-foreground"
-        )}
-      >
-        <span className="line-clamp-1 flex-1 min-w-0">{summary}</span>
-        <span className="flex items-center gap-1 shrink-0">
-          {selectedLabels.length > 0 && (
-            <span className="text-[10px] font-semibold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
-              {selectedLabels.length}
-            </span>
-          )}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={cn("transition-transform", open && "rotate-180")}
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </span>
-      </button>
-      {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg max-h-64 overflow-y-auto">
-          {options.map((opt) => {
-            const isSel = selected.includes(opt.value);
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => onToggle(opt.value)}
-                className={cn(
-                  "w-full flex items-center gap-2 px-3 py-2 text-sm text-start hover:bg-accent min-h-[40px]",
-                  isSel && "bg-primary/5"
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={isSel}
-                  readOnly
-                  className="size-4 shrink-0 pointer-events-none"
-                />
-                <span className="flex-1 min-w-0 line-clamp-1">{opt.label}</span>
-              </button>
-            );
-          })}
         </div>
       )}
     </div>
